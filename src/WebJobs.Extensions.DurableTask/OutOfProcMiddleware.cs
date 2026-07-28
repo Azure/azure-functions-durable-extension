@@ -338,8 +338,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 });
             }
 
-            if (functionInfo == null)
+            if (functionInfo?.Executor == null)
             {
+                // The entity is not registered (deleted/renamed) or is registered/indexed but disabled
+                // but still deployed, so it has no active listener (null executor). Fail the batch
+                // deterministically instead of dereferencing the null executor below, which would
+                // surface as a transient failure and retry the work item forever.
+                // See https://github.com/Azure/azure-functions-durable-extension/issues/3471.
                 SetErrorResult(new FailureDetails(
                     errorType: "EntityFunctionNotFound",
                     errorMessage: this.extension.GetInvalidEntityFunctionMessage(functionName.Name),
@@ -531,9 +536,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return;
             }
 
-            if (!this.extension.TryGetActivityInfo(functionName, out RegisteredFunctionInfo? function))
+            if (!this.extension.TryGetActivityInfo(functionName, out RegisteredFunctionInfo? function)
+                || function?.Executor == null)
             {
                 // Fail the activity call with an error explaining that the function name is invalid.
+                // This covers two cases that must both fail deterministically rather than poison-loop:
+                //   1. the activity is not registered (deleted/renamed), and
+                //   2. the activity is registered/indexed but is disabled and still deployed, so it has
+                //      no active listener and its Executor is null. Dereferencing that null executor
+                //      below would surface as a transient runtime failure and retry the work item
+                //      forever. See https://github.com/Azure/azure-functions-durable-extension/issues/3471.
                 string errorMessage = this.extension.GetInvalidActivityFunctionMessage(functionName.Name);
                 dispatchContext.SetProperty(new ActivityExecutionResult
                 {
@@ -681,6 +693,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             return (exception?.InnerException is InvalidOperationException ioe && ioe.Message.Contains(NoWorkerInitializedMessage, StringComparison.Ordinal))
                 || (exception?.InnerException is FileNotFoundException fnfe && fnfe.Message.Contains(AssemblyNotLoadedMessage, StringComparison.Ordinal));
+        }
+
+        /// <summary>
+        /// Attempts to parse a structured <see cref="FailureDetails"/> (including any custom
+        /// <c>Properties</c>) from an out-of-proc worker exception whose message contains a
+        /// serialized <c>TaskFailureDetails</c> JSON payload. Returns <c>null</c> when no
+        /// structured payload is present so callers can fall back to legacy behavior.
+        /// </summary>
+        internal static FailureDetails? TryGetStructuredFailureDetails(Exception e)
+        {
+            string? candidate = null;
+            if (e.InnerException != null && e.InnerException.Message.StartsWith("Result:", StringComparison.Ordinal))
+            {
+                candidate = e.InnerException.Message;
+            }
+            else if (e.Message.StartsWith("Result:", StringComparison.Ordinal))
+            {
+                candidate = e.Message;
+            }
+
+            if (candidate != null
+                && TryGetRpcExceptionFields(candidate, out string? exception, out string? _)
+                && TryExtractSerializedFailureDetailsFromException(exception, out FailureDetails? details))
+            {
+                return details;
+            }
+
+            return null;
         }
 
         private static FailureDetails GetFailureDetails(Exception e, out bool fromSerializedException)

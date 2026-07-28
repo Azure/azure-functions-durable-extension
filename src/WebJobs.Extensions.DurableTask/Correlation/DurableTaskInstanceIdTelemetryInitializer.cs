@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using Microsoft.ApplicationInsights.Channel;
 using Microsoft.ApplicationInsights.Extensibility;
+using Microsoft.ApplicationInsights.Extensibility.Implementation;
 
 #nullable enable
 
@@ -20,6 +21,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 
         public void Initialize(ITelemetry telemetry)
         {
+            if (telemetry is OperationTelemetry operationTelemetry &&
+                string.IsNullOrEmpty(telemetry.Context.Operation.Name) &&
+                !string.IsNullOrEmpty(operationTelemetry.Name))
+            {
+                telemetry.Context.Operation.Name = operationTelemetry.Name;
+            }
+
             if (!this.includeInstanceId)
             {
                 return;
@@ -33,7 +41,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 
             // Check if it is an orchestration, activity, or entity span
             string? type = activity.GetTagItem(Schema.Task.Type) as string;
-            string? operation = activity.GetTagItem(Schema.Task.Operation) as string;
 
             // Support orchestration, activity, and entity spans
             if (type != TraceActivityConstants.Orchestration &&
@@ -42,6 +49,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             {
                 return;
             }
+
+            string? operation = activity.GetTagItem(Schema.Task.Operation) as string;
 
             // Exclude create_orchestration spans via operation tag
             if (operation == TraceActivityConstants.CreateOrchestration)
@@ -52,7 +61,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             string? instanceId = activity.GetTagItem(Schema.Task.InstanceId) as string;
             if (!string.IsNullOrEmpty(instanceId))
             {
-                // If the operation name is empty, use the activity display name
                 if (string.IsNullOrEmpty(telemetry.Context.Operation.Name))
                 {
                     telemetry.Context.Operation.Name = activity.DisplayName;

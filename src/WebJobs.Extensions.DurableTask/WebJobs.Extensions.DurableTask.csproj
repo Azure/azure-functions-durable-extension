@@ -5,8 +5,8 @@
     <AssemblyName>Microsoft.Azure.WebJobs.Extensions.DurableTask</AssemblyName>
     <RootNamespace>Microsoft.Azure.WebJobs.Extensions.DurableTask</RootNamespace>
     <MajorVersion>3</MajorVersion>
-    <MinorVersion>12</MinorVersion>
-    <PatchVersion>5</PatchVersion>
+    <MinorVersion>14</MinorVersion>
+    <PatchVersion>0</PatchVersion>
     <VersionPrefix>$(MajorVersion).$(MinorVersion).$(PatchVersion)</VersionPrefix>
     <FileVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</FileVersion>
     <AssemblyVersion>$(MajorVersion).0.0.0</AssemblyVersion>
@@ -39,6 +39,8 @@
     <PackageTags>Microsoft Azure WebJobs Durable Extension Orchestration Workflow Functions</PackageTags>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageIcon>functions.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageProjectUrl>https://github.com/Azure/azure-functions-durable-extension</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Azure/azure-functions-durable-extension/</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -75,6 +77,11 @@
   <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
     <PackageReference Include="Microsoft.Extensions.Options" VersionOverride="8.0.2" />
     <PackageReference Include="System.Text.Json" VersionOverride="8.0.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\functions.png" Pack="true" PackagePath="\" />
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
   <ItemGroup>

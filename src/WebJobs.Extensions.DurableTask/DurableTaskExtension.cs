@@ -13,6 +13,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.AzureStorage;
 using DurableTask.Core;
+using DurableTask.Core.Command;
 using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Middleware;
@@ -166,11 +167,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.telemetryActivator = telemetryActivator;
             this.telemetryActivator?.Initialize(logger);
 
-            // Starting with .NET isolated and Java, we have a more efficient out-of-process
-            // function invocation protocol. Other languages will use the existing protocol.
+            // The gRPC-based out-of-process invocation protocol (MiddlewarePassthrough) is the more
+            // efficient protocol used by the compiled / newer-SDK runtimes: .NET isolated, Java, the
+            // native worker (e.g. Go), and custom handlers. The remaining script languages (Python,
+            // Node.js, PowerShell) start on the legacy HTTP protocol below and may upgrade to gRPC
+            // during function indexing if their metadata requests it (see ConfigureForGrpcProtocol).
             WorkerRuntimeType runtimeType = this.PlatformInformationService.GetWorkerRuntimeType();
             if (runtimeType == WorkerRuntimeType.DotNetIsolated ||
                 runtimeType == WorkerRuntimeType.Java ||
+                runtimeType == WorkerRuntimeType.Native ||
+                runtimeType == WorkerRuntimeType.Golang ||
                 runtimeType == WorkerRuntimeType.Custom)
             {
                 this.ConfigureForGrpcProtocol();
@@ -261,6 +267,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         // dotnet-isolated and java use a gRPC server instead of the HTTP server
                         WorkerRuntimeType.DotNetIsolated => false,
                         WorkerRuntimeType.Java => false,
+
+                        // the native worker (e.g. golang) uses the gRPC protocol, so it never starts the HTTP RPC server
+                        WorkerRuntimeType.Native => false,
+                        WorkerRuntimeType.Golang => false,
 
                         // everything else - assume the HTTP server
                         WorkerRuntimeType.Python => true, // This method will only be called for Python if we already know that we are using the HTTP protocol
@@ -698,7 +708,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             RegisteredFunctionInfo info;
             if (!this.knownActivities.TryGetValue(activityFunction, out info))
             {
+                // The activity function is not registered at all (e.g. it was deleted or renamed).
                 return new TaskNonexistentActivityShim(this, name);
+            }
+
+            if (info.Executor == null)
+            {
+                // The activity function was indexed (so it is present in knownActivities) but no
+                // listener was ever started for it. This happens when the function is disabled but
+                // still deployed: the binding provider registers the name with a null executor
+                // during indexing, and the disabled function's listener never replaces it. Returning
+                // a shim that fails deterministically — instead of constructing a TaskActivityShim
+                // with a null executor, which throws ArgumentNullException during object construction
+                // and causes the work item to be abandoned and retried forever (a poison loop) — lets
+                // the orchestration receive a catchable failure.
+                // See https://github.com/Azure/azure-functions-durable-extension/issues/3471.
+                return new TaskNonexistentActivityShim(this, name, isDisabled: true);
             }
 
             return new TaskActivityShim(this, info.Executor, this.HostLifetimeService, name);
@@ -710,16 +735,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         /// <param name="dispatchContext">A property bag containing useful DTFx context.</param>
         /// <param name="next">The handler for running the next middleware in the pipeline.</param>
-        private Task ActivityMiddleware(DispatchMiddlewareContext dispatchContext, Func<Task> next)
+        private async Task ActivityMiddleware(DispatchMiddlewareContext dispatchContext, Func<Task> next)
         {
-            if (dispatchContext.GetProperty<TaskActivity>() is TaskActivityShim shim)
+            TaskActivityShim shim = dispatchContext.GetProperty<TaskActivity>() as TaskActivityShim;
+            TaskScheduledEvent scheduledEvent = dispatchContext.GetProperty<TaskScheduledEvent>();
+
+            if (shim != null)
             {
-                TaskScheduledEvent @event = dispatchContext.GetProperty<TaskScheduledEvent>();
-                shim.SetTaskEventId(@event?.EventId ?? -1);
+                shim.SetTaskEventId(scheduledEvent?.EventId ?? -1);
             }
 
-            // Move to the next stage of the DTFx pipeline to trigger the activity shim.
-            return next();
+            try
+            {
+                // Move to the next stage of the DTFx pipeline to trigger the activity shim.
+                await next();
+            }
+            catch (TaskFailureException) when (shim?.StructuredFailureDetails != null)
+            {
+                // The shim extracted a structured TaskFailureDetails payload from the out-of-proc
+                // worker's exception. Override the dispatch result so DTFx persists the
+                // FailureDetails on the TaskFailedEvent, mirroring what OutOfProcMiddleware does
+                // for the new-protocol.
+                FailureDetails failureDetails = shim.StructuredFailureDetails;
+                dispatchContext.SetProperty(new ActivityExecutionResult
+                {
+                    ResponseEvent = new TaskFailedEvent(
+                        eventId: -1,
+                        taskScheduledId: scheduledEvent?.EventId ?? -1,
+                        reason: $"Activity function '{shim.ActivityName}' failed with an unhandled exception.",
+                        details: null,
+                        failureDetails),
+                });
+            }
         }
 
         /// <summary>
@@ -818,6 +865,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     // This will abort the execution and cause the message to go back onto the queue for re-processing
                     throw new SessionAbortedException(
                         $"An internal error occurred while attempting to execute '{context.FunctionName}'.", result.Exception);
+                }
+            }
+
+            // If an out-of-proc worker supplied structured failure details for an uncaught
+            // sub-orchestration/activity failure that propagated out of the orchestrator, attach
+            // them to the orchestration completion action so DTFx persists them on the resulting
+            // ExecutionCompleted / SubOrchestrationInstanceFailed event. This lets a calling parent
+            // orchestration reconstruct the full InnerFailure chain (including custom Properties).
+            // The completion action's FailureDetails is publicly settable and is read by the DTFx
+            // dispatcher after this middleware returns, so mutating it here is safe and works
+            // regardless of the configured ErrorPropagationMode. No-op for all other workers/paths.
+            if (context.OrchestrationFailureDetails != null)
+            {
+                OrchestratorExecutionResult executionResult = dispatchContext.GetProperty<OrchestratorExecutionResult>();
+                if (executionResult?.Actions != null)
+                {
+                    foreach (OrchestrationCompleteOrchestratorAction completeAction in executionResult.Actions
+                        .OfType<OrchestrationCompleteOrchestratorAction>()
+                        .Where(a => a.OrchestrationStatus == OrchestrationStatus.Failed && a.FailureDetails == null))
+                    {
+                        completeAction.FailureDetails = context.OrchestrationFailureDetails;
+                    }
                 }
             }
 
@@ -1023,11 +1092,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             WrappedFunctionResult result;
 
-            if (entityShim.OperationBatch.Count > 0 && !this.HostLifetimeService.OnStopping.IsCancellationRequested)
+            RegisteredFunctionInfo entityFunctionInfo = entityShim.GetFunctionInfo();
+            bool functionUnavailable = entityFunctionInfo?.Executor == null;
+
+            if (entityShim.OperationBatch.Count > 0
+                && !this.HostLifetimeService.OnStopping.IsCancellationRequested
+                && !functionUnavailable)
             {
                 // 3a. (function execution) Start the functions invocation pipeline (billing, logging, bindings, and timeout tracking).
                 result = await FunctionExecutionHelper.ExecuteFunctionInOrchestrationMiddleware(
-                    entityShim.GetFunctionInfo().Executor,
+                    entityFunctionInfo.Executor,
                     new TriggeredFunctionData
                     {
                         TriggerValue = entityShim.Context,
@@ -1122,6 +1196,42 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         result.Exception);
                 }
             }
+            else if (functionUnavailable
+                && entityShim.OperationBatch.Count > 0
+                && !this.HostLifetimeService.OnStopping.IsCancellationRequested)
+            {
+                // The entity function is registered/indexed but has no active listener — e.g. it is
+                // disabled but still deployed, or was deleted/renamed. Rather than dereferencing a
+                // null executor (which would surface as a transient work-item failure and poison-loop
+                // the batch forever), fail every operation in the batch deterministically. Each
+                // operation gets an exception response and is recorded as an application (not internal)
+                // error, so the batch is not aborted/retried. This mirrors the graceful handling in
+                // OutOfProcMiddleware.CallEntityAsync and the activity GetObject path.
+                // See https://github.com/Azure/azure-functions-durable-extension/issues/3471.
+                entityShim.AddTraceFlag(EntityTraceFlags.FunctionUnavailable);
+
+                this.TraceHelper.ExtensionWarningEvent(
+                    this.Options.HubName,
+                    entityContext.Name,
+                    entityContext.InstanceId,
+                    $"The entity function '{entityContext.Name}' is disabled or does not exist. Failing {entityShim.OperationBatch.Count} operation(s).");
+
+                var failureMessage = this.GetInvalidEntityFunctionMessage(entityContext.Name);
+                entityShim.SetFunctionInvocationCallback(() => throw new FunctionFailedException(failureMessage));
+
+                if (entityContext.InternalError == null)
+                {
+                    try
+                    {
+                        await entityShim.ExecuteBatch(this.HostLifetimeService.OnStopping);
+                        await next();
+                    }
+                    catch (Exception e)
+                    {
+                        entityContext.CaptureInternalError(e, entityShim);
+                    }
+                }
+            }
             else
             {
                 entityShim.AddTraceFlag(EntityTraceFlags.DirectExecution);
@@ -1176,17 +1286,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             IReadOnlyCollection<string> activityNames,
             IReadOnlyCollection<string> entityNames) GetActiveRegisteredFunctionNames()
         {
+            // Note: dictionary values can be null for functions disabled via attribute or
+            // app setting. The binding provider registers the name with a null
+            // RegisteredFunctionInfo during indexing; for disabled functions the listener
+            // factory never replaces it. Treat null entries as inactive, matching the
+            // existing pattern in StopTaskHubWorkerIfIdleAsync.
             return (
                 orchestratorNames: this.knownOrchestrators
-                    .Where(kvp => !kvp.Value.IsDeregistered)
+                    .Where(kvp => kvp.Value != null && !kvp.Value.IsDeregistered)
                     .Select(kvp => kvp.Key.Name)
                     .ToList(),
                 activityNames: this.knownActivities
-                    .Where(kvp => !kvp.Value.IsDeregistered)
+                    .Where(kvp => kvp.Value != null && !kvp.Value.IsDeregistered)
                     .Select(kvp => kvp.Key.Name)
                     .ToList(),
                 entityNames: this.knownEntities
-                    .Where(kvp => !kvp.Value.IsDeregistered)
+                    .Where(kvp => kvp.Value != null && !kvp.Value.IsDeregistered)
                     .Select(kvp => kvp.Key.Name)
                     .ToList());
         }
@@ -1418,7 +1533,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal string GetInvalidEntityFunctionMessage(string name)
         {
             string message = $"The function '{name}' doesn't exist, is disabled, or is not an entity function. Additional info: ";
-            if (this.knownOrchestrators.Keys.Count > 0)
+            if (this.knownEntities.Keys.Count > 0)
             {
                 message += $"The following are the known entity functions: '{string.Join("', '", this.knownEntities.Keys)}'.";
             }

@@ -114,6 +114,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal ExceptionDispatchInfo OrchestrationException { get; set; }
 
+        /// <summary>
+        /// Structured failure details supplied by an out-of-proc worker when an uncaught
+        /// sub-orchestration or activity failure propagates out of the
+        /// orchestrator. Carries the full <c>InnerFailure</c> chain (including any custom
+        /// <c>Properties</c>) so <see cref="DurableTaskExtension.OrchestrationMiddleware"/> can attach
+        /// it to the orchestration completion action, allowing a calling parent orchestration to
+        /// reconstruct the failure. <c>null</c> for all other workers/paths, leaving behavior unchanged.
+        /// </summary>
+        internal FailureDetails OrchestrationFailureDetails { get; set; }
+
         internal bool IsOutputSet => this.serializedOutput != null;
 
         private string OrchestrationName => this.FunctionName;
@@ -1081,6 +1091,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private Task<T> WaitForExternalEvent<T>(string name, TimeSpan timeout, Action<TaskCompletionSource<T>> timeoutAction, CancellationToken cancelToken)
         {
+            // Timeout.InfiniteTimeSpan means "wait indefinitely for the event". Adding it to
+            // CurrentUtcDateTime would schedule a durable timer in the past, which fires immediately
+            // and runs the timeout action (e.g. an immediate TimeoutException or default value).
+            // Instead, wait for the event without any timeout timer, mirroring the no-timeout
+            // WaitForExternalEvent overload. The cancelToken parameter exists solely to cancel that
+            // internal timeout timer, so with no timer to cancel it is intentionally ignored here.
+            // See https://github.com/Azure/azure-functions-durable-extension/issues/2111.
+            if (timeout == Timeout.InfiniteTimeSpan)
+            {
+                return this.WaitForExternalEvent<T>(name, "ExternalEvent");
+            }
+
             var tcs = new TaskCompletionSource<T>();
             var cts = CancellationTokenSource.CreateLinkedTokenSource(cancelToken);
 
