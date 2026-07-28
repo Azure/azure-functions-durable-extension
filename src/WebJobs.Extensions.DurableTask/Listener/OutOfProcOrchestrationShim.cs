@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using DurableTask.Core;
 using DurableTask.Core.Exceptions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -39,6 +40,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             Original = 0,
             V2 = 1,
             V3 = 2,
+            V4 = 3,
         }
 
         private enum AsyncActionType
@@ -56,6 +58,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             ScheduledSignalEntity = 10,
             WhenAny = 11,
             WhenAll = 12,
+            LockEntities = 13,
+            ReleaseEntities = 14,
         }
 
         // Handles replaying the Durable Task APIs that the out-of-proc function scheduled
@@ -84,6 +88,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (!string.IsNullOrEmpty(execution.Error))
             {
+                // If the worker provided structured failure details (e.g. an uncaught
+                // sub-orchestration/activity failure propagated out of the orchestrator),
+                // stash them on the context so OrchestrationMiddleware can attach them to the
+                // orchestration completion action. This preserves the full InnerFailure chain
+                // (including custom Properties) for a calling parent orchestration. The legacy
+                // string-based OrchestrationFailureException is still thrown so existing behavior
+                // (and replay determinism) is unchanged.
+                if (execution.FailureDetails != null
+                    && this.context is DurableOrchestrationContext durableContext)
+                {
+                    durableContext.OrchestrationFailureDetails = ConvertToFailureDetails(execution.FailureDetails);
+                }
+
                 string exceptionDetails = $"Message: {execution.Error}, StackTrace: {result.Exception.StackTrace}";
                 throw new OrchestrationFailureException(
                         $"Orchestrator function '{this.context.Name}' failed: {execution.Error}",
@@ -183,6 +200,49 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 case AsyncActionType.WhenAny:
                     task = Task.WhenAny(action.CompoundActions.Select(x => this.InvokeAPIFromAction(x, schema)));
                     break;
+                case AsyncActionType.LockEntities:
+                    {
+                        if (action.LockSet == null || action.LockSet.Length == 0)
+                        {
+                            throw new ArgumentException("LockEntities action requires a non-empty LockSet.");
+                        }
+
+                        if (action.LockSet.Any(e => e == null || string.IsNullOrEmpty(e.Name) || e.Key == null))
+                        {
+                            throw new ArgumentException("LockEntities action requires each LockSet entry to have a non-empty name and a non-null key.");
+                        }
+
+                        var ctxForLock = this.context as DurableOrchestrationContext;
+                        if (ctxForLock == null)
+                        {
+                            throw new InvalidOperationException("LockEntities action requires a DurableOrchestrationContext.");
+                        }
+
+                        var entityIds = action.LockSet
+                            .Select(e => new EntityId(e.Name, e.Key))
+                            .ToArray();
+
+                        // We intentionally do NOT hold onto the returned IDisposable here:
+                        // the worker emits an explicit ReleaseEntities action when the
+                        // user releases the lock (or when the orchestration completes).
+                        // ReleaseLocks() reads ContextLocks from the context.
+                        task = ((IDurableOrchestrationContext)ctxForLock).LockAsync(entityIds);
+                        break;
+                    }
+
+                case AsyncActionType.ReleaseEntities:
+                    {
+                        var ctxForRelease = this.context as DurableOrchestrationContext;
+                        if (ctxForRelease == null)
+                        {
+                            throw new InvalidOperationException("ReleaseEntities action requires a DurableOrchestrationContext.");
+                        }
+
+                        ctxForRelease.ReleaseLocks();
+                        task = fireAndForgetTask;
+                        break;
+                    }
+
                 default:
                     throw new Exception($"Received an unexpected action type from the out-of-proc function: '${action.ActionType}'.");
             }
@@ -229,6 +289,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             switch (schema)
             {
+                case SchemaVersion.V4:
                 case SchemaVersion.V3:
                 case SchemaVersion.V2:
                     // In this schema, action arrays should be 1 dimensional (1 action per yield), but due to legacy behavior they're nested within a 2-dimensional array.
@@ -278,6 +339,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
+        /// <summary>
+        /// Recursively converts a worker-supplied <see cref="FailureDetailsPayload"/> into a
+        /// <see cref="DurableTask.Core.FailureDetails"/>, preserving the <c>InnerFailure</c> chain
+        /// and any custom <c>Properties</c>.
+        /// </summary>
+        private static FailureDetails ConvertToFailureDetails(FailureDetailsPayload dto)
+        {
+            if (dto == null)
+            {
+                return null;
+            }
+
+            IDictionary<string, object> properties = null;
+            if (dto.Properties != null && dto.Properties.Count > 0)
+            {
+                properties = new Dictionary<string, object>(dto.Properties);
+            }
+
+            return new FailureDetails(
+                dto.ErrorType ?? string.Empty,
+                dto.ErrorMessage ?? string.Empty,
+                dto.StackTrace,
+                ConvertToFailureDetails(dto.InnerFailure),
+                dto.IsNonRetriable,
+                properties);
+        }
+
         private class OutOfProcOrchestratorState
         {
             [JsonProperty("isDone")]
@@ -295,10 +383,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             [JsonProperty("customStatus")]
             internal object CustomStatus { get; set; }
 
+            [JsonProperty("failureDetails")]
+            internal FailureDetailsPayload FailureDetails { get; set; }
+
             [DefaultValue(SchemaVersion.Original)]
             [JsonConverter(typeof(StringEnumConverter))]
             [JsonProperty("schemaVersion", DefaultValueHandling = DefaultValueHandling.Populate)]
             internal SchemaVersion SchemaVersion { get; set; }
+        }
+
+        /// <summary>
+        /// Wire-format DTO matching the JSON shape the durable-functions worker SDKs serialize for
+        /// <see cref="DurableTask.Core.FailureDetails"/> (PascalCase). Mirrors the
+        /// <c>FailureDetailsDto</c> the host extension already sends down on history events.
+        /// </summary>
+        private class FailureDetailsPayload
+        {
+            [JsonProperty("ErrorType")]
+            internal string ErrorType { get; set; }
+
+            [JsonProperty("ErrorMessage")]
+            internal string ErrorMessage { get; set; }
+
+            [JsonProperty("StackTrace")]
+            internal string StackTrace { get; set; }
+
+            [JsonProperty("IsNonRetriable")]
+            internal bool IsNonRetriable { get; set; }
+
+            [JsonProperty("Properties")]
+            internal IDictionary<string, object> Properties { get; set; }
+
+            [JsonProperty("InnerFailure")]
+            internal FailureDetailsPayload InnerFailure { get; set; }
         }
 
         private class AsyncAction
@@ -340,6 +457,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             [JsonProperty("operation")]
             internal string EntityOperation { get; set; }
+
+            [JsonProperty("lockSet")]
+            internal LockSetEntry[] LockSet { get; set; }
+        }
+
+        private class LockSetEntry
+        {
+            [JsonProperty("name")]
+            internal string Name { get; set; }
+
+            [JsonProperty("key")]
+            internal string Key { get; set; }
         }
     }
 }

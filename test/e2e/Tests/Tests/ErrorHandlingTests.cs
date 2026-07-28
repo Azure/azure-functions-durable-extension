@@ -224,7 +224,7 @@ public class ErrorHandlingTests
     [Fact]
     [Trait("PowerShell", "Skip")] // FailureDetails is a dotnet-isolated implementation detail
     [Trait("Python", "Skip")] // FailureDetails is a dotnet-isolated implementation detail
-    [Trait("Node", "Skip")] // FailureDetails is a dotnet-isolated implementation detail
+    [Trait("Node", "Skip")] // Custom exception properties are not yet supported by the durable-functions JS SDK.
     [Trait("Java", "Skip")] // Include exception properties at Failure Details for Java is not supported yet.
     [Trait("DTS", "Skip")] // DTS doesn't support this feature yet.
     public async Task CustomExceptionPropertiesInFailureDetails()

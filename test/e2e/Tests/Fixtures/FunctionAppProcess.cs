@@ -21,6 +21,12 @@ internal class FunctionAppProcess
     private ILogger logger;
     private TestLoggerProvider TestLogs;
 
+    /// <summary>
+    /// Additional environment variables to set on the function host process
+    /// before it starts. Set by fixture subclasses to scope settings to specific test collections.
+    /// </summary>
+    internal Dictionary<string, string>? AdditionalEnvironmentVariables { get; set; }
+
     public FunctionAppProcess(ILogger logger, TestLoggerProvider TestLogs, LanguageType testLanguage)
     {
         this.logger = logger;
@@ -91,6 +97,15 @@ internal class FunctionAppProcess
             this.logger.LogInformation($"  File name:   '${fileName}' Exists: '{File.Exists(fileName)}'");
 
             FixtureHelpers.AddDurableBackendEnvironmentVariables(this.funcProcess, this.logger);
+
+            if (this.AdditionalEnvironmentVariables != null)
+            {
+                foreach (var kvp in this.AdditionalEnvironmentVariables)
+                {
+                    this.logger.LogInformation($"  Additional env var: {kvp.Key}");
+                    this.funcProcess.StartInfo.EnvironmentVariables[kvp.Key] = kvp.Value;
+                }
+            }
 
             FixtureHelpers.StartProcessWithLogging(this.funcProcess, this.logger);
 

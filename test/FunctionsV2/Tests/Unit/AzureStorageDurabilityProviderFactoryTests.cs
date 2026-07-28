@@ -6,6 +6,11 @@ using System.Collections.Generic;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
+using Microsoft.Azure.WebJobs.Host.TestCommon;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -78,6 +83,50 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             Assert.Equal(25, settings.MaxStorageOperationConcurrency);
         }
 
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(WorkerRuntimeType.Native)]
+        [InlineData(WorkerRuntimeType.Golang)]
+        public void GrpcRuntimes_UseSeparateQueueForEntityWorkItems(WorkerRuntimeType runtimeType)
+        {
+            var clientProviderFactory = new TestStorageServiceClientProviderFactory();
+            var mockOptions = new OptionsWrapper<DurableTaskOptions>(new DurableTaskOptions());
+            var nameResolver = new Mock<INameResolver>().Object;
+            var factory = new AzureStorageDurabilityProviderFactory(
+                mockOptions,
+                clientProviderFactory,
+                nameResolver,
+                NullLoggerFactory.Instance,
+                TestHelpers.GetMockPlatformInformationService(language: runtimeType));
+
+            var settings = factory.GetAzureStorageOrchestrationServiceSettings();
+
+            // The native worker runtimes use the gRPC protocol, which requires a separate
+            // queue for entity work items (matching .NET isolated / Java behavior).
+            Assert.True(settings.UseSeparateQueueForEntityWorkItems);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void InProcRuntime_DoesNotUseSeparateQueueForEntityWorkItems()
+        {
+            var clientProviderFactory = new TestStorageServiceClientProviderFactory();
+            var mockOptions = new OptionsWrapper<DurableTaskOptions>(new DurableTaskOptions());
+            var nameResolver = new Mock<INameResolver>().Object;
+            var factory = new AzureStorageDurabilityProviderFactory(
+                mockOptions,
+                clientProviderFactory,
+                nameResolver,
+                NullLoggerFactory.Instance,
+                TestHelpers.GetMockPlatformInformationService(language: WorkerRuntimeType.DotNet));
+
+            var settings = factory.GetAzureStorageOrchestrationServiceSettings();
+
+            // The in-process .NET runtime keeps the shared queue (this default is flipped
+            // to true only for the gRPC-based runtimes).
+            Assert.False(settings.UseSeparateQueueForEntityWorkItems);
+        }
+
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void ConsumptionDefaultsAreNotAlwaysApplied()
@@ -129,6 +178,95 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             Assert.Equal(999, settings.ControlQueueBufferThreshold);
             Assert.Equal(888, settings.MaxConcurrentTaskOrchestrationWorkItems);
             Assert.Equal(777, settings.MaxConcurrentTaskActivityWorkItems);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void LegacyPartitionManagementConfiguredAndTablePartitionManagementNotConfigured_DisablesDefaultTablePartitionManagement()
+        {
+            var clientProviderFactory = new TestStorageServiceClientProviderFactory();
+            DurableTaskOptions options = BindDurableTaskOptions(
+                new Dictionary<string, string>
+                {
+                    { "useLegacyPartitionManagement", "true" },
+                });
+
+            Assert.Single(options.StorageProvider);
+            Assert.True(options.StorageProvider.ContainsKey("useLegacyPartitionManagement"));
+            Assert.False(options.StorageProvider.ContainsKey("useTablePartitionManagement"));
+
+            var loggerProvider = new TestLoggerProvider(null);
+            using var loggerFactory = new LoggerFactory();
+            loggerFactory.AddProvider(loggerProvider);
+            var factory = new AzureStorageDurabilityProviderFactory(
+                new OptionsWrapper<DurableTaskOptions>(options),
+                clientProviderFactory,
+                new Mock<INameResolver>().Object,
+                loggerFactory,
+                TestHelpers.GetMockPlatformInformationService());
+
+            var settings = factory.GetAzureStorageOrchestrationServiceSettings();
+
+            Assert.True(settings.UseLegacyPartitionManagement);
+            Assert.False(settings.UseTablePartitionManagement);
+            var warning = Assert.Single(
+                loggerProvider.GetAllLogMessages(),
+                message =>
+                    message.Level == LogLevel.Warning &&
+                    message.FormattedMessage.Contains("Disabling `useTablePartitionManagement` to preserve legacy partition management."));
+            Assert.Equal("Host.Triggers.DurableTask.AzureStorage", warning.Category);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void ExplicitPartitionManagementConflictIsNotNormalized()
+        {
+            var clientProviderFactory = new TestStorageServiceClientProviderFactory();
+            DurableTaskOptions options = BindDurableTaskOptions(
+                new Dictionary<string, string>
+                {
+                    { "useLegacyPartitionManagement", "true" },
+                    { "useTablePartitionManagement", "true" },
+                });
+
+            Assert.Equal(2, options.StorageProvider.Count);
+            Assert.True(options.StorageProvider.ContainsKey("useLegacyPartitionManagement"));
+            Assert.True(options.StorageProvider.ContainsKey("useTablePartitionManagement"));
+
+            var factory = new AzureStorageDurabilityProviderFactory(
+                new OptionsWrapper<DurableTaskOptions>(options),
+                clientProviderFactory,
+                new Mock<INameResolver>().Object,
+                NullLoggerFactory.Instance,
+                TestHelpers.GetMockPlatformInformationService());
+
+            var settings = factory.GetAzureStorageOrchestrationServiceSettings();
+
+            Assert.True(settings.UseLegacyPartitionManagement);
+            Assert.True(settings.UseTablePartitionManagement);
+            Assert.Throws<ArgumentException>(() => factory.GetDurabilityProvider());
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void PartitionManagementNotConfigured_KeepsDefaultTablePartitionManagement()
+        {
+            var clientProviderFactory = new TestStorageServiceClientProviderFactory();
+            DurableTaskOptions options = BindDurableTaskOptions(new Dictionary<string, string>());
+
+            Assert.Empty(options.StorageProvider);
+
+            var factory = new AzureStorageDurabilityProviderFactory(
+                new OptionsWrapper<DurableTaskOptions>(options),
+                clientProviderFactory,
+                new Mock<INameResolver>().Object,
+                NullLoggerFactory.Instance,
+                TestHelpers.GetMockPlatformInformationService());
+
+            var settings = factory.GetAzureStorageOrchestrationServiceSettings();
+
+            Assert.False(settings.UseLegacyPartitionManagement);
+            Assert.True(settings.UseTablePartitionManagement);
         }
 
         [Fact]
@@ -194,6 +332,25 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             var provider = factory.GetDurabilityProvider();
 
             Assert.Equal("Storage", provider.ConnectionName);
+        }
+
+        private static DurableTaskOptions BindDurableTaskOptions(
+            IDictionary<string, string> storageProviderSettings)
+        {
+            var configuration = new Dictionary<string, string>();
+            foreach (KeyValuePair<string, string> setting in storageProviderSettings)
+            {
+                configuration.Add(
+                    $"AzureWebJobs:extensions:DurableTask:storageProvider:{setting.Key}",
+                    setting.Value);
+            }
+
+            using IHost host = new HostBuilder()
+                .ConfigureAppConfiguration(builder => builder.AddInMemoryCollection(configuration))
+                .ConfigureWebJobs(builder => builder.AddDurableTask())
+                .Build();
+
+            return host.Services.GetRequiredService<IOptions<DurableTaskOptions>>().Value;
         }
     }
 }

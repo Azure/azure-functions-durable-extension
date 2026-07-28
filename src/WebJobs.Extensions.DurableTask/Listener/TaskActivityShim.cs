@@ -46,6 +46,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.activityName = activityName;
         }
 
+        /// <summary>
+        /// Structured failure details extracted from an out-of-proc worker's serialized exception payload.
+        /// The shim stashes this so <see cref="DurableTaskExtension.ActivityMiddleware"/> can override the
+        /// resulting TaskFailedEvent with structured FailureDetails after RunAsync throws.
+        /// </summary>
+        internal FailureDetails? StructuredFailureDetails { get; private set; }
+
+        internal string ActivityName => this.activityName;
+
         public override async Task<string> RunAsync(TaskContext context, string rawInput)
         {
             string instanceId = context.OrchestrationInstance.InstanceId;
@@ -118,6 +127,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         functionType: FunctionType.Activity,
                         isReplay: false,
                         taskEventId: this.taskEventId);
+
+                    this.StructuredFailureDetails = OutOfProcMiddleware.TryGetStructuredFailureDetails(exceptionToReport!);
 
                     throw new TaskFailureException(
                             $"Activity function '{this.activityName}' failed: {exceptionToReport!.Message}",

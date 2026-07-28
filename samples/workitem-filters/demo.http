@@ -1,0 +1,136 @@
+# =============================================================================
+# Work Item Filters Sample — Demo Workflow
+# =============================================================================
+#
+# This file walks through the work item filter feature step by step.
+# Use the VS Code REST Client extension to send requests (click "Send Request"
+# above each ### block).
+#
+# Prerequisites:
+#   1. Durable Task Scheduler running locally (see README.md for setup)
+#   2. Azurite running (storage emulator for AzureWebJobsStorage)
+#   3. This sample app running: func start --port 7071
+#
+# This app registers:
+#   Orchestrations: GreetingOrchestration, FanOutOrchestration,
+#                   ParentOrchestration, CounterOrchestration
+#   Activities:     SayHello
+#   Entities:       CounterEntity
+#
+# With workItemFilteringEnabled: true, DTS will ONLY dispatch these
+# function types to this worker. Any other orchestration/activity/entity
+# names will be held in the DTS queue until a matching worker connects.
+# =============================================================================
+
+@baseUrl = http://localhost:7071/api
+
+
+# =============================================================================
+# 1. BASIC ORCHESTRATION — simple activity call
+#    Expected: Completed with "Hello, World!"
+# =============================================================================
+
+### 1a. Start GreetingOrchestration
+# @name greeting
+POST {{baseUrl}}/orchestrators/greeting
+
+### 1b. Check status (wait a few seconds)
+GET {{baseUrl}}/instances/{{greeting.response.body.instanceId}}
+
+
+# =============================================================================
+# 2. FAN-OUT/FAN-IN — parallel activity calls
+#    Expected: Completed with ["Hello, Tokyo!", "Hello, London!", "Hello, Seattle!"]
+# =============================================================================
+
+### 2a. Start FanOutOrchestration
+# @name fanout
+POST {{baseUrl}}/orchestrators/fanout
+
+### 2b. Check status
+GET {{baseUrl}}/instances/{{fanout.response.body.instanceId}}
+
+
+# =============================================================================
+# 3. SUB-ORCHESTRATION — parent calls child orchestration
+#    Expected: Completed with "Parent received: Hello, World!"
+# =============================================================================
+
+### 3a. Start ParentOrchestration
+# @name parent
+POST {{baseUrl}}/orchestrators/parent
+
+### 3b. Check status
+GET {{baseUrl}}/instances/{{parent.response.body.instanceId}}
+
+
+# =============================================================================
+# 4. ENTITY — orchestration interacts with a durable entity
+#    Expected: Completed with 30 (10 + 20)
+# =============================================================================
+
+### 4a. Start CounterOrchestration
+# @name counter
+POST {{baseUrl}}/orchestrators/counter
+
+### 4b. Check status (entities may take a few extra seconds)
+GET {{baseUrl}}/instances/{{counter.response.body.instanceId}}
+
+
+# =============================================================================
+# 5. FILTER ISOLATION — schedule an orchestration this app does NOT have
+#    Expected: Stays Pending (DTS holds it because no worker has a matching filter)
+# =============================================================================
+
+### 5a. Schedule a non-existent orchestration via the generic starter
+# @name unknown
+POST {{baseUrl}}/start/SomeOtherOrchestration
+
+### 5b. Check status immediately — should be Pending
+GET {{baseUrl}}/instances/{{unknown.response.body.instanceId}}
+
+### 5c. Check again after 15 seconds — should STILL be Pending
+#      This proves DTS is correctly holding unmatched work items instead of
+#      dispatching them to this worker.
+#      Without filters, this would show Failed: "function doesn't exist"
+GET {{baseUrl}}/instances/{{unknown.response.body.instanceId}}
+
+
+# =============================================================================
+# 6. POSITIVE CONTROL — schedule a known orchestration via the generic starter
+#    Expected: Completed (confirms the generic starter works and filters allow it)
+# =============================================================================
+
+### 6a. Schedule GreetingOrchestration via generic starter
+# @name genericGreeting
+POST {{baseUrl}}/start/GreetingOrchestration
+
+### 6b. Check status
+GET {{baseUrl}}/instances/{{genericGreeting.response.body.instanceId}}
+
+
+# =============================================================================
+# 7. VIEW ALL INSTANCES — shows a summary of all orchestrations in the task hub
+# =============================================================================
+
+### 7a. List all instances via the Durable Functions management API
+GET http://localhost:7071/runtime/webhooks/durabletask/instances
+
+
+# =============================================================================
+# EXPECTED RESULTS SUMMARY
+# =============================================================================
+#
+# | Test | Orchestration            | Expected Status | Why                           |
+# |------|--------------------------|-----------------|-------------------------------|
+# | 1    | GreetingOrchestration    | Completed       | Matches filter → dispatched   |
+# | 2    | FanOutOrchestration      | Completed       | Activities also filtered      |
+# | 3    | ParentOrchestration      | Completed       | Sub-orch also filtered        |
+# | 4    | CounterOrchestration     | Completed       | Entity also filtered          |
+# | 5    | SomeOtherOrchestration   | Pending         | No matching filter → held     |
+# | 6    | GreetingOrchestration    | Completed       | Generic starter + filter OK   |
+#
+# The key proof is Test 5: without filters, "SomeOtherOrchestration" would be
+# dispatched to this worker and fail with "function doesn't exist". With filters,
+# DTS correctly holds it in the queue, waiting for a worker that has it registered.
+#

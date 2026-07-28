@@ -186,6 +186,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                 config.TelemetryChannel = new NoOpTelemetryChannel { OnSend = this.OnSend };
             }
 
+            config.TelemetryInitializers.Add(new DurableTaskInstanceIdTelemetryInitializer(this.options.Tracing.IncludeInstanceIdInOperationName));
+
             string resolvedInstrumentationKey = this.nameResolver.Resolve("APPINSIGHTS_INSTRUMENTATIONKEY");
             string resolvedConnectionString = this.nameResolver.Resolve("APPLICATIONINSIGHTS_CONNECTION_STRING");
 

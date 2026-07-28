@@ -502,7 +502,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Contains("transient", ex.Message);
         }
 
+        /// <summary>
+        /// Verifies that the native worker runtimes (the Go worker reports either "native" or,
+        /// defensively, "golang") select the gRPC protocol (MiddlewarePassthrough) at extension
+        /// initialization rather than the legacy HTTP-correlation shim (OrchestratorShim). When
+        /// MiddlewarePassthrough is selected the local HTTP RPC server is never started — the
+        /// runtime communicates durable operations over the local gRPC sidecar instead.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(WorkerRuntimeType.Native)]
+        [InlineData(WorkerRuntimeType.Golang)]
+        public void TestNativeRuntime_SelectsGrpcProtocol(WorkerRuntimeType runtimeType)
+        {
+            using DurableTaskExtension extension = this.CreateExtension("NativeRuntimeProtocol", runtimeType);
+
+            Assert.Equal(OutOfProcOrchestrationProtocol.MiddlewarePassthrough, extension.OutOfProcProtocol);
+            Assert.NotEqual(OutOfProcOrchestrationProtocol.OrchestratorShim, extension.OutOfProcProtocol);
+        }
+
         private DurableTaskExtension CreateExtension(string hubName)
+        {
+            return this.CreateExtension(hubName, WorkerRuntimeType.DotNetIsolated);
+        }
+
+        private DurableTaskExtension CreateExtension(string hubName, WorkerRuntimeType runtimeType)
         {
             var options = new DurableTaskOptions { HubName = hubName };
             var wrappedOptions = new OptionsWrapper<DurableTaskOptions>(options);
@@ -512,7 +536,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 new TestStorageServiceClientProviderFactory(),
                 nameResolver,
                 NullLoggerFactory.Instance,
-                TestHelpers.GetMockPlatformInformationService(language: WorkerRuntimeType.DotNetIsolated));
+                TestHelpers.GetMockPlatformInformationService(language: runtimeType));
 
             return new DurableTaskExtension(
                 wrappedOptions,
@@ -521,7 +545,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 new[] { serviceFactory },
                 new TestHostShutdownNotificationService(),
                 new DurableHttpMessageHandlerFactory(),
-                platformInformationService: TestHelpers.GetMockPlatformInformationService(language: WorkerRuntimeType.DotNetIsolated));
+                platformInformationService: TestHelpers.GetMockPlatformInformationService(language: runtimeType));
         }
 
         /// <summary>

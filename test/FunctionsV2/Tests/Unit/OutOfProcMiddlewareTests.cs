@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,6 +23,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     public class OutOfProcMiddlewareTests
     {
+        private const string NoWorkerInitializedMessage = "Did not find any initialized language workers";
+        private const string AssemblyNotLoadedMessage = "Could not load file or assembly";
+
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task CallOrchestratorAsync_DifferentInvalidOperationException_DoesNotThrowSessionAbortedException()
@@ -65,6 +69,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CallEntityAsync_WorkerNotInitializedException_ThrowsSessionAbortedException()
+        {
+            // Arrange: an InvalidOperationException with the "Did not find any initialized language workers" message
+            // indicates the worker is not yet ready and the entity should be retried.
+            var exception = new Exception(
+                "Function invocation failed.",
+                new InvalidOperationException(NoWorkerInitializedMessage));
+
+            (OutOfProcMiddleware middleware, DispatchMiddlewareContext dispatchContext) = this.SetupEntityTest(exception);
+
+            await Assert.ThrowsAsync<SessionAbortedException>(
+                () => middleware.CallEntityAsync(dispatchContext, () => Task.CompletedTask));
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CallEntityAsync_AssemblyNotLoadedException_ThrowsSessionAbortedException()
+        {
+            // Arrange: a FileNotFoundException with the "Could not load file or assembly" message
+            // indicates the worker assembly is not yet loaded and the entity should be retried.
+            var exception = new Exception(
+                "Function invocation failed.",
+                new FileNotFoundException(AssemblyNotLoadedMessage));
+
+            (OutOfProcMiddleware middleware, DispatchMiddlewareContext dispatchContext) = this.SetupEntityTest(exception);
+
+            await Assert.ThrowsAsync<SessionAbortedException>(
+                () => middleware.CallEntityAsync(dispatchContext, () => Task.CompletedTask));
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task CallActivityAsync_FunctionTimeoutAbortException_ThrowsSessionAbortedException()
         {
             var exception = new FunctionTimeoutAbortException("Activity A timed out! Worker channel closing");
@@ -73,6 +109,173 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             await Assert.ThrowsAsync<SessionAbortedException>(
                 () => middleware.CallActivityAsync(dispatchContext, () => Task.CompletedTask));
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CallActivityAsync_WorkerNotInitializedException_ThrowsSessionAbortedException()
+        {
+            // Arrange: an InvalidOperationException with the "Did not find any initialized language workers" message
+            // indicates the worker is not yet ready and the activity should be retried.
+            var exception = new Exception(
+                "Function invocation failed.",
+                new InvalidOperationException(NoWorkerInitializedMessage));
+
+            (OutOfProcMiddleware middleware, DispatchMiddlewareContext dispatchContext) = this.SetupActivityTest(exception);
+
+            await Assert.ThrowsAsync<SessionAbortedException>(
+                () => middleware.CallActivityAsync(dispatchContext, () => Task.CompletedTask));
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CallActivityAsync_AssemblyNotLoadedException_ThrowsSessionAbortedException()
+        {
+            // Arrange: a FileNotFoundException with the "Could not load file or assembly" message
+            // indicates the worker assembly is not yet loaded and the activity should be retried.
+            var exception = new Exception(
+                "Function invocation failed.",
+                new FileNotFoundException(AssemblyNotLoadedMessage));
+
+            (OutOfProcMiddleware middleware, DispatchMiddlewareContext dispatchContext) = this.SetupActivityTest(exception);
+
+            await Assert.ThrowsAsync<SessionAbortedException>(
+                () => middleware.CallActivityAsync(dispatchContext, () => Task.CompletedTask));
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CallActivityAsync_DisabledActivity_FailsDeterministicallyWithoutAbort()
+        {
+            // Reproduces https://github.com/Azure/azure-functions-durable-extension/issues/3471 for the
+            // passthrough/out-of-proc activity middleware. A disabled-but-still-deployed activity is
+            // indexed (present in knownActivities) but has a null executor because its listener never
+            // started. The middleware must fail the activity with a deterministic TaskFailedEvent instead
+            // of dereferencing the null executor (which surfaced as a SessionAbortedException and made the
+            // work item retry forever).
+            DurableTaskExtension extension = CreateDurableTaskExtension();
+            extension.RegisterActivity(new FunctionName("TestActivity"), executor: null!);
+
+            var middleware = new OutOfProcMiddleware(extension);
+            var dispatchContext = new DispatchMiddlewareContext();
+            dispatchContext.SetProperty(new TaskScheduledEvent(-1) { Name = "TestActivity" });
+            dispatchContext.SetProperty(new OrchestrationInstance { InstanceId = "test-instance-id" });
+
+            // Act: must NOT throw (no SessionAbortedException / NullReferenceException poison loop).
+            await middleware.CallActivityAsync(dispatchContext, () => Task.CompletedTask);
+
+            // Assert: a deterministic (non-transient) failure was set on the dispatch context.
+            ActivityExecutionResult result = dispatchContext.GetProperty<ActivityExecutionResult>();
+            Assert.NotNull(result);
+            TaskFailedEvent failedEvent = Assert.IsType<TaskFailedEvent>(result.ResponseEvent);
+            Assert.Contains("TestActivity", failedEvent.Reason);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CallEntityAsync_DisabledEntity_FailsDeterministicallyWithoutAbort()
+        {
+            // Reproduces https://github.com/Azure/azure-functions-durable-extension/issues/3471 for the
+            // passthrough/out-of-proc entity middleware. A disabled-but-still-deployed entity is indexed
+            // (present in knownEntities) but has a null executor because its listener never started. The
+            // middleware must fail the batch with a non-retriable FailureDetails result instead of
+            // dereferencing the null executor (which surfaced as a transient failure and retried forever).
+            DurableTaskExtension extension = CreateDurableTaskExtension();
+            extension.RegisterEntity(new FunctionName("TestEntity"), new RegisteredFunctionInfo(executor: null!, isOutOfProc: true));
+
+            var middleware = new OutOfProcMiddleware(extension);
+            var dispatchContext = new DispatchMiddlewareContext();
+            dispatchContext.SetProperty(new EntityBatchRequest
+            {
+                InstanceId = "@TestEntity@test-key",
+                EntityState = null,
+                Operations = new List<OperationRequest>(),
+            });
+            dispatchContext.SetProperty(CreateWorkItemMetadata(isExtendedSession: false, includeState: false));
+
+            // Act: must NOT throw (no SessionAbortedException / NullReferenceException poison loop).
+            await middleware.CallEntityAsync(dispatchContext, () => Task.CompletedTask);
+
+            // Assert: a deterministic, non-retriable failure was set on the dispatch context.
+            EntityBatchResult result = dispatchContext.GetProperty<EntityBatchResult>();
+            Assert.NotNull(result);
+            Assert.NotNull(result.FailureDetails);
+            Assert.Contains("TestEntity", result.FailureDetails.ErrorMessage);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void TryGetStructuredFailureDetails_StructuredPayload_ReturnsFailureDetailsWithProperties()
+        {
+            // Arrange: an out-of-proc worker exception whose message embeds a serialized
+            // TaskFailureDetails JSON payload (including custom Properties), in the
+            // "Result: ...\nException: {json}\nStack: ..." format produced by the host.
+            const string serializedFailureDetails =
+                """{"errorType":"BusinessValidationException","errorMessage":"Business logic validation failed","stackTrace":"at BusinessActivity.Run()","isNonRetriable":false,"properties":{"StringProperty":"validation-error-123","IntProperty":100,"NullProperty":null}}""";
+            var exception = new Exception(
+                $"Result: failure\nException: {serializedFailureDetails}\nStack: at Worker.Invoke()");
+
+            // Act
+            FailureDetails details = OutOfProcMiddleware.TryGetStructuredFailureDetails(exception);
+
+            // Assert: the structured error type, message, and custom properties are parsed.
+            Assert.NotNull(details);
+            Assert.Equal("BusinessValidationException", details.ErrorType);
+            Assert.Equal("Business logic validation failed", details.ErrorMessage);
+            Assert.NotNull(details.Properties);
+            Assert.Equal("validation-error-123", details.Properties["StringProperty"]);
+
+            // JSON numbers are parsed as protobuf number values, which surface as doubles.
+            Assert.Equal(100d, Assert.IsType<double>(details.Properties["IntProperty"]));
+
+            // A JSON null property is preserved as a null value (not dropped).
+            Assert.True(details.Properties.ContainsKey("NullProperty"));
+            Assert.Null(details.Properties["NullProperty"]);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void TryGetStructuredFailureDetails_PayloadInInnerException_ReturnsFailureDetails()
+        {
+            // Arrange: the serialized payload is carried by the inner exception, which is the
+            // common shape when the host wraps the worker failure in an outer exception.
+            const string serializedFailureDetails =
+                """{"errorType":"BusinessValidationException","errorMessage":"Business logic validation failed"}""";
+            var exception = new Exception(
+                "Function invocation failed.",
+                new Exception($"Result: failure\nException: {serializedFailureDetails}\nStack: at Worker.Invoke()"));
+
+            // Act
+            FailureDetails details = OutOfProcMiddleware.TryGetStructuredFailureDetails(exception);
+
+            // Assert
+            Assert.NotNull(details);
+            Assert.Equal("BusinessValidationException", details.ErrorType);
+            Assert.Equal("Business logic validation failed", details.ErrorMessage);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void TryGetStructuredFailureDetails_NonResultMessage_ReturnsNull()
+        {
+            // Arrange: an exception that does not carry an RPC "Result:" payload.
+            var exception = new InvalidOperationException("Some arbitrary failure that is not an RPC result.");
+
+            // Act + Assert: callers should fall back to legacy behavior.
+            Assert.Null(OutOfProcMiddleware.TryGetStructuredFailureDetails(exception));
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void TryGetStructuredFailureDetails_NonJsonExceptionPayload_ReturnsNull()
+        {
+            // Arrange: an RPC "Result:" message whose exception payload is a plain string
+            // rather than a serialized TaskFailureDetails JSON object.
+            var exception = new Exception(
+                "Result: failure\nException: System.ApplicationException: Kah-BOOOOM!!\nStack: at Worker.Invoke()");
+
+            // Act + Assert: no structured payload, so null is returned.
+            Assert.Null(OutOfProcMiddleware.TryGetStructuredFailureDetails(exception));
         }
 
         public static IEnumerable<object[]> PlatformLevelExceptions()
@@ -97,6 +300,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             // GrpcChannelTemporarilyUnavailableException as top-level exception (thrown in-process during binding)
             yield return new object[] { new GrpcChannelTemporarilyUnavailableException("The local gRPC endpoint is not available.") };
+
+            // InvalidOperationException with "Did not find any initialized language workers" as InnerException (worker not yet initialized)
+            yield return new object[] { new Exception("Function invocation failed.", new InvalidOperationException(NoWorkerInitializedMessage)) };
+
+            // FileNotFoundException with "Could not load file or assembly" as InnerException (assembly not yet loaded during initialization)
+            yield return new object[] { new Exception("Function invocation failed.", new FileNotFoundException(AssemblyNotLoadedMessage)) };
         }
 
         private (OutOfProcMiddleware middleware, DispatchMiddlewareContext context) SetupOrchestratorTest(Exception executorException)
