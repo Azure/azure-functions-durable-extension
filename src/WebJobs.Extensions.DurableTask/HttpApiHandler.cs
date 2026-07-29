@@ -610,7 +610,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             IDurableOrchestrationClient client = this.GetClient(request);
             var queryNameValuePairs = request.GetQueryNameValuePairs();
-            if (!TryGetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeFromParameter, out DateTime createdTimeFrom))
+            string createdTimeFromValue = queryNameValuePairs[CreatedTimeFromParameter];
+            bool hasBareCreatedTimeFrom = queryNameValuePairs.GetValues(string.Empty)?
+                .Any(value => string.Equals(value, CreatedTimeFromParameter, StringComparison.OrdinalIgnoreCase)) == true;
+            DateTime createdTimeFrom;
+            if (createdTimeFromValue == null && !hasBareCreatedTimeFrom)
+            {
+                createdTimeFrom = DateTime.MinValue;
+            }
+            else if (!TryGetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeFromParameter, out createdTimeFrom))
             {
                 var badRequestResponse = request.CreateResponse(
                     HttpStatusCode.BadRequest,
@@ -790,17 +798,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             string value = queryStringNameValueCollection[queryParameterName];
             int yearSeparatorIndex = value?.IndexOf('-') ?? -1;
-            if (yearSeparatorIndex > 0 &&
+            if (value != null &&
+                yearSeparatorIndex > 0 &&
                 yearSeparatorIndex < 4 &&
                 value.Take(yearSeparatorIndex).All(char.IsDigit))
             {
                 // Python's strftime can omit leading zeroes from years before 1000 on Linux.
                 string paddedValue = value.PadLeft(value.Length + 4 - yearSeparatorIndex, '0');
-                return DateTime.TryParse(
-                    paddedValue,
-                    CultureInfo.InvariantCulture,
-                    DateTimeStyles.RoundtripKind,
-                    out dateTimeValue);
+                if (DateTime.TryParse(
+                        paddedValue,
+                        CultureInfo.InvariantCulture,
+                        DateTimeStyles.RoundtripKind,
+                        out dateTimeValue))
+                {
+                    return true;
+                }
             }
 
             return DateTime.TryParse(value, out dateTimeValue);

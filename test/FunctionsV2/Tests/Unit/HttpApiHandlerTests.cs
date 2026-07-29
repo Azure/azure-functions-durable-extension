@@ -872,7 +872,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             var purgeRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
             purgeRequestUriBuilder.Path += "/Instances/";
-            purgeRequestUriBuilder.Query = $"createdTimeFrom={createdTimeFrom}";
+            purgeRequestUriBuilder.Query = $"createdTimeFrom={WebUtility.UrlEncode(createdTimeFrom)}";
 
             var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
             HttpResponseMessage responseMessage = await httpApiHandler.HandleRequestAsync(
@@ -885,6 +885,81 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
             Assert.Equal(new DateTime(expectedYear, 1, 1), actualCreatedTimeFrom);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task PurgeHistoryWithoutCreatedTimeFrom_UsesMinimumDate()
+        {
+            DateTime actualCreatedTimeFrom = default;
+            var clientMock = new Mock<IDurableClient>();
+            clientMock
+                .Setup(x => x.PurgeInstanceHistoryAsync(
+                    It.IsAny<DateTime>(),
+                    It.IsAny<DateTime?>(),
+                    It.IsAny<IEnumerable<OrchestrationStatus>>()))
+                .Callback((DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationStatus> runtimeStatus) =>
+                {
+                    actualCreatedTimeFrom = createdTimeFrom;
+                })
+                .Returns(Task.FromResult(new PurgeHistoryResult(1)));
+
+            var purgeRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+            purgeRequestUriBuilder.Path += "/Instances/";
+
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+            HttpResponseMessage responseMessage = await httpApiHandler.HandleRequestAsync(
+                new HttpRequestMessage
+                {
+                    Method = HttpMethod.Delete,
+                    RequestUri = purgeRequestUriBuilder.Uri,
+                },
+                CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
+            Assert.Equal(DateTime.MinValue, actualCreatedTimeFrom);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task PurgeHistoryWithInvalidCreatedTimeFrom_ReturnsBadRequest()
+        {
+            var clientMock = new Mock<IDurableClient>(MockBehavior.Strict);
+            var purgeRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+            purgeRequestUriBuilder.Path += "/Instances/";
+            purgeRequestUriBuilder.Query = "createdTimeFrom=invalid";
+
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+            HttpResponseMessage responseMessage = await httpApiHandler.HandleRequestAsync(
+                new HttpRequestMessage
+                {
+                    Method = HttpMethod.Delete,
+                    RequestUri = purgeRequestUriBuilder.Uri,
+                },
+                CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.BadRequest, responseMessage.StatusCode);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task PurgeHistoryWithBareCreatedTimeFrom_ReturnsBadRequest()
+        {
+            var clientMock = new Mock<IDurableClient>(MockBehavior.Strict);
+            var purgeRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+            purgeRequestUriBuilder.Path += "/Instances/";
+            purgeRequestUriBuilder.Query = "createdTimeFrom";
+
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+            HttpResponseMessage responseMessage = await httpApiHandler.HandleRequestAsync(
+                new HttpRequestMessage
+                {
+                    Method = HttpMethod.Delete,
+                    RequestUri = purgeRequestUriBuilder.Uri,
+                },
+                CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.BadRequest, responseMessage.StatusCode);
         }
 
         [Fact]
