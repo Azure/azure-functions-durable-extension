@@ -114,14 +114,22 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             }
         }
 
+        // FunctionType is internal, so it cannot appear as a parameter on a public xUnit test
+        // method (CS0051). The values are passed as int and cast back inside the test body.
         [Theory]
-        [InlineData((int)FunctionType.Entity, "@counter@42")]
-        [InlineData((int)FunctionType.Orchestrator, "child-orchestration-id")]
-        [InlineData((int)FunctionType.Activity, null)]
+        [InlineData((int)FunctionType.Entity, "@counter@42", "@counter@42")]
+        [InlineData((int)FunctionType.Orchestrator, "child-orchestration-id", "child-orchestration-id")]
+        [InlineData((int)FunctionType.Activity, null, null)]
+
+        // Callers that do not supply an instance ID forward an empty string, most notably
+        // CallSubOrchestratorAsync(functionName, input). That must be logged as "not supplied"
+        // rather than as an empty target instance ID.
+        [InlineData((int)FunctionType.Orchestrator, "", null)]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void FunctionScheduled_LogsTargetInstanceIdInStructuredState(
             int functionType,
-            string? targetInstanceId)
+            string? targetInstanceId,
+            string? expectedLoggedTargetInstanceId)
         {
             // Arrange
             var testLogger = new TestLogger(this.output, category: "UnitTest");
@@ -143,7 +151,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             var logMessage = Assert.Single(testLogger.LogMessages);
             var state = Assert.IsAssignableFrom<IEnumerable<KeyValuePair<string, object>>>(logMessage.State);
             var targetInstanceIdState = Assert.Single(state, property => property.Key == "targetInstanceId");
-            Assert.Equal(targetInstanceId, targetInstanceIdState.Value);
+            Assert.Equal(expectedLoggedTargetInstanceId, targetInstanceIdState.Value);
         }
 
         [Fact]

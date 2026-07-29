@@ -194,6 +194,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (this.ShouldLogEvent(isReplay))
             {
+                // Callers that do not supply an explicit instance ID pass an empty string down this path.
+                // For example, CallSubOrchestratorAsync(functionName, input) forwards string.Empty and lets
+                // DTFx generate the ID, which is not visible here. Normalize those to null so the logs
+                // distinguish "not supplied" from a real ID rather than reporting an empty one.
+                targetInstanceId = string.IsNullOrEmpty(targetInstanceId) ? null : targetInstanceId;
+
                 EtwEventSource.Instance.FunctionScheduled(
                     hubName,
                     LocalAppName,
