@@ -40,5 +40,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// True if gRPC is required; otherwise, false.
         /// </value>
         public bool DurableRequiresGrpc { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether a parameter declared as <c>object</c> binds to the
+        /// activity input. Default false.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// This setting only affects parameters declared as <c>object</c> or <c>dynamic</c> (which the
+        /// runtime also sees as <c>object</c>). It is ignored for every other parameter type, because all
+        /// other types already bind to the activity input.
+        /// </para>
+        /// <para>
+        /// For historical reasons, an <c>object</c> parameter binds to the <see cref="IDurableActivityContext"/>
+        /// rather than to the activity input, which is surprising and inconsistent with every other parameter
+        /// type. See https://github.com/Azure/azure-functions-durable-extension/issues/1343. Setting this
+        /// property to true opts a single activity function into the corrected behavior. The default of false
+        /// preserves the legacy behavior so that existing applications are unaffected.
+        /// </para>
+        /// <para>
+        /// The default is expected to change in the next major version of this extension, at which point this
+        /// property becomes obsolete and declaring a parameter of type <see cref="IDurableActivityContext"/>
+        /// will be the way to receive the activity context.
+        /// </para>
+        /// </remarks>
+        /// <value>
+        /// True to bind an <c>object</c> parameter to the activity input; otherwise, false to bind it to the
+        /// <see cref="IDurableActivityContext"/>.
+        /// </value>
+        public bool BindToInput { get; set; }
     }
 }

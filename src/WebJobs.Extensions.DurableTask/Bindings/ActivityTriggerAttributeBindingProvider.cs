@@ -134,7 +134,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 Type destinationType = this.parameterInfo.ParameterType;
 
                 object? convertedValue;
-                if (destinationType == typeof(IDurableActivityContext))
+                if (destinationType == typeof(object) && !this.attribute.BindToInput)
+                {
+                    // Legacy behavior: an 'object' (or 'dynamic') parameter receives the trigger value itself
+                    // rather than the activity input, unlike every other parameter type. See issue #1343.
+                    // Setting [ActivityTrigger(BindToInput = true)] opts this activity into binding to the input.
+                    convertedValue = value;
+                }
+                else if (destinationType == typeof(IDurableActivityContext))
                 {
                     convertedValue = activityContext;
                 }
@@ -144,9 +151,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else
                 {
-                    // Deserialize the activity's input to the requested type. This includes System.Object and dynamic
-                    // parameters, which previously received the raw trigger value (DurableActivityContext or serialized input)
-                    // instead of the deserialized input value (issue #1343).
                     convertedValue = activityContext.GetInput(destinationType);
                 }
 

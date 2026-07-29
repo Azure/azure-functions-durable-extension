@@ -21,6 +21,7 @@
 
 - Allow overriding orchestration version when starting orchestrations via APIs in PowerShell, Python, and Node.js (https://github.com/Azure/azure-functions-durable-extension/pull/3213)
 - Added `ClientOperationReceived` trace event to `DurableFunctionsEvents` for correlating out-of-process worker invocations with orchestration events. The event includes `FunctionInvocationId`, `OperationType`, and `InstanceId` fields for cross-log correlation. (#3317)
+- Added `[ActivityTrigger(BindToInput = true)]`, which opts an activity function into binding an `object` (or `dynamic`) parameter to the activity input instead of the `DurableActivityContext`. The default remains `false` so existing apps are unaffected; the default is expected to flip in the next major version. (#1343)
 
 ### Bug Fixes
 

@@ -210,29 +210,103 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
-        public async Task ActivityTriggerAsObject(string storageProviderType)
+        public async Task ActivityTriggerAsObject_LegacyDefault_BindsToContext(string storageProviderType)
         {
-            using (ITestHost host = TestHelpers.GetJobHost(this.loggerProvider, nameof(this.ActivityTriggerAsObject), false, storageProviderType: storageProviderType))
-            {
-                await host.StartAsync();
+            // Compatibility guard for https://github.com/Azure/azure-functions-durable-extension/issues/1343.
+            // Without BindToInput, an 'object'-typed [ActivityTrigger] parameter must keep receiving the
+            // DurableActivityContext, because existing apps cast it to IDurableActivityContext and call GetInput<T>().
+            string output = await this.RunActivityBindingTestAsync(
+                storageProviderType,
+                nameof(this.ActivityTriggerAsObject_LegacyDefault_BindsToContext),
+                nameof(TestActivities.BindToObject),
+                5);
 
-                // Using StartOrchestrationArgs to start an activity function because it's easier than creating a new type.
-                var startArgs = new StartOrchestrationArgs();
-                startArgs.FunctionName = nameof(TestActivities.BindToObject);
-                startArgs.Input = 5;
+            Assert.Equal("Microsoft.Azure.WebJobs.Extensions.DurableTask.DurableActivityContext|System.Int64|5", output);
+        }
 
-                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CallActivity), startArgs, this.output);
-                var status = await client.WaitForCompletionAsync(this.output);
-                Assert.NotNull(status);
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task ActivityTriggerAsObject_BindToInput_Scalar(string storageProviderType)
+        {
+            string output = await this.RunActivityBindingTestAsync(
+                storageProviderType,
+                nameof(this.ActivityTriggerAsObject_BindToInput_Scalar),
+                nameof(TestActivities.BindToObjectWithBindToInput),
+                5);
 
-                // Regression test for https://github.com/Azure/azure-functions-durable-extension/issues/1343:
-                // an 'object'-typed [ActivityTrigger] parameter must bind to the deserialized input value (5),
-                // not the DurableActivityContext. The activity returns value.ToString().
-                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
-                Assert.Equal("5", status.Output);
+            Assert.Equal("System.Int64|5", output);
+        }
 
-                await host.StopAsync();
-            }
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task ActivityTriggerAsObject_BindToInput_StructuredObject(string storageProviderType)
+        {
+            // A structured input is not a JValue, so it takes the serialize-and-reparse path in
+            // DurableActivityContext.GetInput rather than the cheap JValue.ToObject path.
+            string output = await this.RunActivityBindingTestAsync(
+                storageProviderType,
+                nameof(this.ActivityTriggerAsObject_BindToInput_StructuredObject),
+                nameof(TestActivities.BindToObjectWithBindToInput),
+                new TestActivities.StructuredInput { Name = "foo", Count = 3 });
+
+            Assert.Equal("Newtonsoft.Json.Linq.JObject|{\"Name\":\"foo\",\"Count\":3}", output);
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task ActivityTriggerAsObject_BindToInput_Array(string storageProviderType)
+        {
+            string output = await this.RunActivityBindingTestAsync(
+                storageProviderType,
+                nameof(this.ActivityTriggerAsObject_BindToInput_Array),
+                nameof(TestActivities.BindToObjectWithBindToInput),
+                new object[] { 1, "two", 3.5 });
+
+            Assert.Equal("Newtonsoft.Json.Linq.JArray|[1,\"two\",3.5]", output);
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task ActivityTriggerAsDynamic_BindToInput(string storageProviderType)
+        {
+            // 'dynamic' reflects as System.Object, so it must behave exactly like the 'object' case above.
+            string output = await this.RunActivityBindingTestAsync(
+                storageProviderType,
+                nameof(this.ActivityTriggerAsDynamic_BindToInput),
+                nameof(TestActivities.BindToDynamicWithBindToInput),
+                new TestActivities.StructuredInput { Name = "foo", Count = 3 });
+
+            Assert.Equal("Newtonsoft.Json.Linq.JObject|{\"Name\":\"foo\",\"Count\":3}", output);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task ActivityTriggerAsObject_LegacyDefault_AdminInvocation()
+        {
+            // The Azure Portal / admin API invokes an activity directly, so the trigger value is a raw serialized
+            // string rather than a DurableActivityContext. The legacy default hands that string through untouched.
+            string output = await this.RunAdminInvocationBindingTestAsync(
+                nameof(this.ActivityTriggerAsObject_LegacyDefault_AdminInvocation),
+                nameof(TestActivities.BindToObjectWithOutParameter),
+                "{\"Name\":\"foo\",\"Count\":3}");
+
+            Assert.Equal("System.String|{\"Name\":\"foo\",\"Count\":3}", output);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task ActivityTriggerAsObject_BindToInput_AdminInvocation()
+        {
+            string output = await this.RunAdminInvocationBindingTestAsync(
+                nameof(this.ActivityTriggerAsObject_BindToInput_AdminInvocation),
+                nameof(TestActivities.BindToObjectWithBindToInputAndOutParameter),
+                "{\"Name\":\"foo\",\"Count\":3}");
+
+            Assert.Equal("Newtonsoft.Json.Linq.JObject|{\"Name\":\"foo\",\"Count\":3}", output);
         }
 
         [Theory]
@@ -350,6 +424,67 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Equal(randomData, copiedData);
 
                 await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// Starts an activity function through an orchestrator and returns its string output.
+        /// </summary>
+        private async Task<string> RunActivityBindingTestAsync(
+            string storageProviderType,
+            string testName,
+            string activityName,
+            object input)
+        {
+            using (ITestHost host = TestHelpers.GetJobHost(this.loggerProvider, testName, false, storageProviderType: storageProviderType))
+            {
+                await host.StartAsync();
+
+                // Using StartOrchestrationArgs to start an activity function because it's easier than creating a new type.
+                var startArgs = new StartOrchestrationArgs();
+                startArgs.FunctionName = activityName;
+                startArgs.Input = input;
+
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CallActivity), startArgs, this.output);
+                var status = await client.WaitForCompletionAsync(this.output);
+                Assert.NotNull(status);
+                Assert.Equal(OrchestrationRuntimeStatus.Completed, status.RuntimeStatus);
+
+                // The activity returns "<concrete CLR type of the bound value>|<value>" so that assertions can
+                // distinguish, for example, a raw "5" string from a boxed Int64 or a JValue.
+                string output = (string)status.Output;
+                this.output.WriteLine($"Activity '{activityName}' bound: {output}");
+
+                await host.StopAsync();
+
+                return output;
+            }
+        }
+
+        /// <summary>
+        /// Invokes an activity function directly, the way the Azure Portal / admin API does, and returns the
+        /// description of the value that was bound to the activity's trigger parameter.
+        /// </summary>
+        private async Task<string> RunAdminInvocationBindingTestAsync(string testName, string activityName, string serializedInput)
+        {
+            using (ITestHost host = TestHelpers.GetJobHost(this.loggerProvider, testName, false))
+            {
+                await host.StartAsync();
+
+                var startFunction = typeof(TestActivities).GetMethod(activityName);
+                string[] outputWrapper = new string[1];
+                var args = new Dictionary<string, object>
+                {
+                    { "value", serializedInput },
+                    { "outputWrapper", outputWrapper },
+                };
+
+                await host.CallAsync(startFunction, args);
+                this.output.WriteLine($"Activity '{activityName}' bound: {outputWrapper[0]}");
+
+                await host.StopAsync();
+
+                return outputWrapper[0];
             }
         }
     }
