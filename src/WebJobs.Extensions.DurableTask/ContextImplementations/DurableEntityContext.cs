@@ -539,7 +539,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             var state = ((Extensions.DurableTask.DurableEntityContext)context).GetStateWithInjectedDependencies(Constructor);
 
-            object result = method.Invoke(state, args);
+            object result;
+            try
+            {
+                result = method.Invoke(state, args);
+            }
+            catch (TargetInvocationException e) when (e.InnerException != null)
+            {
+                ExceptionDispatchInfo.Capture(e.InnerException).Throw();
+                throw;
+            }
 
             if (method.ReturnType != typeof(void))
             {

@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -859,13 +858,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     await t;
                     Assert.Fail("expected exception");
                 }
-                catch (TargetInvocationException) when (isClassBased)
+                catch (TestEntityClasses.FaultyEntity.UnserializableKaboom) when (isClassBased)
                 {
-                    // thrown by v2 when using DispatchAsync()
+                    // thrown by v2 from the class-based operation
                 }
                 catch (TestEntityClasses.FaultyEntity.SerializableKaboom) when (!isClassBased)
                 {
-                    // thrown by v2 when not using DispatchAsync()
+                    // thrown by v2 function-based operation
                 }
                 catch (FunctionFailedException)
                 {
