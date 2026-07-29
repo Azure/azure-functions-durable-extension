@@ -29,6 +29,8 @@
 
 ### Breaking Changes
 
+- Exceptions thrown by class-based entity operations are no longer wrapped in a `TargetInvocationException`. The original application exception is now rethrown with its stack trace preserved, so it can be caught directly by its own type. Code that currently catches `TargetInvocationException` around a class-based entity call must be updated to catch the application exception type instead. Function-based entities are unaffected, as they never went through reflection. (#1230)
+
 ### Dependency Updates
 
 - Remove LegacyLocalGrpcListener and the dependency on Grpc.Core (https://github.com/Azure/azure-functions-durable-extension/pull/3236)
