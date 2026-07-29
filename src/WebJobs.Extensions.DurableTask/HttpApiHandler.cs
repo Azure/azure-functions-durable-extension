@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -788,7 +789,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private static bool TryGetDateTimeQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName, out DateTime dateTimeValue)
         {
             string value = queryStringNameValueCollection[queryParameterName];
-            return DateTime.TryParse(value, out dateTimeValue);
+            if (DateTime.TryParse(value, out dateTimeValue))
+            {
+                return true;
+            }
+
+            int yearSeparatorIndex = value?.IndexOf('-') ?? -1;
+            if (value != null &&
+                yearSeparatorIndex > 0 &&
+                yearSeparatorIndex < 4 &&
+                value.Take(yearSeparatorIndex).All(char.IsDigit))
+            {
+                // Python's strftime can omit leading zeroes from years before 1000 on Linux.
+                string paddedValue = value.PadLeft(value.Length + 4 - yearSeparatorIndex, '0');
+                if (DateTime.TryParseExact(
+                        paddedValue,
+                        "yyyy-MM-dd'T'HH:mm:ss.ffffffK",
+                        CultureInfo.InvariantCulture,
+                        DateTimeStyles.RoundtripKind,
+                        out dateTimeValue))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static bool TryGetBooleanQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName, out bool boolValue)
