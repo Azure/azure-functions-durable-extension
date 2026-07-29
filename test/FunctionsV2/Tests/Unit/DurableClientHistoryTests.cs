@@ -39,6 +39,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             { true, true },
         };
 
+        public static TheoryData<EventType, EventType> RewindDuplicateScheduledEventIdCases => new TheoryData<EventType, EventType>
+        {
+            { EventType.TaskScheduled, EventType.TaskCompleted },
+            { EventType.SubOrchestrationInstanceCreated, EventType.SubOrchestrationInstanceCompleted },
+        };
+
         public static TheoryData<int[]> HistoryRemovalCases => new TheoryData<int[]>
         {
             new[] { 0, 0, 0 },
@@ -199,6 +205,67 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
             AssertJsonEqual(
                 new JArray(retainedUnknownEvent, expectedCompletion1, expectedCompletion2),
+                actual);
+        }
+
+        [Theory]
+        [MemberData(nameof(RewindDuplicateScheduledEventIdCases))]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task GetStatusAsync_DuplicateScheduledEventIdsFromRewindDoNotThrow(EventType scheduledType, EventType completedType)
+        {
+            // A rewind replays work items, so history can legitimately contain two scheduled events
+            // sharing the same EventId. Each completion must resolve to the most recent preceding
+            // scheduled event, and both scheduled events must still be compacted away.
+            string history = new JArray(
+                CreateEvent(
+                    scheduledType,
+                    40,
+                    StartTime,
+                    new JProperty("Name", "PreRewindWork"),
+                    new JProperty("Input", ActivityInput),
+                    new JProperty("Version", "v1")),
+                CreateEvent(
+                    completedType,
+                    41,
+                    StartTime.AddSeconds(1),
+                    new JProperty("TaskScheduledId", 40),
+                    new JProperty("Result", StringResult)),
+                CreateEvent(
+                    scheduledType,
+                    40,
+                    StartTime.AddSeconds(2),
+                    new JProperty("Name", "PostRewindWork"),
+                    new JProperty("Input", FailedActivityInput),
+                    new JProperty("Version", "v2")),
+                CreateEvent(
+                    completedType,
+                    42,
+                    StartTime.AddSeconds(3),
+                    new JProperty("TaskScheduledId", 40),
+                    new JProperty("Result", ObjectResult))).ToString(Formatting.None);
+
+            JArray actual = await GetProjectedHistoryAsync(history, showInput: true, showHistoryOutput: true);
+
+            var expectedPreRewindCompletion = new JObject
+            {
+                ["EventType"] = completedType.ToString(),
+                ["Timestamp"] = StartTime.AddSeconds(1),
+                ["Result"] = "activity-result",
+                ["ScheduledTime"] = StartTime.ToLocalTime(),
+                ["FunctionName"] = "PreRewindWork",
+                ["Input"] = ActivityInput,
+            };
+            var expectedPostRewindCompletion = new JObject
+            {
+                ["EventType"] = completedType.ToString(),
+                ["Timestamp"] = StartTime.AddSeconds(3),
+                ["Result"] = new JObject { ["ok"] = true },
+                ["ScheduledTime"] = StartTime.AddSeconds(2).ToLocalTime(),
+                ["FunctionName"] = "PostRewindWork",
+                ["Input"] = FailedActivityInput,
+            };
+            AssertJsonEqual(
+                new JArray(expectedPreRewindCompletion, expectedPostRewindCompletion),
                 actual);
         }
 
