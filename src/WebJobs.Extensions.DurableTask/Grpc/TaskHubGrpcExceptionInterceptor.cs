@@ -11,6 +11,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc
 {
     internal sealed class TaskHubGrpcExceptionInterceptor : Interceptor
     {
+        // gRPC metadata key used by clients to target a task hub other than the host's default.
+        // Kept in sync with TaskHubGrpcServer.GetAttribute, which uses it to select the provider.
+        private const string TaskHubMetadataKey = "Durable-TaskHub";
+
         private readonly DurableTaskExtension extension;
 
         public TaskHubGrpcExceptionInterceptor(DurableTaskExtension extension)
@@ -73,10 +77,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc
                 : exception;
 
             this.extension.TraceHelper.ExtensionWarningEvent(
-                this.extension.Options.HubName,
+                this.GetHubName(context),
                 instanceId: string.Empty,
                 functionName: string.Empty,
                 message: $"Unhandled exception in local gRPC call '{context.Method}': {exceptionToLog}");
+        }
+
+        /// <summary>
+        /// Resolves the task hub the failing call targeted. Clients can address a non-default hub
+        /// through request metadata, so the host's configured hub is only a fallback.
+        /// </summary>
+        private string GetHubName(ServerCallContext context)
+        {
+            string? taskHub = context.RequestHeaders.GetValue(TaskHubMetadataKey);
+            return string.IsNullOrWhiteSpace(taskHub) ? this.extension.Options.HubName : taskHub;
         }
     }
 }

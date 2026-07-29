@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
@@ -48,6 +49,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
     public class LocalGrpcListenerTests
     {
+        private const string TaskHubMetadataKey = "Durable-TaskHub";
+
+        // Host's configured hub for the task hub attribution test. Must be a constant so it can be
+        // referenced from [InlineData].
+        private const string AttributionDefaultHubName = "AttributionDefaultHub";
+
         private readonly ITestOutputHelper output;
         private readonly TestLoggerProvider loggerProvider;
 
@@ -86,6 +93,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             Assert.Equal(StatusCode.Unknown, rpcException.StatusCode);
             this.AssertWarning(ErrorMessage, "GetInstance", nameof(InvalidOperationException));
+        }
+
+        [Theory]
+        [InlineData("AttributionOtherHub", "AttributionOtherHub")]
+        [InlineData(null, AttributionDefaultHubName)]
+        [InlineData("", AttributionDefaultHubName)]
+        [InlineData("   ", AttributionDefaultHubName)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task TestGrpcListener_AttributesWarningToTaskHubFromRequestHeader(
+            string requestTaskHub,
+            string expectedHubName)
+        {
+            const string InstanceId = "test-instance";
+            const string ErrorMessage = "The durability provider failed.";
+
+            var providerException = new InvalidOperationException(ErrorMessage);
+            DurabilityProvider durabilityProvider = CreateFailingGetStateProvider(InstanceId, providerException);
+
+            Metadata headers = requestTaskHub is null
+                ? null
+                : new Metadata { { TaskHubMetadataKey, requestTaskHub } };
+
+            RpcException rpcException = await this.InvokeFailingRpcAsync(
+                AttributionDefaultHubName,
+                durabilityProvider,
+                async client => await client.GetInstanceAsync(
+                    new P.GetInstanceRequest { InstanceId = InstanceId },
+                    headers).ResponseAsync);
+
+            Assert.Equal(StatusCode.Unknown, rpcException.StatusCode);
+            LogMessage warning = this.AssertWarning(ErrorMessage, "GetInstance", nameof(InvalidOperationException));
+            Assert.Equal(expectedHubName, GetLoggedHubName(warning));
         }
 
         [Theory]
@@ -839,7 +878,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-        private void AssertWarning(string errorMessage, string methodName, string exceptionType)
+        private LogMessage AssertWarning(string errorMessage, string methodName, string exceptionType)
         {
             LogMessage warning = Assert.Single(
                 this.loggerProvider.GetAllLogMessages(),
@@ -847,6 +886,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     message.FormattedMessage.Contains(errorMessage));
             Assert.Contains(methodName, warning.FormattedMessage);
             Assert.Contains(exceptionType, warning.FormattedMessage);
+            return warning;
+        }
+
+        private static string GetLoggedHubName(LogMessage warning)
+        {
+            return warning.State.Single(pair => pair.Key == "hubName").Value?.ToString();
         }
 
         private DurableTaskExtension CreateExtension(string hubName, WorkerRuntimeType runtimeType)
