@@ -8,11 +8,19 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace WebJobs.Extensions.DurableTask.Tests.V2
 {
     public class EndToEndTraceHelperTests
     {
+        private readonly ITestOutputHelper output;
+
+        public EndToEndTraceHelperTests(ITestOutputHelper output)
+        {
+            this.output = output;
+        }
+
         [Theory]
         [InlineData(true, "DO NOT LOG ME")]
         [InlineData(false, "DO NOT LOG ME")]
@@ -116,7 +124,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             string? targetInstanceId)
         {
             // Arrange
-            var testLogger = new TestLogger(null!, category: "UnitTest");
+            var testLogger = new TestLogger(this.output, category: "UnitTest");
             var traceHelper = new EndToEndTraceHelper(
                 logger: testLogger,
                 traceReplayEvents: false);
@@ -143,7 +151,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         public void ClientOperationReceived_LogsWhenInvocationIdProvided()
         {
             // Arrange
-            var testLogger = new TestLogger(null!, category: "UnitTest");
+            var testLogger = new TestLogger(this.output, category: "UnitTest");
             var traceHelper = new EndToEndTraceHelper(
                 logger: testLogger,
                 traceReplayEvents: false);
@@ -167,7 +175,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         public void ClientOperationReceived_DoesNotLogWhenInvocationIdNull()
         {
             // Arrange
-            var testLogger = new TestLogger(null!, category: "UnitTest");
+            var testLogger = new TestLogger(this.output, category: "UnitTest");
             var traceHelper = new EndToEndTraceHelper(
                 logger: testLogger,
                 traceReplayEvents: false);
@@ -188,7 +196,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         public void ClientOperationReceived_DoesNotLogWhenInvocationIdEmpty()
         {
             // Arrange
-            var testLogger = new TestLogger(null!, category: "UnitTest");
+            var testLogger = new TestLogger(this.output, category: "UnitTest");
             var traceHelper = new EndToEndTraceHelper(
                 logger: testLogger,
                 traceReplayEvents: false);
