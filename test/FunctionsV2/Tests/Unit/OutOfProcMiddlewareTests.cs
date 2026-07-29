@@ -289,14 +289,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // Regression test for https://github.com/Azure/azure-functions-durable-extension/issues/286.
             // A termination is applied by the orchestration executor and never reaches orchestrator user
             // code, so the middleware is responsible for raising the "Terminated" lifecycle notification.
+            // Both cases here are terminated; the null case covers terminating without supplying a reason.
             var notificationHelper = new RecordingLifeCycleNotificationHelper();
             (OutOfProcMiddleware middleware, DispatchMiddlewareContext dispatchContext) =
-                this.SetupCompletedOrchestratorTest(notificationHelper, terminationReason);
+                this.SetupCompletedOrchestratorTest(notificationHelper, isTerminated: true, terminationReason);
 
             await middleware.CallOrchestratorAsync(dispatchContext, () => Task.CompletedTask);
 
-            string expectedNotification = terminationReason != null ? $"Terminated:{terminationReason}" : "Completed";
-            Assert.Equal(new[] { expectedNotification }, notificationHelper.Notifications);
+            Assert.Equal(new[] { $"Terminated:{terminationReason}" }, notificationHelper.Notifications);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CallOrchestratorAsync_CompletedInstance_RaisesCompletedNotification()
+        {
+            // Control case for the regression above: an instance that completed normally must still
+            // raise "Completed", so the termination handling does not swallow the ordinary path.
+            var notificationHelper = new RecordingLifeCycleNotificationHelper();
+            (OutOfProcMiddleware middleware, DispatchMiddlewareContext dispatchContext) =
+                this.SetupCompletedOrchestratorTest(notificationHelper, isTerminated: false, terminationReason: null);
+
+            await middleware.CallOrchestratorAsync(dispatchContext, () => Task.CompletedTask);
+
+            Assert.Equal(new[] { "Completed" }, notificationHelper.Notifications);
         }
 
         public static IEnumerable<object[]> PlatformLevelExceptions()
@@ -373,6 +388,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         private (OutOfProcMiddleware middleware, DispatchMiddlewareContext context) SetupCompletedOrchestratorTest(
             ILifeCycleNotificationHelper notificationHelper,
+            bool isTerminated,
             string terminationReason)
         {
             DurableTaskExtension extension = CreateDurableTaskExtension(notificationHelper);
@@ -384,7 +400,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 CompleteOrchestration = new P.CompleteOrchestrationAction
                 {
-                    OrchestrationStatus = terminationReason != null
+                    OrchestrationStatus = isTerminated
                         ? P.OrchestrationStatus.Terminated
                         : P.OrchestrationStatus.Completed,
                     Result = terminationReason ?? "\"done\"",
@@ -416,7 +432,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     new ExecutionStartedEvent(-1, null) { Name = "TestOrchestrator" },
                 ]);
 
-            if (terminationReason != null)
+            if (isTerminated)
             {
                 runtimeState.AddEvent(new ExecutionTerminatedEvent(-1, terminationReason));
             }

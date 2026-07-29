@@ -778,10 +778,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// matching on every subsequent replay of the instance, which would produce duplicate notifications.
         /// </remarks>
         /// <param name="runtimeState">The runtime state of the orchestration being dispatched.</param>
-        internal static ExecutionTerminatedEvent GetTerminationEventOrNull(OrchestrationRuntimeState runtimeState)
+#nullable enable
+        internal static ExecutionTerminatedEvent? GetTerminationEventOrNull(OrchestrationRuntimeState? runtimeState)
         {
             return runtimeState?.NewEvents?.OfType<ExecutionTerminatedEvent>().FirstOrDefault();
         }
+#nullable restore
 
         /// <summary>
         /// This DTFx orchestration middleware allows us to initialize Durable Functions-specific context
