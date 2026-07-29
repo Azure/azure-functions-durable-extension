@@ -189,7 +189,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId,
             string reason,
             FunctionType functionType,
-            bool isReplay)
+            bool isReplay,
+            string? targetInstanceId = null)
         {
             if (this.ShouldLogEvent(isReplay))
             {
@@ -202,11 +203,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     reason,
                     functionType.ToString(),
                     ExtensionVersion,
-                    isReplay);
+                    isReplay,
+                    targetInstanceId);
 
                 this.logger.LogInformation(
-                    "{instanceId}: Function '{functionName} ({functionType})' scheduled. Reason: {reason}. IsReplay: {isReplay}. State: {state}. RuntimeStatus: {runtimeStatus}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
-                    instanceId, functionName, functionType, reason, isReplay, FunctionState.Scheduled, OrchestrationRuntimeStatus.Pending, hubName,
+                    "{instanceId}: Function '{functionName} ({functionType})' scheduled. Reason: {reason}. IsReplay: {isReplay}. TargetInstanceId: {targetInstanceId}. State: {state}. RuntimeStatus: {runtimeStatus}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                    instanceId, functionName, functionType, reason, isReplay, targetInstanceId, FunctionState.Scheduled, OrchestrationRuntimeStatus.Pending, hubName,
                     LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
             }
         }

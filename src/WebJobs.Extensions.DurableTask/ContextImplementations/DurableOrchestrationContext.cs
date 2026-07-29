@@ -783,7 +783,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.InstanceId,
                 reason: sourceFunctionId,
                 functionType: functionType,
-                isReplay: this.IsReplaying);
+                isReplay: this.IsReplaying,
+                targetInstanceId: instanceId);
 
             TResult output;
             Exception exception = null;

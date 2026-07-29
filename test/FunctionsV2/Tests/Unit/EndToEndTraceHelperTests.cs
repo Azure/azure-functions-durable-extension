@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
@@ -107,13 +106,44 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             }
         }
 
+        [Theory]
+        [InlineData((int)FunctionType.Entity, "@counter@42")]
+        [InlineData((int)FunctionType.Orchestrator, "child-orchestration-id")]
+        [InlineData((int)FunctionType.Activity, null)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void FunctionScheduled_LogsTargetInstanceIdInStructuredState(
+            int functionType,
+            string? targetInstanceId)
+        {
+            // Arrange
+            var testLogger = new TestLogger(null!, category: "UnitTest");
+            var traceHelper = new EndToEndTraceHelper(
+                logger: testLogger,
+                traceReplayEvents: false);
+
+            // Act
+            traceHelper.FunctionScheduled(
+                hubName: "TestHub",
+                functionName: "TargetFunction",
+                instanceId: "parent-instance-id",
+                reason: "TestCaller",
+                functionType: (FunctionType)functionType,
+                isReplay: false,
+                targetInstanceId: targetInstanceId);
+
+            // Assert
+            var logMessage = Assert.Single(testLogger.LogMessages);
+            var state = Assert.IsAssignableFrom<IEnumerable<KeyValuePair<string, object>>>(logMessage.State);
+            var targetInstanceIdState = Assert.Single(state, property => property.Key == "targetInstanceId");
+            Assert.Equal(targetInstanceId, targetInstanceIdState.Value);
+        }
+
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void ClientOperationReceived_LogsWhenInvocationIdProvided()
         {
             // Arrange
-            var logMessages = new List<string>();
-            var testLogger = new TestLogger(logMessages);
+            var testLogger = new TestLogger(null!, category: "UnitTest");
             var traceHelper = new EndToEndTraceHelper(
                 logger: testLogger,
                 traceReplayEvents: false);
@@ -126,10 +156,10 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 functionInvocationId: "invocation-456");
 
             // Assert
-            Assert.Single(logMessages);
-            Assert.Contains("StartOrchestration", logMessages[0]);
-            Assert.Contains("test-instance-123", logMessages[0]);
-            Assert.Contains("invocation-456", logMessages[0]);
+            var logMessage = Assert.Single(testLogger.LogMessages);
+            Assert.Contains("StartOrchestration", logMessage.FormattedMessage);
+            Assert.Contains("test-instance-123", logMessage.FormattedMessage);
+            Assert.Contains("invocation-456", logMessage.FormattedMessage);
         }
 
         [Fact]
@@ -137,8 +167,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         public void ClientOperationReceived_DoesNotLogWhenInvocationIdNull()
         {
             // Arrange
-            var logMessages = new List<string>();
-            var testLogger = new TestLogger(logMessages);
+            var testLogger = new TestLogger(null!, category: "UnitTest");
             var traceHelper = new EndToEndTraceHelper(
                 logger: testLogger,
                 traceReplayEvents: false);
@@ -151,7 +180,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 functionInvocationId: null);
 
             // Assert - should not log when invocation ID is null
-            Assert.Empty(logMessages);
+            Assert.Empty(testLogger.LogMessages);
         }
 
         [Fact]
@@ -159,8 +188,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         public void ClientOperationReceived_DoesNotLogWhenInvocationIdEmpty()
         {
             // Arrange
-            var logMessages = new List<string>();
-            var testLogger = new TestLogger(logMessages);
+            var testLogger = new TestLogger(null!, category: "UnitTest");
             var traceHelper = new EndToEndTraceHelper(
                 logger: testLogger,
                 traceReplayEvents: false);
@@ -173,35 +201,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 functionInvocationId: string.Empty);
 
             // Assert - should not log when invocation ID is empty
-            Assert.Empty(logMessages);
-        }
-
-        /// <summary>
-        /// Simple test logger that captures log messages.
-        /// </summary>
-        private class TestLogger : ILogger
-        {
-            private readonly List<string> messages;
-
-            public TestLogger(List<string> messages)
-            {
-                this.messages = messages;
-            }
-
-            public IDisposable? BeginScope<TState>(TState state)
-                where TState : notnull => null;
-
-            public bool IsEnabled(LogLevel logLevel) => true;
-
-            public void Log<TState>(
-                LogLevel logLevel,
-                EventId eventId,
-                TState state,
-                Exception? exception,
-                Func<TState, Exception?, string> formatter)
-            {
-                this.messages.Add(formatter(state, exception));
-            }
+            Assert.Empty(testLogger.LogMessages);
         }
     }
 }
