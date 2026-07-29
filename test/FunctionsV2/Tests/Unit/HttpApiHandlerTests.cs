@@ -889,21 +889,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task PurgeHistoryWithoutCreatedTimeFrom_UsesMinimumDate()
+        public async Task PurgeHistoryWithoutCreatedTimeFrom_ReturnsBadRequest()
         {
-            DateTime actualCreatedTimeFrom = default;
-            var clientMock = new Mock<IDurableClient>();
-            clientMock
-                .Setup(x => x.PurgeInstanceHistoryAsync(
-                    It.IsAny<DateTime>(),
-                    It.IsAny<DateTime?>(),
-                    It.IsAny<IEnumerable<OrchestrationStatus>>()))
-                .Callback((DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationStatus> runtimeStatus) =>
-                {
-                    actualCreatedTimeFrom = createdTimeFrom;
-                })
-                .Returns(Task.FromResult(new PurgeHistoryResult(1)));
-
+            var clientMock = new Mock<IDurableClient>(MockBehavior.Strict);
             var purgeRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
             purgeRequestUriBuilder.Path += "/Instances/";
 
@@ -916,8 +904,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 },
                 CancellationToken.None);
 
-            Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
-            Assert.Equal(DateTime.MinValue, actualCreatedTimeFrom);
+            Assert.Equal(HttpStatusCode.BadRequest, responseMessage.StatusCode);
         }
 
         [Fact]
@@ -960,6 +947,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 CancellationToken.None);
 
             Assert.Equal(HttpStatusCode.BadRequest, responseMessage.StatusCode);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task PurgeHistoryWithLegacyShortDate_PreservesExistingParsing()
+        {
+            DateTime actualCreatedTimeFrom = default;
+            var clientMock = new Mock<IDurableClient>();
+            clientMock
+                .Setup(x => x.PurgeInstanceHistoryAsync(
+                    It.IsAny<DateTime>(),
+                    It.IsAny<DateTime?>(),
+                    It.IsAny<IEnumerable<OrchestrationStatus>>()))
+                .Callback((DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationStatus> runtimeStatus) =>
+                {
+                    actualCreatedTimeFrom = createdTimeFrom;
+                })
+                .Returns(Task.FromResult(new PurgeHistoryResult(1)));
+
+            var purgeRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+            purgeRequestUriBuilder.Path += "/Instances/";
+            purgeRequestUriBuilder.Query = "createdTimeFrom=12-11-10";
+
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+            HttpResponseMessage responseMessage = await httpApiHandler.HandleRequestAsync(
+                new HttpRequestMessage
+                {
+                    Method = HttpMethod.Delete,
+                    RequestUri = purgeRequestUriBuilder.Uri,
+                },
+                CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
+            Assert.Equal(DateTime.Parse("12-11-10"), actualCreatedTimeFrom);
         }
 
         [Fact]

@@ -610,15 +610,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             IDurableOrchestrationClient client = this.GetClient(request);
             var queryNameValuePairs = request.GetQueryNameValuePairs();
-            string createdTimeFromValue = queryNameValuePairs[CreatedTimeFromParameter];
-            bool hasBareCreatedTimeFrom = queryNameValuePairs.GetValues(string.Empty)?
-                .Any(value => string.Equals(value, CreatedTimeFromParameter, StringComparison.OrdinalIgnoreCase)) == true;
-            DateTime createdTimeFrom;
-            if (createdTimeFromValue == null && !hasBareCreatedTimeFrom)
-            {
-                createdTimeFrom = DateTime.MinValue;
-            }
-            else if (!TryGetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeFromParameter, out createdTimeFrom))
+            if (!TryGetDateTimeQueryParameterValue(queryNameValuePairs, CreatedTimeFromParameter, out DateTime createdTimeFrom))
             {
                 var badRequestResponse = request.CreateResponse(
                     HttpStatusCode.BadRequest,
@@ -805,10 +797,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 // Python's strftime can omit leading zeroes from years before 1000 on Linux.
                 string paddedValue = value.PadLeft(value.Length + 4 - yearSeparatorIndex, '0');
-                if (DateTime.TryParse(
+                if (DateTime.TryParseExact(
                         paddedValue,
+                        "yyyy-MM-dd'T'HH:mm:ss.ffffff'Z'",
                         CultureInfo.InvariantCulture,
-                        DateTimeStyles.RoundtripKind,
+                        DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
                         out dateTimeValue))
                 {
                     return true;
