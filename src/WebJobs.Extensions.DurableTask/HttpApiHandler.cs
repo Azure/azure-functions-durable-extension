@@ -789,6 +789,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private static bool TryGetDateTimeQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName, out DateTime dateTimeValue)
         {
             string value = queryStringNameValueCollection[queryParameterName];
+            if (DateTime.TryParse(value, out dateTimeValue))
+            {
+                return true;
+            }
+
             int yearSeparatorIndex = value?.IndexOf('-') ?? -1;
             if (value != null &&
                 yearSeparatorIndex > 0 &&
@@ -799,16 +804,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 string paddedValue = value.PadLeft(value.Length + 4 - yearSeparatorIndex, '0');
                 if (DateTime.TryParseExact(
                         paddedValue,
-                        "yyyy-MM-dd'T'HH:mm:ss.ffffff'Z'",
+                        "yyyy-MM-dd'T'HH:mm:ss.ffffffK",
                         CultureInfo.InvariantCulture,
-                        DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                        DateTimeStyles.RoundtripKind,
                         out dateTimeValue))
                 {
                     return true;
                 }
             }
 
-            return DateTime.TryParse(value, out dateTimeValue);
+            return false;
         }
 
         private static bool TryGetBooleanQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName, out bool boolValue)

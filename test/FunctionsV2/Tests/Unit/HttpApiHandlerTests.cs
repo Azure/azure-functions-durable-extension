@@ -853,7 +853,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Theory]
         [InlineData("1-01-01T00:00:00.000000Z", 1)]
-        [InlineData("100-01-01T00:00:00.000000Z", 100)]
+        [InlineData("12-01-01T00:00:00.000000Z", 12)]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task PurgeHistoryWithShortYearDate_Succeeds(string createdTimeFrom, int expectedYear)
         {
@@ -981,6 +981,41 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
             Assert.Equal(DateTime.Parse("12-11-10"), actualCreatedTimeFrom);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task PurgeHistoryWithPreviouslyAcceptedThreeDigitYear_PreservesExistingParsing()
+        {
+            const string createdTimeFrom = "100-01-01T00:00:00.000000Z";
+            DateTime actualCreatedTimeFrom = default;
+            var clientMock = new Mock<IDurableClient>();
+            clientMock
+                .Setup(x => x.PurgeInstanceHistoryAsync(
+                    It.IsAny<DateTime>(),
+                    It.IsAny<DateTime?>(),
+                    It.IsAny<IEnumerable<OrchestrationStatus>>()))
+                .Callback((DateTime parsedCreatedTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationStatus> runtimeStatus) =>
+                {
+                    actualCreatedTimeFrom = parsedCreatedTimeFrom;
+                })
+                .Returns(Task.FromResult(new PurgeHistoryResult(1)));
+
+            var purgeRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+            purgeRequestUriBuilder.Path += "/Instances/";
+            purgeRequestUriBuilder.Query = $"createdTimeFrom={WebUtility.UrlEncode(createdTimeFrom)}";
+
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+            HttpResponseMessage responseMessage = await httpApiHandler.HandleRequestAsync(
+                new HttpRequestMessage
+                {
+                    Method = HttpMethod.Delete,
+                    RequestUri = purgeRequestUriBuilder.Uri,
+                },
+                CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
+            Assert.Equal(DateTime.Parse(createdTimeFrom), actualCreatedTimeFrom);
         }
 
         [Fact]
