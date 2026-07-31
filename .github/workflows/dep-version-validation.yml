@@ -40,7 +40,7 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with: { dotnet-version: '8.0.x' }
       - uses: actions/setup-node@v4
-        with: { node-version: '20.x' }
+        with: { node-version: '22.x' }
       - run: npm install -g azure-functions-core-tools@4 --unsafe-perm true
 
       - name: Parse and bump Worker extension version
@@ -159,7 +159,7 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with: { dotnet-version: '8.0.x' }
       - uses: actions/setup-node@v4
-        with: { node-version: '20.x' }
+        with: { node-version: '22.x' }
       - run: npm install -g azure-functions-core-tools@4 --unsafe-perm true
 
       - name: Parse and bump WebJobs extension version

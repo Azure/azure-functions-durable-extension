@@ -851,6 +851,173 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(instanceId, actual.InstanceId);
         }
 
+        [Theory]
+        [InlineData("1-01-01T00:00:00.000000Z", 1)]
+        [InlineData("12-01-01T00:00:00.000000Z", 12)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task PurgeHistoryWithShortYearDate_Succeeds(string createdTimeFrom, int expectedYear)
+        {
+            DateTime actualCreatedTimeFrom = default;
+            var clientMock = new Mock<IDurableClient>();
+            clientMock
+                .Setup(x => x.PurgeInstanceHistoryAsync(
+                    It.IsAny<DateTime>(),
+                    It.IsAny<DateTime?>(),
+                    It.IsAny<IEnumerable<OrchestrationStatus>>()))
+                .Callback((DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationStatus> runtimeStatus) =>
+                {
+                    actualCreatedTimeFrom = createdTimeFrom;
+                })
+                .Returns(Task.FromResult(new PurgeHistoryResult(1)));
+
+            var purgeRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+            purgeRequestUriBuilder.Path += "/Instances/";
+            purgeRequestUriBuilder.Query = $"createdTimeFrom={WebUtility.UrlEncode(createdTimeFrom)}";
+
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+            HttpResponseMessage responseMessage = await httpApiHandler.HandleRequestAsync(
+                new HttpRequestMessage
+                {
+                    Method = HttpMethod.Delete,
+                    RequestUri = purgeRequestUriBuilder.Uri,
+                },
+                CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
+            Assert.Equal(new DateTime(expectedYear, 1, 1), actualCreatedTimeFrom);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task PurgeHistoryWithoutCreatedTimeFrom_ReturnsBadRequest()
+        {
+            var clientMock = new Mock<IDurableClient>(MockBehavior.Strict);
+            var purgeRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+            purgeRequestUriBuilder.Path += "/Instances/";
+
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+            HttpResponseMessage responseMessage = await httpApiHandler.HandleRequestAsync(
+                new HttpRequestMessage
+                {
+                    Method = HttpMethod.Delete,
+                    RequestUri = purgeRequestUriBuilder.Uri,
+                },
+                CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.BadRequest, responseMessage.StatusCode);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task PurgeHistoryWithInvalidCreatedTimeFrom_ReturnsBadRequest()
+        {
+            var clientMock = new Mock<IDurableClient>(MockBehavior.Strict);
+            var purgeRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+            purgeRequestUriBuilder.Path += "/Instances/";
+            purgeRequestUriBuilder.Query = "createdTimeFrom=invalid";
+
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+            HttpResponseMessage responseMessage = await httpApiHandler.HandleRequestAsync(
+                new HttpRequestMessage
+                {
+                    Method = HttpMethod.Delete,
+                    RequestUri = purgeRequestUriBuilder.Uri,
+                },
+                CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.BadRequest, responseMessage.StatusCode);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task PurgeHistoryWithBareCreatedTimeFrom_ReturnsBadRequest()
+        {
+            var clientMock = new Mock<IDurableClient>(MockBehavior.Strict);
+            var purgeRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+            purgeRequestUriBuilder.Path += "/Instances/";
+            purgeRequestUriBuilder.Query = "createdTimeFrom";
+
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+            HttpResponseMessage responseMessage = await httpApiHandler.HandleRequestAsync(
+                new HttpRequestMessage
+                {
+                    Method = HttpMethod.Delete,
+                    RequestUri = purgeRequestUriBuilder.Uri,
+                },
+                CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.BadRequest, responseMessage.StatusCode);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task PurgeHistoryWithLegacyShortDate_PreservesExistingParsing()
+        {
+            DateTime actualCreatedTimeFrom = default;
+            var clientMock = new Mock<IDurableClient>();
+            clientMock
+                .Setup(x => x.PurgeInstanceHistoryAsync(
+                    It.IsAny<DateTime>(),
+                    It.IsAny<DateTime?>(),
+                    It.IsAny<IEnumerable<OrchestrationStatus>>()))
+                .Callback((DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationStatus> runtimeStatus) =>
+                {
+                    actualCreatedTimeFrom = createdTimeFrom;
+                })
+                .Returns(Task.FromResult(new PurgeHistoryResult(1)));
+
+            var purgeRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+            purgeRequestUriBuilder.Path += "/Instances/";
+            purgeRequestUriBuilder.Query = "createdTimeFrom=12-11-10";
+
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+            HttpResponseMessage responseMessage = await httpApiHandler.HandleRequestAsync(
+                new HttpRequestMessage
+                {
+                    Method = HttpMethod.Delete,
+                    RequestUri = purgeRequestUriBuilder.Uri,
+                },
+                CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
+            Assert.Equal(DateTime.Parse("12-11-10"), actualCreatedTimeFrom);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task PurgeHistoryWithPreviouslyAcceptedThreeDigitYear_PreservesExistingParsing()
+        {
+            const string createdTimeFrom = "100-01-01T00:00:00.000000Z";
+            DateTime actualCreatedTimeFrom = default;
+            var clientMock = new Mock<IDurableClient>();
+            clientMock
+                .Setup(x => x.PurgeInstanceHistoryAsync(
+                    It.IsAny<DateTime>(),
+                    It.IsAny<DateTime?>(),
+                    It.IsAny<IEnumerable<OrchestrationStatus>>()))
+                .Callback((DateTime parsedCreatedTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationStatus> runtimeStatus) =>
+                {
+                    actualCreatedTimeFrom = parsedCreatedTimeFrom;
+                })
+                .Returns(Task.FromResult(new PurgeHistoryResult(1)));
+
+            var purgeRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+            purgeRequestUriBuilder.Path += "/Instances/";
+            purgeRequestUriBuilder.Query = $"createdTimeFrom={WebUtility.UrlEncode(createdTimeFrom)}";
+
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+            HttpResponseMessage responseMessage = await httpApiHandler.HandleRequestAsync(
+                new HttpRequestMessage
+                {
+                    Method = HttpMethod.Delete,
+                    RequestUri = purgeRequestUriBuilder.Uri,
+                },
+                CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
+            Assert.Equal(DateTime.Parse(createdTimeFrom), actualCreatedTimeFrom);
+        }
+
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task TerminateInstanceWebhook()
