@@ -66,8 +66,9 @@ jobs:
         mkdir "$HOME/packages"
         dotnet nuget push ./bin/Release/Microsoft.Azure.WebJobs.Extensions.DurableTask.*.nupkg --source "$HOME/packages"
         cd "$env:GITHUB_WORKSPACE"
+        $configPath = Join-Path $env:RUNNER_TEMP "NuGet.config"
         ./eng/cfs/New-LocalNuGetConfig.ps1 `
-          -DestinationPath "$env:RUNNER_TEMP/NuGet.config" `
+          -DestinationPath $configPath `
           -LocalSourcePath "$HOME/packages" `
           -PackagePatterns "Microsoft.Azure.WebJobs.Extensions.DurableTask"
       shell: pwsh
@@ -75,7 +76,8 @@ jobs:
     - name: Build .NET Isolated Smoke Test
       run: |
         cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated
-        dotnet restore --configfile "$env:RUNNER_TEMP/NuGet.config" --verbosity normal -p:TargetFramework=${{ matrix.targetFramework }}
+        $configPath = Join-Path $env:RUNNER_TEMP "NuGet.config"
+        dotnet restore --configfile "$configPath" --verbosity normal -p:TargetFramework=${{ matrix.targetFramework }}
         dotnet build -c Release -f ${{ matrix.targetFramework }} --no-restore
 
     - name: Install core tools
