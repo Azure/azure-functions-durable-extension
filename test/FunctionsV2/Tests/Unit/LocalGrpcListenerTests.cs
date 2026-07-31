@@ -835,17 +835,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
-        [InlineData(null, false)]
-        [InlineData(true, true)]
+        [InlineData(null, false, false)]
+        [InlineData(false, false, false)]
+        [InlineData(true, true, false)]
+        [InlineData(null, false, true)]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void TestBindingHelper_SerializesUseForwardedHost(bool? configuredValue, bool expectedValue)
+        public void TestBindingHelper_SerializesUseForwardedHost(
+            bool? configuredValue,
+            bool expectedValue,
+            bool nullHttpSettings)
         {
             var options = new DurableTaskOptions
             {
                 HubName = "UseForwardedHost",
                 WebhookUriProviderOverride = () => new Uri("https://durable.test/runtime/webhooks/durabletask"),
             };
-            if (configuredValue.HasValue)
+            if (nullHttpSettings)
+            {
+                options.HttpSettings = null;
+            }
+            else if (configuredValue.HasValue)
             {
                 options.HttpSettings.UseForwardedHost = configuredValue.Value;
             }

@@ -52,7 +52,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     RpcBaseUrl = localRpcAddress,
                     RequiredQueryStringParameters = this.config.HttpApiHandler.GetUniversalQueryStrings(),
                     HttpBaseUrl = this.config.HttpApiHandler.GetBaseUrl(),
-                    UseForwardedHost = this.config.Options.HttpSettings.UseForwardedHost,
+                    UseForwardedHost = this.config.Options.HttpSettings?.UseForwardedHost ?? false,
                     MaxGrpcMessageSizeInBytes = this.config.Options.MaxGrpcMessageSizeInBytes,
                     GrpcHttpClientTimeout = JsonConvert.SerializeObject(this.config.Options.GrpcHttpClientTimeout),
                 });

@@ -30,10 +30,5 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Gets or sets the amount of time in seconds before an idle extended session times out.
         /// </summary>
         internal int ExtendedSessionIdleTimeoutInSeconds { get; set; }
-
-        /// <summary>
-        /// Gets or sets whether an uncaught exception should roll back the effects of an entity operation.
-        /// </summary>
-        internal bool RollbackEntityOperationsOnExceptions { get; set; } = true;
     }
 }

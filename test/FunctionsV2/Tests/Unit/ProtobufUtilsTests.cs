@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using DurableTask.Core.Entities.OperationFormat;
 using Google.Protobuf.WellKnownTypes;
 using Xunit;
@@ -109,9 +110,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(defaultVersion, action.Version);
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(false, null, true)]
+        [InlineData(false, true, true)]
+        [InlineData(false, false, false)]
+        [InlineData(true, true, true)]
+        [InlineData(true, false, false)]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void ToEntityBatchRequest_IncludesDefaultRollbackEntityOperationsOnExceptions()
+        public void ToEntityBatchRequest_IncludesExpectedProperties(
+            bool extendedSessionsEnabled,
+            bool? configuredRollback,
+            bool expectedRollback)
         {
             var request = new EntityBatchRequest
             {
@@ -120,45 +129,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
             var options = new DurableTaskOptions
             {
-                ExtendedSessionsEnabled = false,
+                ExtendedSessionsEnabled = extendedSessionsEnabled,
             };
+            if (configuredRollback.HasValue)
+            {
+                options.RollbackEntityOperationsOnExceptions = configuredRollback.Value;
+            }
 
             var context = new RemoteEntityContext(
                 request,
                 options,
-                isExtendedSession: false,
-                includeEntityState: true);
+                isExtendedSession: true,
+                includeEntityState: false);
 
-            P.EntityBatchRequest result = context.Request.ToEntityBatchRequest(context.Configurations);
+            P.EntityBatchRequest result = context.Request.ToEntityBatchRequest(
+                context.Configurations,
+                context.RollbackEntityOperationsOnExceptions);
 
+            string[] expectedKeys = extendedSessionsEnabled
+                ? new[]
+                {
+                    "ExtendedSessionIdleTimeoutInSeconds",
+                    "HttpDefaultAsyncRequestSleepTimeMilliseconds",
+                    "IncludeState",
+                    "IsExtendedSession",
+                    "RollbackEntityOperationsOnExceptions",
+                }
+                : new[] { "RollbackEntityOperationsOnExceptions" };
+            Assert.Equal(expectedKeys, result.Properties.Keys.OrderBy(key => key));
+            bool actualRollback = result.Properties["RollbackEntityOperationsOnExceptions"].BoolValue;
             Assert.True(
-                result.Properties[nameof(DurableTaskOptions.RollbackEntityOperationsOnExceptions)].BoolValue);
-        }
-
-        [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void ToEntityBatchRequest_IncludesDisabledRollbackEntityOperationsOnExceptions()
-        {
-            var request = new EntityBatchRequest
-            {
-                InstanceId = "@TestEntity@test-key",
-                Operations = new List<OperationRequest>(),
-            };
-            var options = new DurableTaskOptions
-            {
-                ExtendedSessionsEnabled = false,
-                RollbackEntityOperationsOnExceptions = false,
-            };
-            var context = new RemoteEntityContext(
-                request,
-                options,
-                isExtendedSession: false,
-                includeEntityState: true);
-
-            P.EntityBatchRequest result = context.Request.ToEntityBatchRequest(context.Configurations);
-
-            Assert.False(
-                result.Properties[nameof(DurableTaskOptions.RollbackEntityOperationsOnExceptions)].BoolValue);
+                actualRollback == expectedRollback,
+                $"Expected rollback to be {expectedRollback}, but it was {actualRollback}.");
         }
 
         /// <summary>

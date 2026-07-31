@@ -14,16 +14,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public RemoteEntityContext(EntityBatchRequest batchRequest, DurableTaskOptions options, bool isExtendedSession, bool includeEntityState)
         {
             this.Request = batchRequest;
-            this.Configurations = new RemoteInstanceConfiguration
-            {
-                RollbackEntityOperationsOnExceptions = options.RollbackEntityOperationsOnExceptions,
-            };
-
+            this.RollbackEntityOperationsOnExceptions = options.RollbackEntityOperationsOnExceptions;
             if (options.ExtendedSessionsEnabled)
             {
-                this.Configurations.IsExtendedSession = isExtendedSession;
-                this.Configurations.IncludeState = includeEntityState;
-                this.Configurations.ExtendedSessionIdleTimeoutInSeconds = options.ExtendedSessionIdleTimeoutInSeconds;
+                this.Configurations = new RemoteInstanceConfiguration
+                {
+                    IsExtendedSession = isExtendedSession,
+                    IncludeState = includeEntityState,
+                    ExtendedSessionIdleTimeoutInSeconds = options.ExtendedSessionIdleTimeoutInSeconds,
+                };
             }
         }
 
@@ -31,7 +30,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal EntityBatchRequest Request { get; private set; }
 
         [JsonProperty("configurations")]
-        public RemoteInstanceConfiguration Configurations { get; }
+        public RemoteInstanceConfiguration? Configurations { get; }
+
+        [JsonIgnore]
+        internal bool RollbackEntityOperationsOnExceptions { get; }
 
         [JsonIgnore]
         internal EntityBatchResult? Result { get; set; }
