@@ -604,13 +604,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         /// <param name="entityBatchRequest">The operation request to convert.</param>
         /// <param name="configurations">The remote instance configuration options for this batch request.</param>
-        /// <param name="rollbackEntityOperationsOnExceptions">Whether failed entity operations should be rolled back.</param>
         /// <returns>The converted operation request.</returns>
         [return: NotNullIfNotNull("entityBatchRequest")]
-        internal static P.EntityBatchRequest? ToEntityBatchRequest(
-            this EntityBatchRequest? entityBatchRequest,
-            RemoteInstanceConfiguration? configurations,
-            bool? rollbackEntityOperationsOnExceptions = null)
+        internal static P.EntityBatchRequest? ToEntityBatchRequest(this EntityBatchRequest? entityBatchRequest, RemoteInstanceConfiguration? configurations)
         {
             if (entityBatchRequest == null)
             {
@@ -624,11 +620,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             };
 
             batchRequest.Properties.Add(ProtobufUtils.ConvertPocoToProtoMap(configurations));
-            if (rollbackEntityOperationsOnExceptions.HasValue)
-            {
-                batchRequest.Properties[nameof(DurableTaskOptions.RollbackEntityOperationsOnExceptions)] =
-                    Value.ForBool(rollbackEntityOperationsOnExceptions.Value);
-            }
 
             foreach (var operation in entityBatchRequest.Operations ?? Enumerable.Empty<OperationRequest>())
             {

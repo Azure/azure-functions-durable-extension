@@ -109,13 +109,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(defaultVersion, action.Version);
         }
 
-        [Theory]
-        [InlineData(null, true)]
-        [InlineData(false, false)]
+        [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void ToEntityBatchRequest_IncludesRollbackEntityOperationsOnExceptions(
-            bool? configuredValue,
-            bool expectedValue)
+        public void ToEntityBatchRequest_IncludesDefaultRollbackEntityOperationsOnExceptions()
         {
             var request = new EntityBatchRequest
             {
@@ -126,10 +122,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 ExtendedSessionsEnabled = false,
             };
-            if (configuredValue.HasValue)
-            {
-                options.RollbackEntityOperationsOnExceptions = configuredValue.Value;
-            }
 
             var context = new RemoteEntityContext(
                 request,
@@ -137,13 +129,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 isExtendedSession: false,
                 includeEntityState: true);
 
-            P.EntityBatchRequest result = context.Request.ToEntityBatchRequest(
-                context.Configurations,
-                context.RollbackEntityOperationsOnExceptions);
+            P.EntityBatchRequest result = context.Request.ToEntityBatchRequest(context.Configurations);
 
-            Assert.Null(context.Configurations);
-            Assert.Equal(
-                expectedValue,
+            Assert.True(
+                result.Properties[nameof(DurableTaskOptions.RollbackEntityOperationsOnExceptions)].BoolValue);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void ToEntityBatchRequest_IncludesDisabledRollbackEntityOperationsOnExceptions()
+        {
+            var request = new EntityBatchRequest
+            {
+                InstanceId = "@TestEntity@test-key",
+                Operations = new List<OperationRequest>(),
+            };
+            var options = new DurableTaskOptions
+            {
+                ExtendedSessionsEnabled = false,
+                RollbackEntityOperationsOnExceptions = false,
+            };
+            var context = new RemoteEntityContext(
+                request,
+                options,
+                isExtendedSession: false,
+                includeEntityState: true);
+
+            P.EntityBatchRequest result = context.Request.ToEntityBatchRequest(context.Configurations);
+
+            Assert.False(
                 result.Properties[nameof(DurableTaskOptions.RollbackEntityOperationsOnExceptions)].BoolValue);
         }
 
