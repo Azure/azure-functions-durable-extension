@@ -16,6 +16,9 @@ on:
       - 'src/**'
       - 'test/SmokeTests/OOProcSmokeTests/DotNetIsolated/**'
 
+env:
+  NPM_CONFIG_USERCONFIG: ${{ github.workspace }}/eng/cfs/.npmrc
+
 jobs:
   build:
     runs-on: ubuntu-22.04
@@ -57,16 +60,23 @@ jobs:
       run: dotnet restore $solution
 
     - name: Build and pack WebJobs extension
-      run: cd ./src/WebJobs.Extensions.DurableTask &&
-        dotnet build -c Release WebJobs.Extensions.DurableTask.csproj &&
-        mkdir ~/packages &&
-        dotnet nuget push ./bin/Release/Microsoft.Azure.WebJobs.Extensions.DurableTask.*.nupkg --source ~/packages &&
-        dotnet nuget add source ~/packages
+      run: |
+        cd ./src/WebJobs.Extensions.DurableTask
+        dotnet build -c Release WebJobs.Extensions.DurableTask.csproj
+        mkdir "$HOME/packages"
+        dotnet nuget push ./bin/Release/Microsoft.Azure.WebJobs.Extensions.DurableTask.*.nupkg --source "$HOME/packages"
+        cd "$GITHUB_WORKSPACE"
+        ./eng/cfs/New-LocalNuGetConfig.ps1 `
+          -DestinationPath "$RUNNER_TEMP/NuGet.config" `
+          -LocalSourcePath "$HOME/packages" `
+          -PackagePatterns "Microsoft.Azure.WebJobs.Extensions.DurableTask"
+      shell: pwsh
 
     - name: Build .NET Isolated Smoke Test
-      run: cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated &&
-        dotnet restore --verbosity normal -p:TargetFramework=${{ matrix.targetFramework }} &&
-        dotnet build -c Release -f ${{ matrix.targetFramework }}
+      run: |
+        cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated
+        dotnet restore --configfile "$RUNNER_TEMP/NuGet.config" --verbosity normal -p:TargetFramework=${{ matrix.targetFramework }}
+        dotnet build -c Release -f ${{ matrix.targetFramework }} --no-restore
 
     - name: Install core tools
       run: npm i -g azure-functions-core-tools@4 --unsafe-perm true

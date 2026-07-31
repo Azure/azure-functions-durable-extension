@@ -16,6 +16,7 @@ on:
 env:
   config: Release
   AzureWebJobsStorage: UseDevelopmentStorage=true
+  NPM_CONFIG_USERCONFIG: ${{ github.workspace }}/eng/cfs/.npmrc
 
 jobs:
   azure-storage:
