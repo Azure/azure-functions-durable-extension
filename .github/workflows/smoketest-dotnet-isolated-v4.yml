@@ -74,6 +74,7 @@ jobs:
       shell: pwsh
 
     - name: Build .NET Isolated Smoke Test
+      shell: pwsh
       run: |
         cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated
         $configPath = Join-Path $env:RUNNER_TEMP "NuGet.config"
