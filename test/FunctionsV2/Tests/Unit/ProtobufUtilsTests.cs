@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using DurableTask.Core.Entities.OperationFormat;
 using Google.Protobuf.WellKnownTypes;
 using Xunit;
@@ -106,6 +107,44 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Single(result.Actions);
             var action = Assert.IsType<StartNewOrchestrationOperationAction>(result.Actions[0]);
             Assert.Equal(defaultVersion, action.Version);
+        }
+
+        [Theory]
+        [InlineData(null, true)]
+        [InlineData(false, false)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void ToEntityBatchRequest_IncludesRollbackEntityOperationsOnExceptions(
+            bool? configuredValue,
+            bool expectedValue)
+        {
+            var request = new EntityBatchRequest
+            {
+                InstanceId = "@TestEntity@test-key",
+                Operations = new List<OperationRequest>(),
+            };
+            var options = new DurableTaskOptions
+            {
+                ExtendedSessionsEnabled = false,
+            };
+            if (configuredValue.HasValue)
+            {
+                options.RollbackEntityOperationsOnExceptions = configuredValue.Value;
+            }
+
+            var context = new RemoteEntityContext(
+                request,
+                options,
+                isExtendedSession: false,
+                includeEntityState: true);
+
+            P.EntityBatchRequest result = context.Request.ToEntityBatchRequest(
+                context.Configurations,
+                context.RollbackEntityOperationsOnExceptions);
+
+            Assert.Null(context.Configurations);
+            Assert.Equal(
+                expectedValue,
+                result.Properties[nameof(DurableTaskOptions.RollbackEntityOperationsOnExceptions)].BoolValue);
         }
 
         /// <summary>

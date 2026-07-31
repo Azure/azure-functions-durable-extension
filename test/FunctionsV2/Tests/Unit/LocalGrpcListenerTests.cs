@@ -19,6 +19,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
+using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
 using P = Microsoft.DurableTask.Protobuf;
@@ -833,6 +834,59 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Contains("transient", ex.Message);
         }
 
+        [Theory]
+        [InlineData(null, false)]
+        [InlineData(true, true)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void TestBindingHelper_SerializesUseForwardedHost(bool? configuredValue, bool expectedValue)
+        {
+            var options = new DurableTaskOptions
+            {
+                HubName = "UseForwardedHost",
+                WebhookUriProviderOverride = () => new Uri("https://durable.test/runtime/webhooks/durabletask"),
+            };
+            if (configuredValue.HasValue)
+            {
+                options.HttpSettings.UseForwardedHost = configuredValue.Value;
+            }
+
+            using DurableTaskExtension extension = this.CreateExtension(options, WorkerRuntimeType.DotNetIsolated);
+            extension.EnsureTaskHubWorker();
+
+            var bindingHelper = new BindingHelper(extension);
+            var client = new Mock<IDurableOrchestrationClient>();
+            client.Setup(c => c.TaskHubName).Returns(options.HubName);
+
+            string payload = bindingHelper.DurableOrchestrationClientToString(
+                client.Object,
+                new DurableClientAttribute());
+
+            Assert.Equal(expectedValue, JObject.Parse(payload).Value<bool>("useForwardedHost"));
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void TestBindingHelper_OmitsUseForwardedHostFromLegacyPayload()
+        {
+            var options = new DurableTaskOptions
+            {
+                HubName = "LegacyUseForwardedHost",
+                WebhookUriProviderOverride = () => new Uri("https://durable.test/runtime/webhooks/durabletask"),
+            };
+            options.HttpSettings.UseForwardedHost = true;
+            using DurableTaskExtension extension = this.CreateExtension(options, WorkerRuntimeType.DotNet);
+
+            var bindingHelper = new BindingHelper(extension);
+            var client = new Mock<IDurableOrchestrationClient>();
+            client.Setup(c => c.TaskHubName).Returns(options.HubName);
+
+            string payload = bindingHelper.DurableOrchestrationClientToString(
+                client.Object,
+                new DurableClientAttribute());
+
+            Assert.False(JObject.Parse(payload).ContainsKey("useForwardedHost"));
+        }
+
         /// <summary>
         /// Verifies that the native worker runtimes (the Go worker reports either "native" or,
         /// defensively, "golang") select the gRPC protocol (MiddlewarePassthrough) at extension
@@ -896,7 +950,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         private DurableTaskExtension CreateExtension(string hubName, WorkerRuntimeType runtimeType)
         {
-            var options = new DurableTaskOptions { HubName = hubName };
+            return this.CreateExtension(new DurableTaskOptions { HubName = hubName }, runtimeType);
+        }
+
+        private DurableTaskExtension CreateExtension(DurableTaskOptions options, WorkerRuntimeType runtimeType)
+        {
             var wrappedOptions = new OptionsWrapper<DurableTaskOptions>(options);
             var nameResolver = TestHelpers.GetTestNameResolver();
             var serviceFactory = new AzureStorageDurabilityProviderFactory(
