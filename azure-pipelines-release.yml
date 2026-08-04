@@ -44,10 +44,6 @@ steps:
     packageType: 'sdk'
     version: '10.0.x'
 
-# Use NuGet
-- task: NuGetToolInstaller@1
-  displayName: 'Use NuGet '
-
 # dotnet restore
 - task: DotNetCoreCLI@2
   displayName: 'dotnet restore'
