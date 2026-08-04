@@ -2,6 +2,8 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using DurableTask.Core.Entities.OperationFormat;
 using Google.Protobuf.WellKnownTypes;
 using Xunit;
@@ -106,6 +108,59 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Single(result.Actions);
             var action = Assert.IsType<StartNewOrchestrationOperationAction>(result.Actions[0]);
             Assert.Equal(defaultVersion, action.Version);
+        }
+
+        [Theory]
+        [InlineData(false, null, true)]
+        [InlineData(false, true, true)]
+        [InlineData(false, false, false)]
+        [InlineData(true, true, true)]
+        [InlineData(true, false, false)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void ToEntityBatchRequest_IncludesExpectedProperties(
+            bool extendedSessionsEnabled,
+            bool? configuredRollback,
+            bool expectedRollback)
+        {
+            var request = new EntityBatchRequest
+            {
+                InstanceId = "@TestEntity@test-key",
+                Operations = new List<OperationRequest>(),
+            };
+            var options = new DurableTaskOptions
+            {
+                ExtendedSessionsEnabled = extendedSessionsEnabled,
+            };
+            if (configuredRollback.HasValue)
+            {
+                options.RollbackEntityOperationsOnExceptions = configuredRollback.Value;
+            }
+
+            var context = new RemoteEntityContext(
+                request,
+                options,
+                isExtendedSession: true,
+                includeEntityState: false);
+
+            P.EntityBatchRequest result = context.Request.ToEntityBatchRequest(
+                context.Configurations,
+                context.RollbackEntityOperationsOnExceptions);
+
+            string[] expectedKeys = extendedSessionsEnabled
+                ? new[]
+                {
+                    "ExtendedSessionIdleTimeoutInSeconds",
+                    "HttpDefaultAsyncRequestSleepTimeMilliseconds",
+                    "IncludeState",
+                    "IsExtendedSession",
+                    "RollbackEntityOperationsOnExceptions",
+                }
+                : new[] { "RollbackEntityOperationsOnExceptions" };
+            Assert.Equal(expectedKeys, result.Properties.Keys.OrderBy(key => key));
+            bool actualRollback = result.Properties["RollbackEntityOperationsOnExceptions"].BoolValue;
+            Assert.True(
+                actualRollback == expectedRollback,
+                $"Expected rollback to be {expectedRollback}, but it was {actualRollback}.");
         }
 
         /// <summary>

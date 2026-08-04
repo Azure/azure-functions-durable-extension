@@ -16,6 +16,9 @@ on:
       - 'src/**'
       - 'test/SmokeTests/OOProcSmokeTests/DotNetIsolated/**'
 
+env:
+  NPM_CONFIG_USERCONFIG: ${{ github.workspace }}/eng/cfs/.npmrc
+
 jobs:
   build:
     runs-on: ubuntu-22.04
@@ -54,19 +57,29 @@ jobs:
         dotnet-version: '10.0.x'
 
     - name: Restore WebJobs extension
-      run: dotnet restore $solution
+      run: dotnet restore ./WebJobs.Extensions.DurableTask.sln
 
     - name: Build and pack WebJobs extension
-      run: cd ./src/WebJobs.Extensions.DurableTask &&
-        dotnet build -c Release WebJobs.Extensions.DurableTask.csproj &&
-        mkdir ~/packages &&
-        dotnet nuget push ./bin/Release/Microsoft.Azure.WebJobs.Extensions.DurableTask.*.nupkg --source ~/packages &&
-        dotnet nuget add source ~/packages
+      run: |
+        cd ./src/WebJobs.Extensions.DurableTask
+        dotnet build -c Release WebJobs.Extensions.DurableTask.csproj
+        mkdir "$HOME/packages"
+        dotnet nuget push ./bin/Release/Microsoft.Azure.WebJobs.Extensions.DurableTask.*.nupkg --source "$HOME/packages"
+        cd "$env:GITHUB_WORKSPACE"
+        $configPath = Join-Path $env:RUNNER_TEMP "NuGet.config"
+        ./eng/cfs/New-LocalNuGetConfig.ps1 `
+          -DestinationPath $configPath `
+          -LocalSourcePath "$HOME/packages" `
+          -PackagePatterns "Microsoft.Azure.WebJobs.Extensions.DurableTask"
+      shell: pwsh
 
     - name: Build .NET Isolated Smoke Test
-      run: cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated &&
-        dotnet restore --verbosity normal -p:TargetFramework=${{ matrix.targetFramework }} &&
-        dotnet build -c Release -f ${{ matrix.targetFramework }}
+      shell: pwsh
+      run: |
+        cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated
+        $configPath = Join-Path $env:RUNNER_TEMP "NuGet.config"
+        dotnet restore --configfile "$configPath" --verbosity normal -p:TargetFramework=${{ matrix.targetFramework }}
+        dotnet build -c Release -f ${{ matrix.targetFramework }} --no-restore
 
     - name: Install core tools
       run: npm i -g azure-functions-core-tools@4 --unsafe-perm true

@@ -24,6 +24,11 @@ if (Test-Path($EmulatorStartDir)) {
 }
 
 $DebugPreference = 'Continue'
+$ProjectBaseDirectory = "$PSScriptRoot\..\..\..\"
+
+if (!$env:NPM_CONFIG_USERCONFIG) {
+    $env:NPM_CONFIG_USERCONFIG = (Resolve-Path (Join-Path $ProjectBaseDirectory "eng\cfs\.npmrc")).Path
+}
 
 Write-Host "Skip Storage Emulator: $SkipStorageEmulator"
 
@@ -66,7 +71,7 @@ if (!$SkipStorageEmulator)
         }
         else
         {
-            sudo npm install -g azurite
+            sudo env "NPM_CONFIG_USERCONFIG=$env:NPM_CONFIG_USERCONFIG" npm install -g azurite
             New-Item -Path "./azurite" -ItemType Directory -ErrorAction SilentlyContinue
             sudo azurite --silent --skipApiVersionCheck --location azurite --debug azurite\debug.log &
         }
