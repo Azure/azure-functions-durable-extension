@@ -4,6 +4,8 @@ permissions:
 
 env:
   CORE_TOOLS_VERSION: '4.8.0'
+  NPM_CONFIG_USERCONFIG: ${{ github.workspace }}/eng/cfs/.npmrc
+  PIP_INDEX_URL: https://pkgs.dev.azure.com/azfunc/public/_packaging/upstream-public/pypi/simple/
 
 on:
   workflow_dispatch:

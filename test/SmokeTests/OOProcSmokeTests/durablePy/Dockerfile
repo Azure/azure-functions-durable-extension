@@ -13,9 +13,10 @@ RUN cd /root/test/SmokeTests/OOProcSmokeTests/durablePy && \
 
 # Step 2: Deploy and run pip install to get the Durable Functions SDK
 FROM mcr.microsoft.com/azure-functions/python:4-python3.11
+ARG PIP_INDEX_URL=https://pkgs.dev.azure.com/azfunc/public/_packaging/upstream-public/pypi/simple/
 COPY --from=build-env /root/test/SmokeTests/OOProcSmokeTests/durablePy /home/site/wwwroot
 ENV AzureWebJobsScriptRoot=/home/site/wwwroot \
     AzureFunctionsJobHost__Logging__Console__IsEnabled=true
 
 RUN cd /home/site/wwwroot && \
-    pip install -r requirements.txt
+    PIP_INDEX_URL="$PIP_INDEX_URL" pip install --requirement requirements.txt

@@ -142,8 +142,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc
                     builder.ConfigureServices(services =>
                     {
                         services.AddSingleton(this.extension);
+
+                        // Register the interceptor in DI so DefaultGrpcInterceptorActivator resolves
+                        // this singleton instead of constructing a new instance for every RPC.
+                        services.AddSingleton<TaskHubGrpcExceptionInterceptor>();
                         services.AddGrpc(options =>
                         {
+                            options.Interceptors.Add<TaskHubGrpcExceptionInterceptor>();
                             options.MaxReceiveMessageSize = int.MaxValue;
                             options.MaxSendMessageSize = int.MaxValue;
                         });
