@@ -24,6 +24,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     public class DurableClientBaseTests
     {
+        private readonly ITestOutputHelper output;
+
+        public DurableClientBaseTests(ITestOutputHelper output)
+        {
+            this.output = output;
+        }
+
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData("@invalid")]
@@ -165,6 +172,46 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task StartNewAsync_LogsKnownTargetInstanceId()
+        {
+            var serviceClient = new Mock<IOrchestrationServiceClient>();
+            (IDurableClient client, TestLogger logger) = this.CreateClientWithCapturedLogs(serviceClient.Object);
+
+            await client.StartNewAsync("ChildOrchestrator", "child-id");
+
+            Assert.Equal("child-id", GetLoggedTargetInstanceId(logger));
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task SignalEntityAsync_LogsKnownTargetInstanceId()
+        {
+            var serviceClient = new Mock<IOrchestrationServiceClient>();
+            (IDurableClient client, TestLogger logger) = this.CreateClientWithCapturedLogs(serviceClient.Object);
+            var entityId = new EntityId("Counter", "entity-key");
+
+            await client.SignalEntityAsync(entityId, "add");
+
+            Assert.Equal(EntityId.GetSchedulerIdFromEntityId(entityId), GetLoggedTargetInstanceId(logger));
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task RaiseEventAsync_LogsKnownTargetInstanceId()
+        {
+            var serviceClient = new Mock<IOrchestrationServiceClient>();
+            serviceClient
+                .Setup(client => client.GetOrchestrationStateAsync("valid_instance_id", false))
+                .ReturnsAsync(GetInstanceState(OrchestrationStatus.Running));
+            (IDurableClient client, TestLogger logger) = this.CreateClientWithCapturedLogs(serviceClient.Object);
+
+            await client.RaiseEventAsync("valid_instance_id", "approval");
+
+            Assert.Equal("valid_instance_id", GetLoggedTargetInstanceId(logger));
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task DurableClient_ExternalApp_StartNewAsync_ReturnsInstanceId()
         {
             var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
@@ -229,6 +276,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             var durableOrchestrationClient = this.GetDurableClient(orchestrationServiceClientMock.Object);
             Assert.ThrowsAny<InvalidOperationException>(() => durableOrchestrationClient.CreateHttpManagementPayload("testInstanceId"));
+        }
+
+        private (IDurableClient Client, TestLogger Logger) CreateClientWithCapturedLogs(
+            IOrchestrationServiceClient serviceClient)
+        {
+            var logger = new TestLogger(this.output, category: "UnitTest");
+            var options = new DurableTaskOptions { HubName = "TestTaskHub" };
+            var traceHelper = new EndToEndTraceHelper(logger, traceReplayEvents: false);
+            var storageProvider = new DurabilityProvider(
+                "test",
+                new Mock<IOrchestrationService>().Object,
+                serviceClient,
+                "test");
+            var attribute = new DurableClientAttribute { TaskHub = "TestTaskHub" };
+            var converter = new MessagePayloadDataConverter(new JsonSerializerSettings(), true);
+            var client = new DurableClient(storageProvider, null, attribute, converter, traceHelper, options);
+            return ((IDurableClient)client, logger);
+        }
+
+        private static object GetLoggedTargetInstanceId(TestLogger logger)
+        {
+            LogMessage message = Assert.Single(logger.LogMessages);
+            KeyValuePair<string, object> property = Assert.Single(
+                message.State,
+                item => item.Key == "targetInstanceId");
+            return property.Value;
         }
 
         private IDurableOrchestrationClient GetDurableClient(IOrchestrationServiceClient orchestrationServiceClientMockObject)

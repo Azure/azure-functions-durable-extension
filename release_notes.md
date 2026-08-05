@@ -21,6 +21,7 @@
 
 - Allow overriding orchestration version when starting orchestrations via APIs in PowerShell, Python, and Node.js (https://github.com/Azure/azure-functions-durable-extension/pull/3213)
 - Added `ClientOperationReceived` trace event to `DurableFunctionsEvents` for correlating out-of-process worker invocations with orchestration events. The event includes `FunctionInvocationId`, `OperationType`, and `InstanceId` fields for cross-log correlation. (#3317)
+- Existing extension-generated `FunctionScheduled` trace events now include a `TargetInstanceId` field for entity, sub-orchestration, and Durable Client scheduling paths when the target ID is known. Sub-orchestrations without an explicit ID report the target as not supplied because DTFx generates it downstream. This change does not add `FunctionScheduled` events to modern gRPC worker middleware paths, which do not currently emit that event. (#1496)
 
 ### Bug Fixes
 
