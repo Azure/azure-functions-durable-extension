@@ -31,8 +31,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         /// </summary>
         /// <param name="options">DurableTask options.</param>
         /// <param name="nameResolver">Name resolver used for environment variables.</param>
+        public TelemetryActivator(IOptions<DurableTaskOptions> options, INameResolver nameResolver)
+            : this(options, nameResolver, null)
+        {
+        }
+
+        /// <summary>
+        /// Constructor for initializing Distributed Tracing with a host telemetry configuration.
+        /// </summary>
+        /// <param name="options">DurableTask options.</param>
+        /// <param name="nameResolver">Name resolver used for environment variables.</param>
         /// <param name="telemetryConfiguration">Host telemetry configuration, when available.</param>
-        public TelemetryActivator(IOptions<DurableTaskOptions> options, INameResolver nameResolver, TelemetryConfiguration telemetryConfiguration = null)
+        public TelemetryActivator(IOptions<DurableTaskOptions> options, INameResolver nameResolver, TelemetryConfiguration telemetryConfiguration)
         {
             this.options = options.Value;
             this.nameResolver = nameResolver;
