@@ -3,7 +3,10 @@
 
 #nullable enable
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics.Tracing;
+using System.Linq;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -125,6 +128,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         // CallSubOrchestratorAsync(functionName, input). That must be logged as "not supplied"
         // rather than as an empty target instance ID.
         [InlineData((int)FunctionType.Orchestrator, "", null)]
+        [InlineData((int)FunctionType.Orchestrator, "   ", null)]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void FunctionScheduled_LogsTargetInstanceIdInStructuredState(
             int functionType,
@@ -152,6 +156,57 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             var state = Assert.IsAssignableFrom<IEnumerable<KeyValuePair<string, object>>>(logMessage.State);
             var targetInstanceIdState = Assert.Single(state, property => property.Key == "targetInstanceId");
             Assert.Equal(expectedLoggedTargetInstanceId, targetInstanceIdState.Value);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void FunctionScheduled_PreservesExistingMessagePrefixAndAppendsTargetInstanceId()
+        {
+            var testLogger = new TestLogger(this.output, category: "UnitTest");
+            var traceHelper = new EndToEndTraceHelper(testLogger, traceReplayEvents: false);
+
+            traceHelper.FunctionScheduled(
+                hubName: "TestHub",
+                functionName: "Child",
+                instanceId: "parent-id",
+                reason: "Parent",
+                functionType: FunctionType.Orchestrator,
+                isReplay: false,
+                targetInstanceId: "child-id");
+
+            string message = Assert.Single(testLogger.LogMessages).FormattedMessage;
+            Assert.Contains("IsReplay: False. State: Scheduled. RuntimeStatus: Pending.", message);
+            Assert.EndsWith("TargetInstanceId: child-id.", message);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void FunctionScheduled_EtwEvent201V3AppendsTargetInstanceId()
+        {
+            using var listener = new CapturingEventListener();
+
+            EtwEventSource.Instance.FunctionScheduled(
+                "hub",
+                "app",
+                "slot",
+                "function",
+                "source-id",
+                "reason",
+                "Entity",
+                "version",
+                false,
+                "@counter@key");
+
+            EventWrittenEventArgs captured = Assert.Single(
+                listener.Events,
+                item => item.EventId == 201 && item.Payload?.LastOrDefault()?.ToString() == "@counter@key");
+            Assert.Equal(3, captured.Version);
+            Assert.Equal(
+                new[] { "TaskHub", "AppName", "SlotName", "FunctionName", "InstanceId", "Reason", "FunctionType", "ExtensionVersion", "IsReplay", "TargetInstanceId" },
+                captured.PayloadNames);
+            Assert.Equal(
+                new object[] { "hub", "app", "slot", "function", "source-id", "reason", "Entity", "version", false, "@counter@key" },
+                captured.Payload);
         }
 
         [Fact]
@@ -218,6 +273,24 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
 
             // Assert - should not log when invocation ID is empty
             Assert.Empty(testLogger.LogMessages);
+        }
+
+        private sealed class CapturingEventListener : EventListener
+        {
+            public ConcurrentQueue<EventWrittenEventArgs> Events { get; } = new ConcurrentQueue<EventWrittenEventArgs>();
+
+            protected override void OnEventSourceCreated(EventSource eventSource)
+            {
+                if (eventSource.Name == "WebJobs-Extensions-DurableTask")
+                {
+                    this.EnableEvents(eventSource, EventLevel.LogAlways);
+                }
+            }
+
+            protected override void OnEventWritten(EventWrittenEventArgs eventData)
+            {
+                this.Events.Enqueue(eventData);
+            }
         }
     }
 }

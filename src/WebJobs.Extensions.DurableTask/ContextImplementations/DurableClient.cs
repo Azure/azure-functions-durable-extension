@@ -350,7 +350,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 EntityId.GetSchedulerIdFromEntityId(entityId),
                 reason: $"EntitySignal:{operationName}",
                 functionType: FunctionType.Entity,
-                isReplay: false);
+                isReplay: false,
+                targetInstanceId: instanceId);
         }
 
         private bool ClientReferencesCurrentApp(DurableClient client)
@@ -841,7 +842,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         instanceId,
                         reason: "RaiseEvent:" + eventName,
                         functionType: FunctionType.Orchestrator,
-                        isReplay: false);
+                        isReplay: false,
+                        targetInstanceId: instanceId);
                 }
                 else
                 {
@@ -1349,7 +1351,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 instanceId,
                 reason: reason,
                 functionType: FunctionType.Orchestrator,
-                isReplay: false);
+                isReplay: false,
+                targetInstanceId: instanceId);
 
             OrchestrationInstance instance = await createTask;
             return instance.InstanceId;

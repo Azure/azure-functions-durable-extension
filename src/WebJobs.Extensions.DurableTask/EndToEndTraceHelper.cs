@@ -194,11 +194,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (this.ShouldLogEvent(isReplay))
             {
-                // Callers that do not supply an explicit instance ID pass an empty string down this path.
+                // Callers that do not supply an explicit instance ID can pass blank text down this path.
                 // For example, CallSubOrchestratorAsync(functionName, input) forwards string.Empty and lets
-                // DTFx generate the ID, which is not visible here. Normalize those to null so the logs
+                // DTFx generate the ID, which is not visible here. Normalize blank values to null so the logs
                 // distinguish "not supplied" from a real ID rather than reporting an empty one.
-                targetInstanceId = string.IsNullOrEmpty(targetInstanceId) ? null : targetInstanceId;
+                targetInstanceId = string.IsNullOrWhiteSpace(targetInstanceId) ? null : targetInstanceId;
 
                 EtwEventSource.Instance.FunctionScheduled(
                     hubName,
@@ -213,9 +213,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     targetInstanceId);
 
                 this.logger.LogInformation(
-                    "{instanceId}: Function '{functionName} ({functionType})' scheduled. Reason: {reason}. IsReplay: {isReplay}. TargetInstanceId: {targetInstanceId}. State: {state}. RuntimeStatus: {runtimeStatus}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
-                    instanceId, functionName, functionType, reason, isReplay, targetInstanceId, FunctionState.Scheduled, OrchestrationRuntimeStatus.Pending, hubName,
-                    LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
+                    "{instanceId}: Function '{functionName} ({functionType})' scheduled. Reason: {reason}. IsReplay: {isReplay}. State: {state}. RuntimeStatus: {runtimeStatus}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}. TargetInstanceId: {targetInstanceId}.",
+                    instanceId, functionName, functionType, reason, isReplay, FunctionState.Scheduled, OrchestrationRuntimeStatus.Pending, hubName,
+                    LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++, targetInstanceId);
             }
         }
 
