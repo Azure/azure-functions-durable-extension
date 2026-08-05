@@ -24,6 +24,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private const string ChildInput = "{\"child\":1}";
         private const string FailedChildInput = "{\"child\":2}";
         private const string InFlightChildInput = "{\"child\":3}";
+        private const string CompletedChildInstanceId = "completed-child-instance";
+        private const string FailedChildInstanceId = "failed-child-instance";
+        private const string InFlightChildInstanceId = "in-flight-child-instance";
         private const string StringResult = "\"activity-result\"";
         private const string FailureResult = "\"failure-result\"";
         private const string ObjectResult = "{\"ok\":true}";
@@ -61,7 +64,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [MemberData(nameof(HistoryProjectionOptions))]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task GetStatusAsync_ProjectsSubOrchestrationHistoryWithoutChangingPublicShape(bool showInput, bool showHistoryOutput)
+        public async Task GetStatusAsync_ProjectsSubOrchestrationHistoryWithInstanceIds(bool showInput, bool showHistoryOutput)
         {
             JArray actual = await GetProjectedHistoryAsync(CreateSubOrchestrationHistory(), showInput, showHistoryOutput);
 
@@ -390,6 +393,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     40,
                     StartTime,
                     new JProperty("Name", "RepeatedChild"),
+                    new JProperty("InstanceId", CompletedChildInstanceId),
                     new JProperty("Input", ChildInput),
                     new JProperty("Version", "v1")),
                 CreateEvent(
@@ -404,6 +408,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     50,
                     StartTime.AddSeconds(2),
                     new JProperty("Name", "RepeatedChild"),
+                    new JProperty("InstanceId", FailedChildInstanceId),
                     new JProperty("Input", FailedChildInput),
                     new JProperty("Version", "v2")),
                 CreateEvent(
@@ -420,6 +425,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     60,
                     StartTime.AddSeconds(4),
                     new JProperty("Name", "InFlightChild"),
+                    new JProperty("InstanceId", InFlightChildInstanceId),
                     new JProperty("Input", InFlightChildInput),
                     new JProperty("Version", "v3"),
                     new JProperty("Extension", "in-flight-child-extension"))).ToString(Formatting.None);
@@ -440,6 +446,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             completed["Extension"] = "completed-child-extension";
             completed["ScheduledTime"] = StartTime.ToLocalTime();
             completed["FunctionName"] = "RepeatedChild";
+            completed["InstanceId"] = CompletedChildInstanceId;
             if (showInput)
             {
                 completed["Input"] = ChildInput;
@@ -455,6 +462,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 ["Extension"] = "failed-child-extension",
                 ["ScheduledTime"] = StartTime.AddSeconds(2).ToLocalTime(),
                 ["FunctionName"] = "RepeatedChild",
+                ["InstanceId"] = FailedChildInstanceId,
             };
             if (showInput)
             {
@@ -466,6 +474,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 ["EventType"] = "SubOrchestrationInstanceCreated",
                 ["Timestamp"] = StartTime.AddSeconds(4),
                 ["Name"] = "InFlightChild",
+                ["InstanceId"] = InFlightChildInstanceId,
             };
             if (showInput)
             {
