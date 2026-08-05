@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using DurableTask.ApplicationInsights;
 using DurableTask.Core;
@@ -21,6 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
     {
         private readonly DurableTaskOptions options;
         private readonly INameResolver nameResolver;
+        private readonly TelemetryConfiguration hostTelemetryConfiguration;
         private EndToEndTraceHelper endToEndTraceHelper;
         private TelemetryClient telemetryClient;
 
@@ -29,10 +31,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         /// </summary>
         /// <param name="options">DurableTask options.</param>
         /// <param name="nameResolver">Name resolver used for environment variables.</param>
-        public TelemetryActivator(IOptions<DurableTaskOptions> options, INameResolver nameResolver)
+        /// <param name="telemetryConfiguration">Host telemetry configuration, when available.</param>
+        public TelemetryActivator(IOptions<DurableTaskOptions> options, INameResolver nameResolver, TelemetryConfiguration telemetryConfiguration = null)
         {
             this.options = options.Value;
             this.nameResolver = nameResolver;
+            this.hostTelemetryConfiguration = telemetryConfiguration;
         }
 
         /// <summary>
@@ -180,13 +184,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 
         private TelemetryConfiguration SetupTelemetryConfiguration()
         {
-            TelemetryConfiguration config = TelemetryConfiguration.CreateDefault();
             if (this.OnSend != null)
             {
+                TelemetryConfiguration config = this.CreateStandaloneTelemetryConfiguration();
                 config.TelemetryChannel = new NoOpTelemetryChannel { OnSend = this.OnSend };
+                return config;
             }
 
-            config.TelemetryInitializers.Add(new DurableTaskInstanceIdTelemetryInitializer(this.options.Tracing.IncludeInstanceIdInOperationName));
+            if (this.hostTelemetryConfiguration != null)
+            {
+                this.EnsureDurableTelemetryInitializers(this.hostTelemetryConfiguration);
+                return this.hostTelemetryConfiguration;
+            }
+
+            return this.CreateStandaloneTelemetryConfiguration();
+        }
+
+        private TelemetryConfiguration CreateStandaloneTelemetryConfiguration()
+        {
+            TelemetryConfiguration config = TelemetryConfiguration.CreateDefault();
+            this.EnsureDurableTelemetryInitializers(config);
 
             string resolvedInstrumentationKey = this.nameResolver.Resolve("APPINSIGHTS_INSTRUMENTATIONKEY");
             string resolvedConnectionString = this.nameResolver.Resolve("APPLICATIONINSIGHTS_CONNECTION_STRING");
@@ -239,6 +256,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             }
 
             return config;
+        }
+
+        private void EnsureDurableTelemetryInitializers(TelemetryConfiguration config)
+        {
+            if (!config.TelemetryInitializers.OfType<DurableTaskInstanceIdTelemetryInitializer>().Any())
+            {
+                config.TelemetryInitializers.Add(
+                    new DurableTaskInstanceIdTelemetryInitializer(this.options.Tracing.IncludeInstanceIdInOperationName));
+            }
         }
     }
 }
