@@ -56,6 +56,15 @@ $ProjectTemporaryPath = Join-Path ([System.IO.Path]::GetTempPath()) "DurableTask
 New-Item -Path $ProjectTemporaryPath -ItemType Directory -ErrorAction SilentlyContinue
 $WebJobsExtensionProjectDirectory = Join-Path $ProjectBaseDirectory "src\WebJobs.Extensions.DurableTask"
 $E2EAppParentDirectory = Join-Path $ProjectBaseDirectory "test\e2e\Apps"
+$CfsNpmConfigPath = (Resolve-Path (Join-Path $ProjectBaseDirectory "eng\cfs\.npmrc")).Path
+
+if (!$env:NPM_CONFIG_USERCONFIG) {
+  $env:NPM_CONFIG_USERCONFIG = $CfsNpmConfigPath
+}
+
+if (!$env:PIP_INDEX_URL) {
+  $env:PIP_INDEX_URL = "https://pkgs.dev.azure.com/azfunc/public/_packaging/upstream-public/pypi/simple/"
+}
 
 $LocalNugetCacheDirectory = $env:NUGET_PACKAGES
 if (!$LocalNugetCacheDirectory) {
@@ -171,7 +180,7 @@ function InstallExtensionAndBuildTestApp($testAppDir) {
         .  ./.venv/bin/Activate.ps1
       }
 
-      python -m pip install --upgrade -r requirements.txt
+      python -m pip install --upgrade --requirement "requirements.txt"
       StopOnFailedExecution
 
       deactivate
