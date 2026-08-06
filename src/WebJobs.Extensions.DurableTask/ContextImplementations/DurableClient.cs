@@ -178,7 +178,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (this.ReferencesCurrentApp())
             {
-                this.config?.ThrowIfOrchestratorFunctionIsUnavailable(orchestratorFunctionName);
+                this.config?.ThrowIfOrchestratorFunctionIsMissingOrDisabled(orchestratorFunctionName);
             }
 
             if (string.IsNullOrEmpty(instanceId))
@@ -1265,7 +1265,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (this.ReferencesCurrentApp())
             {
-                this.config?.ThrowIfOrchestratorFunctionIsUnavailable(state.Name);
+                this.config?.ThrowIfOrchestratorFunctionIsMissingOrDisabled(state.Name);
             }
 
             JToken input = ParseToJToken(state.Input);

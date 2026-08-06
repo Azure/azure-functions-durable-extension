@@ -93,7 +93,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void ThrowIfOrchestratorFunctionIsUnavailable_ActiveOutOfProcOrchestrator_DoesNotThrow()
+        public void ThrowIfOrchestratorFunctionIsMissingOrDisabled_ActiveOutOfProcOrchestrator_DoesNotThrow()
         {
             var extension = CreateExtension();
             var mockExecutor = new Mock<ITriggeredFunctionExecutor>();
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 new FunctionName("ActiveOrchestrator"),
                 new RegisteredFunctionInfo(mockExecutor.Object, isOutOfProc: true));
 
-            extension.ThrowIfOrchestratorFunctionIsUnavailable("ActiveOrchestrator");
+            extension.ThrowIfOrchestratorFunctionIsMissingOrDisabled("ActiveOrchestrator");
         }
 
         [Fact]

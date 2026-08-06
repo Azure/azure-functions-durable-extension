@@ -130,6 +130,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Times.Never());
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task StartNewAsync_DeregisteredOrchestrator_SchedulesInstance()
+        {
+            const string FunctionName = "DrainingOrchestrator";
+            const string InstanceId = "new-instance";
+            var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
+            orchestrationServiceClientMock
+                .Setup(x => x.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()))
+                .Returns(Task.CompletedTask);
+            var storageProvider = new DurabilityProvider(
+                "test",
+                new Mock<IOrchestrationService>().Object,
+                orchestrationServiceClientMock.Object,
+                TestConstants.ConnectionName);
+            var durableExtension = GetDurableTaskConfig();
+            var functionName = new FunctionName(FunctionName);
+            durableExtension.RegisterOrchestrator(
+                functionName,
+                new RegisteredFunctionInfo(executor: null, isOutOfProc: true));
+            durableExtension.DeregisterOrchestrator(functionName);
+            var durableClient = (IDurableOrchestrationClient)new DurableClient(
+                storageProvider,
+                durableExtension,
+                durableExtension.HttpApiHandler,
+                new DurableClientAttribute { });
+
+            string actualInstanceId = await durableClient.StartNewAsync(
+                FunctionName,
+                InstanceId);
+
+            Assert.Equal(InstanceId, actualInstanceId);
+            orchestrationServiceClientMock.Verify(
+                x => x.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()),
+                Times.Once());
+        }
+
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData("@invalid")]

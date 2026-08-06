@@ -1495,9 +1495,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        internal void ThrowIfOrchestratorFunctionIsUnavailable(string name)
+        internal void ThrowIfOrchestratorFunctionIsMissingOrDisabled(string name)
         {
-            if (this.GetOrchestratorInfo(new FunctionName(name)) == null)
+            RegisteredFunctionInfo info = this.GetOrchestratorInfo(new FunctionName(name));
+
+            // A null registration means the function was indexed but disabled, so its listener was
+            // never created. IsDeregistered is deliberately allowed because it represents transient,
+            // instance-local listener shutdown; the durable start can run on another or restarted host.
+            if (info == null)
             {
                 throw new OrchestratorFunctionUnavailableException(this.GetInvalidOrchestratorFunctionMessage(name));
             }
