@@ -267,16 +267,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                     ApplicationInsightsTokenCredentialOptions tokenCredentialOptions =
                         ApplicationInsightsTokenCredentialOptions.ParseAuthenticationString(resolvedAuthenticationString);
                     bool userAssignedIdentity = tokenCredentialOptions.ClientId != null;
-                    object tokenCredential = GetAzureTokenCredential(this.hostTelemetryConfiguration);
-                    if (tokenCredential == null)
-                    {
-                        ManagedIdentityId managedIdentityId = userAssignedIdentity
-                            ? ManagedIdentityId.FromUserAssignedClientId(tokenCredentialOptions.ClientId)
-                            : ManagedIdentityId.SystemAssigned;
-                        tokenCredential = new ManagedIdentityCredential(managedIdentityId);
-                    }
-
-                    config.SetAzureTokenCredential(tokenCredential);
+                    ApplyAzureTokenCredential(config, this.hostTelemetryConfiguration, tokenCredentialOptions);
                     this.endToEndTraceHelper.ExtensionInformationalEvent(
                         hubName: this.options.HubName,
                         functionName: string.Empty,
@@ -301,6 +292,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             }
 
             return config;
+        }
+
+        internal static void ApplyAzureTokenCredential(
+            TelemetryConfiguration durableConfiguration,
+            TelemetryConfiguration hostConfiguration,
+            ApplicationInsightsTokenCredentialOptions tokenCredentialOptions)
+        {
+            object tokenCredential = GetAzureTokenCredential(hostConfiguration);
+            if (tokenCredential == null)
+            {
+                ManagedIdentityId managedIdentityId = tokenCredentialOptions.ClientId != null
+                    ? ManagedIdentityId.FromUserAssignedClientId(tokenCredentialOptions.ClientId)
+                    : ManagedIdentityId.SystemAssigned;
+                tokenCredential = new ManagedIdentityCredential(managedIdentityId);
+            }
+
+            durableConfiguration.SetAzureTokenCredential(tokenCredential);
         }
 
         /// <summary>

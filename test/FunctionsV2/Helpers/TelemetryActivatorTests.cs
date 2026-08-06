@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
+using ApplicationInsightsTokenCredentialOptions = Microsoft.Azure.WebJobs.Logging.ApplicationInsights.TokenCredentialOptions;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
@@ -29,6 +30,41 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             Assert.NotNull(method);
             Assert.Same(credential, method.Invoke(obj: null, new object[] { hostConfiguration }));
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void ApplyAzureTokenCredential_ReusesHostCredential()
+        {
+            using TelemetryConfiguration hostConfiguration = TelemetryConfiguration.CreateDefault();
+            using TelemetryConfiguration durableConfiguration = TelemetryConfiguration.CreateDefault();
+            var credential = new ManagedIdentityCredential(ManagedIdentityId.SystemAssigned);
+            hostConfiguration.SetAzureTokenCredential(credential);
+            ApplicationInsightsTokenCredentialOptions options =
+                ApplicationInsightsTokenCredentialOptions.ParseAuthenticationString("Authorization=AAD");
+
+            TelemetryActivator.ApplyAzureTokenCredential(durableConfiguration, hostConfiguration, options);
+
+            Assert.Same(credential, TelemetryActivator.GetAzureTokenCredential(durableConfiguration));
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData("Authorization=AAD")]
+        [InlineData("Authorization=AAD;ClientId=00000000-0000-0000-0000-000000000001")]
+        public void ApplyAzureTokenCredential_WithoutHostCredential_UsesManagedIdentity(string authenticationString)
+        {
+            using TelemetryConfiguration durableConfiguration = TelemetryConfiguration.CreateDefault();
+            ApplicationInsightsTokenCredentialOptions options =
+                ApplicationInsightsTokenCredentialOptions.ParseAuthenticationString(authenticationString);
+
+            TelemetryActivator.ApplyAzureTokenCredential(
+                durableConfiguration,
+                hostConfiguration: null,
+                options);
+
+            Assert.IsType<ManagedIdentityCredential>(
+                TelemetryActivator.GetAzureTokenCredential(durableConfiguration));
         }
 
         [Fact]
