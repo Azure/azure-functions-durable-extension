@@ -212,13 +212,50 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     await providerCalled.Task.WaitAsync(TimeSpan.FromSeconds(5));
                     cancellation.Cancel();
                     await call.ResponseAsync;
-                });
+                },
+                extension => extension.RegisterOrchestrator(
+                    new FunctionName("TestOrchestration"),
+                    new RegisteredFunctionInfo(executor: null, isOutOfProc: true)));
 
             Assert.Equal(StatusCode.Cancelled, rpcException.StatusCode);
             Assert.DoesNotContain(
                 this.loggerProvider.GetAllLogMessages(),
                 message => message.Level == LogLevel.Warning &&
                     message.FormattedMessage.Contains("StartInstance"));
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task TestGrpcListener_RejectsDisabledOrchestrator()
+        {
+            const string FunctionName = "DisabledOrchestrator";
+            Mock<DurabilityProvider> durabilityProvider = CreateDurabilityProviderMock(
+                new Mock<IOrchestrationService>().Object,
+                new Mock<IOrchestrationServiceClient>().Object);
+            durabilityProvider
+                .Setup(provider => provider.CreateTaskOrchestrationAsync(
+                    It.IsAny<TaskMessage>(),
+                    It.IsAny<OrchestrationStatus[]>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            RpcException rpcException = await this.InvokeFailingRpcAsync(
+                "DisabledOrchestratorStart",
+                durabilityProvider.Object,
+                async client => await client.StartInstanceAsync(
+                    new P.CreateInstanceRequest { Name = FunctionName }).ResponseAsync,
+                extension => extension.RegisterOrchestrator(
+                    new FunctionName(FunctionName),
+                    orchestratorInfo: null));
+
+            Assert.Equal(StatusCode.InvalidArgument, rpcException.StatusCode);
+            Assert.Contains("doesn't exist, is disabled, or is not an orchestrator function", rpcException.Status.Detail);
+            durabilityProvider.Verify(
+                provider => provider.CreateTaskOrchestrationAsync(
+                    It.IsAny<TaskMessage>(),
+                    It.IsAny<OrchestrationStatus[]>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Never);
         }
 
         [Theory]
@@ -923,9 +960,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private async Task<RpcException> InvokeFailingRpcAsync(
             string hubName,
             DurabilityProvider durabilityProvider,
-            Func<P.TaskHubSidecarService.TaskHubSidecarServiceClient, Task> invoke)
+            Func<P.TaskHubSidecarService.TaskHubSidecarServiceClient, Task> invoke,
+            Action<DurableTaskExtension> configureExtension = null)
         {
             using DurableTaskExtension extension = this.CreateExtension(hubName, durabilityProvider);
+            configureExtension?.Invoke(extension);
             ILocalGrpcListener listener = LocalGrpcListener.Create(extension, LocalGrpcListenerMode.AspNetCore);
 
             try

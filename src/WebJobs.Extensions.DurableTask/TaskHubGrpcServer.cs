@@ -59,6 +59,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             try
             {
+                this.extension.ThrowIfOrchestratorFunctionIsUnavailable(request.Name);
+
                 List<OrchestrationStatus> allStatuses = System.Enum
                     .GetValues<OrchestrationStatus>()
                     .ToList();

@@ -176,9 +176,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc />
         async Task<string> IDurableOrchestrationClient.StartNewAsync<T>(string orchestratorFunctionName, string instanceId, T input)
         {
-            if (this.ClientReferencesCurrentApp(this))
+            if (this.ReferencesCurrentApp())
             {
-                this.config?.ThrowIfFunctionDoesNotExist(orchestratorFunctionName, FunctionType.Orchestrator);
+                this.config?.ThrowIfOrchestratorFunctionIsUnavailable(orchestratorFunctionName);
             }
 
             if (string.IsNullOrEmpty(instanceId))
@@ -359,6 +359,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return !client.attribute.ExternalClient &&
                 this.TaskHubMatchesCurrentApp(client) &&
                 this.ConnectionNameMatchesCurrentApp(client);
+        }
+
+        internal bool ReferencesCurrentApp()
+        {
+            return this.ClientReferencesCurrentApp(this);
         }
 
         private bool TaskHubMatchesCurrentApp(DurableClient client)

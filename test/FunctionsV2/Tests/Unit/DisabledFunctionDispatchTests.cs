@@ -93,7 +93,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void ThrowIfFunctionDoesNotExist_ActiveOutOfProcOrchestrator_DoesNotThrow()
+        public void ThrowIfOrchestratorFunctionIsUnavailable_ActiveOutOfProcOrchestrator_DoesNotThrow()
         {
             var extension = CreateExtension();
             var mockExecutor = new Mock<ITriggeredFunctionExecutor>();
@@ -101,7 +101,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 new FunctionName("ActiveOrchestrator"),
                 new RegisteredFunctionInfo(mockExecutor.Object, isOutOfProc: true));
 
-            extension.ThrowIfFunctionDoesNotExist("ActiveOrchestrator", FunctionType.Orchestrator);
+            extension.ThrowIfOrchestratorFunctionIsUnavailable("ActiveOrchestrator");
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void ThrowIfFunctionDoesNotExist_DisabledOrchestrator_DoesNotBreakReplay()
+        {
+            // Deterministic orchestration calls use this helper while replaying history. A disabled
+            // orchestrator remains a known function, so availability checks belong only at new-start
+            // entry points and must not make existing sub-orchestration history fail to replay.
+            var extension = CreateExtension();
+            extension.RegisterOrchestrator(new FunctionName("DisabledOrchestrator"), orchestratorInfo: null);
+
+            extension.ThrowIfFunctionDoesNotExist("DisabledOrchestrator", FunctionType.Orchestrator);
         }
 
         [Fact]
