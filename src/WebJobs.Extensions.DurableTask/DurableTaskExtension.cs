@@ -1485,7 +1485,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 throw new ArgumentException(this.GetInvalidActivityFunctionMessage(name));
             }
-            else if (functionType == FunctionType.Orchestrator && !this.knownOrchestrators.ContainsKey(functionName))
+            else if (functionType == FunctionType.Orchestrator && this.GetOrchestratorInfo(functionName) == null)
             {
                 throw new ArgumentException(this.GetInvalidOrchestratorFunctionMessage(name));
             }

@@ -93,6 +93,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void ThrowIfFunctionDoesNotExist_ActiveOutOfProcOrchestrator_DoesNotThrow()
+        {
+            var extension = CreateExtension();
+            var mockExecutor = new Mock<ITriggeredFunctionExecutor>();
+            extension.RegisterOrchestrator(
+                new FunctionName("ActiveOrchestrator"),
+                new RegisteredFunctionInfo(mockExecutor.Object, isOutOfProc: true));
+
+            extension.ThrowIfFunctionDoesNotExist("ActiveOrchestrator", FunctionType.Orchestrator);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void DisabledEntity_IsTreatedAsUnavailableByClassicDispatch()
         {
             // The classic (in-proc / HTTP-protocol) entity dispatch path in EntityMiddleware treats an
