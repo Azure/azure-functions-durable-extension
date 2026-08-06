@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Reflection;
 using System.Security.Authentication;
 using System.Threading.Tasks;
 using Azure.Identity;
@@ -25,6 +26,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
     {
         private readonly DurableTaskOptions options;
         private readonly INameResolver nameResolver;
+        private readonly TelemetryConfiguration hostTelemetryConfiguration;
         private EndToEndTraceHelper endToEndTraceHelper;
         private TelemetryClient telemetryClient;
 
@@ -34,9 +36,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         /// <param name="options">DurableTask options.</param>
         /// <param name="nameResolver">Name resolver used for environment variables.</param>
         public TelemetryActivator(IOptions<DurableTaskOptions> options, INameResolver nameResolver)
+            : this(options, nameResolver, hostTelemetryConfiguration: null)
+        {
+        }
+
+        /// <summary>
+        /// Constructor for initializing Distributed Tracing with the host telemetry configuration.
+        /// </summary>
+        /// <param name="options">DurableTask options.</param>
+        /// <param name="nameResolver">Name resolver used for environment variables.</param>
+        /// <param name="hostTelemetryConfiguration">Application Insights configuration owned by the host.</param>
+        public TelemetryActivator(
+            IOptions<DurableTaskOptions> options,
+            INameResolver nameResolver,
+            TelemetryConfiguration hostTelemetryConfiguration)
         {
             this.options = options.Value;
             this.nameResolver = nameResolver;
+            this.hostTelemetryConfiguration = hostTelemetryConfiguration;
         }
 
         /// <summary>
@@ -250,11 +267,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                     ApplicationInsightsTokenCredentialOptions tokenCredentialOptions =
                         ApplicationInsightsTokenCredentialOptions.ParseAuthenticationString(resolvedAuthenticationString);
                     bool userAssignedIdentity = tokenCredentialOptions.ClientId != null;
-                    ManagedIdentityId managedIdentityId = userAssignedIdentity
-                        ? ManagedIdentityId.FromUserAssignedClientId(tokenCredentialOptions.ClientId)
-                        : ManagedIdentityId.SystemAssigned;
+                    object tokenCredential = GetAzureTokenCredential(this.hostTelemetryConfiguration);
+                    if (tokenCredential == null)
+                    {
+                        ManagedIdentityId managedIdentityId = userAssignedIdentity
+                            ? ManagedIdentityId.FromUserAssignedClientId(tokenCredentialOptions.ClientId)
+                            : ManagedIdentityId.SystemAssigned;
+                        tokenCredential = new ManagedIdentityCredential(managedIdentityId);
+                    }
 
-                    config.SetAzureTokenCredential(new ManagedIdentityCredential(managedIdentityId));
+                    config.SetAzureTokenCredential(tokenCredential);
                     this.endToEndTraceHelper.ExtensionInformationalEvent(
                         hubName: this.options.HubName,
                         functionName: string.Empty,
@@ -279,6 +301,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             }
 
             return config;
+        }
+
+        internal static object GetAzureTokenCredential(TelemetryConfiguration configuration)
+        {
+            if (configuration == null)
+            {
+                return null;
+            }
+
+            PropertyInfo envelopeProperty = typeof(TelemetryConfiguration).GetProperty(
+                "CredentialEnvelope",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            object credentialEnvelope = envelopeProperty?.GetValue(configuration);
+            PropertyInfo credentialProperty = credentialEnvelope?.GetType().GetProperty(
+                "Credential",
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            return credentialProperty?.GetValue(credentialEnvelope);
         }
 
         private void LogInvalidAuthenticationString()
