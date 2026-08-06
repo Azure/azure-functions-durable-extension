@@ -58,6 +58,7 @@
   <ItemGroup>
     <PackageReference Include="Azure.Identity" />
     <PackageReference Include="Microsoft.Azure.WebJobs" />
+    <PackageReference Include="Microsoft.Azure.WebJobs.Logging.ApplicationInsights" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Rpc" />
     <PackageReference Include="Microsoft.Azure.DurableTask.Core" />
     <PackageReference Include="Microsoft.Azure.DurableTask.AzureStorage" />

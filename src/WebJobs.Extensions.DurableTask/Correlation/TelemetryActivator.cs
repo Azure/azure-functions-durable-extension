@@ -2,15 +2,19 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Security.Authentication;
 using System.Threading.Tasks;
+using Azure.Identity;
 using DurableTask.ApplicationInsights;
 using DurableTask.Core;
 using DurableTask.Core.Settings;
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.Channel;
 using Microsoft.ApplicationInsights.Extensibility;
+using Microsoft.Azure.WebJobs.Logging.ApplicationInsights;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using ApplicationInsightsTokenCredentialOptions = Microsoft.Azure.WebJobs.Logging.ApplicationInsights.TokenCredentialOptions;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 {
@@ -190,6 +194,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 
             string resolvedInstrumentationKey = this.nameResolver.Resolve("APPINSIGHTS_INSTRUMENTATIONKEY");
             string resolvedConnectionString = this.nameResolver.Resolve("APPLICATIONINSIGHTS_CONNECTION_STRING");
+            string resolvedAuthenticationString = this.nameResolver.Resolve("APPLICATIONINSIGHTS_AUTHENTICATION_STRING");
 
             bool instrumentationKeyProvided = !string.IsNullOrEmpty(resolvedInstrumentationKey);
             bool connectionStringProvided = !string.IsNullOrEmpty(resolvedConnectionString);
@@ -238,7 +243,51 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                 config.ConnectionString = resolvedConnectionString;
             }
 
+            if (!string.IsNullOrWhiteSpace(resolvedAuthenticationString))
+            {
+                try
+                {
+                    ApplicationInsightsTokenCredentialOptions tokenCredentialOptions =
+                        ApplicationInsightsTokenCredentialOptions.ParseAuthenticationString(resolvedAuthenticationString);
+                    bool userAssignedIdentity = tokenCredentialOptions.ClientId != null;
+                    ManagedIdentityId managedIdentityId = userAssignedIdentity
+                        ? ManagedIdentityId.FromUserAssignedClientId(tokenCredentialOptions.ClientId)
+                        : ManagedIdentityId.SystemAssigned;
+
+                    config.SetAzureTokenCredential(new ManagedIdentityCredential(managedIdentityId));
+                    this.endToEndTraceHelper.ExtensionInformationalEvent(
+                        hubName: this.options.HubName,
+                        functionName: string.Empty,
+                        instanceId: string.Empty,
+                        message:
+                            "Microsoft Entra authentication enabled for Durable distributed tracing using the "
+                            + $"{(userAssignedIdentity ? "user-assigned" : "system-assigned")} managed identity.",
+                        writeToUserLogs: true);
+                }
+                catch (AuthenticationException)
+                {
+                    this.LogInvalidAuthenticationString();
+                }
+                catch (FormatException)
+                {
+                    this.LogInvalidAuthenticationString();
+                }
+                catch (ArgumentException)
+                {
+                    this.LogInvalidAuthenticationString();
+                }
+            }
+
             return config;
+        }
+
+        private void LogInvalidAuthenticationString()
+        {
+            this.endToEndTraceHelper.ExtensionWarningEvent(
+                hubName: this.options.HubName,
+                functionName: string.Empty,
+                instanceId: string.Empty,
+                message: "APPLICATIONINSIGHTS_AUTHENTICATION_STRING is invalid and will not be used for Durable distributed tracing.");
         }
     }
 }
