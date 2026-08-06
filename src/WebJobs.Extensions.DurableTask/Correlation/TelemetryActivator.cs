@@ -296,13 +296,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                 }
                 catch (ArgumentException)
                 {
-                    this.LogInvalidAuthenticationString();
+                    this.LogAuthenticationStringCouldNotBeApplied();
                 }
             }
 
             return config;
         }
 
+        /// <summary>
+        /// Gets the host credential so the private Durable telemetry configuration uses the same
+        /// Azure.Core type loaded by the Functions host. Creating a new credential in the function
+        /// app load context can be rejected by the host's Application Insights SDK.
+        /// </summary>
         internal static object GetAzureTokenCredential(TelemetryConfiguration configuration)
         {
             if (configuration == null)
@@ -327,6 +332,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                 functionName: string.Empty,
                 instanceId: string.Empty,
                 message: "APPLICATIONINSIGHTS_AUTHENTICATION_STRING is invalid and will not be used for Durable distributed tracing.");
+        }
+
+        private void LogAuthenticationStringCouldNotBeApplied()
+        {
+            this.endToEndTraceHelper.ExtensionWarningEvent(
+                hubName: this.options.HubName,
+                functionName: string.Empty,
+                instanceId: string.Empty,
+                message: "APPLICATIONINSIGHTS_AUTHENTICATION_STRING could not be applied and will not be used for Durable distributed tracing.");
         }
     }
 }

@@ -6,7 +6,9 @@ using Azure.Identity;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Moq;
 using Xunit;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
@@ -31,17 +33,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void Constructor_AcceptsHostTelemetryConfiguration()
+        public void DependencyInjection_SelectsHostTelemetryConfigurationConstructor()
         {
-            ConstructorInfo constructor = typeof(TelemetryActivator).GetConstructor(
-                new[]
-                {
-                    typeof(IOptions<DurableTaskOptions>),
-                    typeof(INameResolver),
-                    typeof(TelemetryConfiguration),
-                });
+            using TelemetryConfiguration hostConfiguration = TelemetryConfiguration.CreateDefault();
+            var services = new ServiceCollection();
+            services.AddSingleton<IOptions<DurableTaskOptions>>(
+                Microsoft.Extensions.Options.Options.Create(new DurableTaskOptions()));
+            services.AddSingleton(Mock.Of<INameResolver>());
+            services.AddSingleton(hostConfiguration);
+            services.AddSingleton<ITelemetryActivator, TelemetryActivator>();
 
-            Assert.NotNull(constructor);
+            using ServiceProvider provider = services.BuildServiceProvider();
+            TelemetryActivator activator =
+                Assert.IsType<TelemetryActivator>(provider.GetRequiredService<ITelemetryActivator>());
+            FieldInfo field = typeof(TelemetryActivator).GetField(
+                "hostTelemetryConfiguration",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+
+            Assert.NotNull(field);
+            Assert.Same(hostConfiguration, field.GetValue(activator));
         }
     }
 }
