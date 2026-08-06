@@ -298,9 +298,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     validator.Invoke();
                 }
 
-                // TODO: There should be two calls, but the termination notification is not being fired.
-                //       https://github.com/Azure/azure-functions-durable-extension/issues/286
-                Assert.Equal(1, callCount);
+                Assert.Equal(2, callCount);
                 await host.StopAsync();
             }
         }
