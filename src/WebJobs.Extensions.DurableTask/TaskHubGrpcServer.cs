@@ -61,7 +61,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 if (this.GetClient(context) is DurableClient durableClient && durableClient.ReferencesCurrentApp())
                 {
-                    this.extension.ThrowIfOrchestratorFunctionIsMissingOrDisabled(request.Name);
+                    this.extension.ThrowIfOrchestratorFunctionIsDisabled(request.Name);
                 }
 
                 List<OrchestrationStatus> allStatuses = System.Enum

@@ -959,7 +959,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     if (durableClient.ReferencesCurrentApp())
                     {
-                        this.config.ThrowIfOrchestratorFunctionIsMissingOrDisabled(functionName);
+                        this.config.ThrowIfOrchestratorFunctionIsDisabled(functionName);
                     }
 
                     var instance = new OrchestrationInstance

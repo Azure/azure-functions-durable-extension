@@ -51,6 +51,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await Assert.ThrowsAnyAsync<ArgumentException>(async () => await durableClient.StartNewAsync("anyOrchestratorFunction", instanceId, new { message = "any obj" }));
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task StartNewAsync_MissingOrchestrator_ThrowsException()
+        {
+            var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
+            orchestrationServiceClientMock
+                .Setup(x => x.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()))
+                .Returns(Task.CompletedTask);
+            var storageProvider = new DurabilityProvider(
+                "test",
+                new Mock<IOrchestrationService>().Object,
+                orchestrationServiceClientMock.Object,
+                TestConstants.ConnectionName);
+            var durableExtension = GetDurableTaskConfig();
+            var durableClient = (IDurableOrchestrationClient)new DurableClient(
+                storageProvider,
+                durableExtension,
+                durableExtension.HttpApiHandler,
+                new DurableClientAttribute());
+
+            ArgumentException exception = await Assert.ThrowsAnyAsync<ArgumentException>(
+                () => durableClient.StartNewAsync("MissingOrchestrator"));
+
+            Assert.Contains("doesn't exist, is disabled, or is not an orchestrator function", exception.Message);
+            orchestrationServiceClientMock.Verify(
+                x => x.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()),
+                Times.Never());
+        }
+
         [Theory]
         [InlineData(null)]
         [InlineData("durabletaskhub")]
