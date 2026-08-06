@@ -224,11 +224,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     message.FormattedMessage.Contains("StartInstance"));
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task TestGrpcListener_RejectsDisabledOrchestrator()
+        public async Task TestGrpcListener_RejectsDisabledOrchestrator(bool useCaseVariantTaskHub)
         {
             const string FunctionName = "DisabledOrchestrator";
+            Metadata headers = useCaseVariantTaskHub
+                ? new Metadata { { TaskHubMetadataKey, "disabledorchestratorstart" } }
+                : null;
             Mock<DurabilityProvider> durabilityProvider = CreateDurabilityProviderMock(
                 new Mock<IOrchestrationService>().Object,
                 new Mock<IOrchestrationServiceClient>().Object);
@@ -243,7 +248,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 "DisabledOrchestratorStart",
                 durabilityProvider.Object,
                 async client => await client.StartInstanceAsync(
-                    new P.CreateInstanceRequest { Name = FunctionName }).ResponseAsync,
+                    new P.CreateInstanceRequest { Name = FunctionName },
+                    headers).ResponseAsync,
                 extension => extension.RegisterOrchestrator(
                     new FunctionName(FunctionName),
                     orchestratorInfo: null));
@@ -317,12 +323,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Times.Once);
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task TestGrpcListener_RestartRejectsDisabledOrchestrator()
+        public async Task TestGrpcListener_RestartRejectsDisabledOrchestrator(bool useCaseVariantTaskHub)
         {
             const string InstanceId = "completed-instance";
             const string FunctionName = "DisabledOrchestrator";
+            Metadata headers = useCaseVariantTaskHub
+                ? new Metadata { { TaskHubMetadataKey, "disabledorchestratorrestart" } }
+                : null;
             var orchestrationServiceClient = new Mock<IOrchestrationServiceClient>();
             orchestrationServiceClient
                 .Setup(client => client.GetOrchestrationStateAsync(InstanceId, false))
@@ -349,7 +360,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     {
                         InstanceId = InstanceId,
                         RestartWithNewInstanceId = false,
-                    }).ResponseAsync,
+                    },
+                    headers).ResponseAsync,
                 extension => extension.RegisterOrchestrator(
                     new FunctionName(FunctionName),
                     orchestratorInfo: null));

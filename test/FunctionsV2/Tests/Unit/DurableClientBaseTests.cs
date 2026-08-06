@@ -51,9 +51,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await Assert.ThrowsAnyAsync<ArgumentException>(async () => await durableClient.StartNewAsync("anyOrchestratorFunction", instanceId, new { message = "any obj" }));
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(null)]
+        [InlineData("durabletaskhub")]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task StartNewAsync_DisabledOrchestrator_ThrowsException()
+        public async Task StartNewAsync_DisabledOrchestrator_ThrowsException(string taskHub)
         {
             var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
             orchestrationServiceClientMock
@@ -70,7 +72,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 storageProvider,
                 durableExtension,
                 durableExtension.HttpApiHandler,
-                new DurableClientAttribute { });
+                new DurableClientAttribute { TaskHub = taskHub });
 
             ArgumentException exception = await Assert.ThrowsAnyAsync<ArgumentException>(
                 () => durableClient.StartNewAsync("DisabledOrchestrator"));
@@ -81,9 +83,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Times.Never());
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(null)]
+        [InlineData("durabletaskhub")]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task RestartAsync_DisabledOrchestrator_ThrowsException()
+        public async Task RestartAsync_DisabledOrchestrator_ThrowsException(string taskHub)
         {
             const string InstanceId = "completed-instance";
             const string FunctionName = "DisabledOrchestrator";
@@ -115,7 +119,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 storageProvider,
                 durableExtension,
                 durableExtension.HttpApiHandler,
-                new DurableClientAttribute { });
+                new DurableClientAttribute { TaskHub = taskHub });
 
             ArgumentException exception = await Assert.ThrowsAnyAsync<ArgumentException>(
                 () => durableClient.RestartAsync(InstanceId, restartWithNewInstanceId: false));

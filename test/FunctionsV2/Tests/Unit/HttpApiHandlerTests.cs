@@ -1315,34 +1315,64 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal("InstanceId does not match a valid orchestration instance.", error["Message"].ToString());
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task RestartInstance_Returns_HTTP_400_On_Disabled_Function()
+        public async Task RestartInstance_Returns_HTTP_400_On_Disabled_Function(bool useCaseVariantTaskHub)
         {
-            const string ExceptionMessage =
-                "The function 'DisabledOrchestrator' doesn't exist, is disabled, or is not an orchestrator function.";
-            string instanceId = Guid.NewGuid().ToString("N");
-            var restartUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
-            restartUriBuilder.Path += $"/Instances/{instanceId}/restart";
-            var request = new HttpRequestMessage
+            const string InstanceId = "completed-instance";
+            const string FunctionName = "DisabledOrchestrator";
+            string query = useCaseVariantTaskHub ? $"?taskHub={TestConstants.TaskHub.ToLowerInvariant()}" : string.Empty;
+            var requestUri = new Uri(
+                $"http://localhost/runtime/webhooks/durabletask/instances/{InstanceId}/restart{query}");
+            var orchestrationServiceMock = new Mock<IOrchestrationService>(MockBehavior.Strict);
+            var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
+            orchestrationServiceClientMock
+                .Setup(client => client.GetOrchestrationStateAsync(InstanceId, false))
+                .ReturnsAsync(
+                    new List<OrchestrationState>
+                    {
+                        new OrchestrationState
+                        {
+                            Name = FunctionName,
+                            Input = "null",
+                            OrchestrationInstance = new OrchestrationInstance { InstanceId = InstanceId },
+                            OrchestrationStatus = OrchestrationStatus.Completed,
+                        },
+                    });
+            orchestrationServiceClientMock
+                .Setup(client => client.CreateTaskOrchestrationAsync(
+                    It.IsAny<TaskMessage>(),
+                    It.IsAny<OrchestrationStatus[]>()))
+                .Returns(Task.CompletedTask);
+            var durabilityProvider = new DurabilityProvider(
+                "storageProviderName",
+                orchestrationServiceMock.Object,
+                orchestrationServiceClientMock.Object,
+                TestConstants.ConnectionName);
+            var options = new DurableTaskOptions
             {
-                Method = HttpMethod.Post,
-                RequestUri = restartUriBuilder.Uri,
+                WebhookUriProviderOverride = () => new Uri("http://localhost/runtime/webhooks/durabletask"),
+                HubName = TestConstants.TaskHub,
             };
-            var clientMock = new Mock<IDurableClient>();
-            clientMock
-                .Setup(x => x.RestartAsync(instanceId, It.IsAny<bool>()))
-                .Throws(new OrchestratorFunctionUnavailableException(ExceptionMessage));
-            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+            var extension = TestDurableTaskExtension.CreateWithProvider(options, durabilityProvider);
+            extension.RegisterOrchestrator(new FunctionName(FunctionName), orchestratorInfo: null);
+            var httpApiHandler = new HttpApiHandler(extension, NullLogger.Instance);
 
             HttpResponseMessage response = await httpApiHandler.HandleRequestAsync(
-                request,
+                new HttpRequestMessage(HttpMethod.Post, requestUri),
                 CancellationToken.None);
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             string content = await response.Content.ReadAsStringAsync();
             var error = JsonConvert.DeserializeObject<JObject>(content);
-            Assert.Equal(ExceptionMessage, error["Message"].ToString());
+            Assert.Contains("doesn't exist, is disabled, or is not an orchestrator function", error["Message"].ToString());
+            orchestrationServiceClientMock.Verify(
+                client => client.CreateTaskOrchestrationAsync(
+                    It.IsAny<TaskMessage>(),
+                    It.IsAny<OrchestrationStatus[]>()),
+                Times.Never);
         }
 
         [Fact]
@@ -2006,13 +2036,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(expectedVersion, capturedEvent.Version);
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task StartNewInstance_Returns_HTTP_400_On_Disabled_Function()
+        public async Task StartNewInstance_Returns_HTTP_400_On_Disabled_Function(bool useCaseVariantTaskHub)
         {
             const string FunctionName = "DisabledOrchestrator";
+            string query = useCaseVariantTaskHub ? $"?taskHub={TestConstants.TaskHub.ToLowerInvariant()}" : string.Empty;
             var requestUri = new Uri(
-                $"http://localhost/runtime/webhooks/durabletask/orchestrators/{FunctionName}");
+                $"http://localhost/runtime/webhooks/durabletask/orchestrators/{FunctionName}{query}");
             var orchestrationServiceMock = new Mock<IOrchestrationService>(MockBehavior.Strict);
             var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
             orchestrationServiceClientMock

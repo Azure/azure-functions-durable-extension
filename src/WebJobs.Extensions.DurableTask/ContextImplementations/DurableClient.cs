@@ -369,7 +369,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private bool TaskHubMatchesCurrentApp(DurableClient client)
         {
             var taskHubName = this.durableTaskOptions.HubName;
-            return client.TaskHubName.Equals(taskHubName);
+            return string.Equals(client.TaskHubName, taskHubName, StringComparison.OrdinalIgnoreCase);
         }
 
         private bool ConnectionNameMatchesCurrentApp(DurableClient client)
