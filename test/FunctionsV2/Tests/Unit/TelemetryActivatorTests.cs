@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.Channel;
 using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.ApplicationInsights.Extensibility;
@@ -51,7 +52,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void ResolveFromDi_UsesRegisteredTelemetryConfiguration()
+        public void ResolveFromDi_UsesRegisteredTelemetryConfiguration_ForV2()
         {
             var channel = new CollectingTelemetryChannel();
             var hostTelemetryConfiguration = TelemetryConfiguration.CreateDefault();
@@ -69,6 +70,28 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             Assert.Contains(channel.Items.OfType<RequestTelemetry>(), telemetry => telemetry.Name == "orchestration:host-config");
             Assert.Contains(channel.Items.OfType<DependencyTelemetry>(), telemetry => telemetry.Name == "activity:host-config");
             Assert.Single(hostTelemetryConfiguration.TelemetryInitializers.OfType<DurableTaskInstanceIdTelemetryInitializer>());
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void ResolveFromDi_UsesRegisteredTelemetryConfiguration_ForV1()
+        {
+            var channel = new CollectingTelemetryChannel();
+            var hostTelemetryConfiguration = TelemetryConfiguration.CreateDefault();
+            hostTelemetryConfiguration.TelemetryChannel = channel;
+
+            using ServiceProvider serviceProvider = CreateServiceProvider(
+                telemetryConfiguration: hostTelemetryConfiguration,
+                version: DurableDistributedTracingVersion.V1);
+            var activator = Assert.IsType<TelemetryActivator>(serviceProvider.GetRequiredService<ITelemetryActivator>());
+
+            Assert.Same(hostTelemetryConfiguration, GetHostTelemetryConfiguration(activator));
+
+            activator.Initialize(NullLogger.Instance);
+            TelemetryClient telemetryClient = GetTelemetryClient(activator);
+            telemetryClient.TrackRequest(new RequestTelemetry { Name = "v1-host-config" });
+
+            Assert.Contains(channel.Items.OfType<RequestTelemetry>(), telemetry => telemetry.Name == "v1-host-config");
         }
 
         [Fact]
@@ -112,14 +135,14 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             Assert.Empty(channel.Items);
         }
 
-        private static IOptions<DurableTaskOptions> CreateOptions()
+        private static IOptions<DurableTaskOptions> CreateOptions(DurableDistributedTracingVersion version = DurableDistributedTracingVersion.V2)
         {
             return Options.Create(new DurableTaskOptions
             {
                 Tracing = new Microsoft.Azure.WebJobs.Extensions.DurableTask.TraceOptions
                 {
                     DistributedTracingEnabled = true,
-                    Version = DurableDistributedTracingVersion.V2,
+                    Version = version,
                 },
             });
         }
@@ -132,10 +155,12 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             });
         }
 
-        private static ServiceProvider CreateServiceProvider(TelemetryConfiguration telemetryConfiguration = null)
+        private static ServiceProvider CreateServiceProvider(
+            TelemetryConfiguration telemetryConfiguration = null,
+            DurableDistributedTracingVersion version = DurableDistributedTracingVersion.V2)
         {
             var services = new ServiceCollection();
-            services.AddSingleton(CreateOptions());
+            services.AddSingleton(CreateOptions(version));
             services.AddSingleton(CreateNameResolver());
 
             if (telemetryConfiguration != null)
@@ -151,6 +176,12 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         {
             FieldInfo field = typeof(TelemetryActivator).GetField("hostTelemetryConfiguration", BindingFlags.Instance | BindingFlags.NonPublic);
             return field?.GetValue(activator) as TelemetryConfiguration;
+        }
+
+        private static TelemetryClient GetTelemetryClient(TelemetryActivator activator)
+        {
+            FieldInfo field = typeof(TelemetryActivator).GetField("telemetryClient", BindingFlags.Instance | BindingFlags.NonPublic);
+            return Assert.IsType<TelemetryClient>(field?.GetValue(activator));
         }
 
         private static void EmitDurableActivity(string name, ActivityKind kind, string durableTaskType)
