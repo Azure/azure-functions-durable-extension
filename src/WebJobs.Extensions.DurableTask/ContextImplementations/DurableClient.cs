@@ -374,7 +374,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private bool ConnectionNameMatchesCurrentApp(DurableClient client)
         {
-            return this.DurabilityProvider.ConnectionNameMatches(client.DurabilityProvider);
+            return this.config != null &&
+                this.config.DefaultDurabilityProvider.ConnectionNameMatches(client.DurabilityProvider);
         }
 
         /// <inheritdoc />
@@ -1261,6 +1262,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             // GetOrchestrationInstanceStateAsync will throw ArgumentException if the provided instanceid is not found.
             OrchestrationState state = await this.GetOrchestrationInstanceStateAsync(instanceId);
+
+            if (this.ReferencesCurrentApp())
+            {
+                this.config?.ThrowIfOrchestratorFunctionIsUnavailable(state.Name);
+            }
 
             JToken input = ParseToJToken(state.Input);
 

@@ -59,7 +59,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             try
             {
-                this.extension.ThrowIfOrchestratorFunctionIsUnavailable(request.Name);
+                if (this.GetClient(context) is DurableClient durableClient && durableClient.ReferencesCurrentApp())
+                {
+                    this.extension.ThrowIfOrchestratorFunctionIsUnavailable(request.Name);
+                }
 
                 List<OrchestrationStatus> allStatuses = System.Enum
                     .GetValues<OrchestrationStatus>()
@@ -522,6 +525,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 string newInstanceId = await this.GetClient(context).RestartAsync(request.InstanceId, request.RestartWithNewInstanceId);
                 return new P.RestartInstanceResponse { InstanceId = newInstanceId };
+            }
+            catch (OrchestratorFunctionUnavailableException ex)
+            {
+                throw new RpcException(new Status(StatusCode.InvalidArgument, ex.Message));
             }
             catch (ArgumentException ex)
             {

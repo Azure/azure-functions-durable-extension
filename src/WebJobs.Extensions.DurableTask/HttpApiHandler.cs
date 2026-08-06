@@ -1105,6 +1105,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     return client.CreateCheckStatusResponse(request, newInstanceId);
                 }
             }
+            catch (OrchestratorFunctionUnavailableException e)
+            {
+                return request.CreateErrorResponse(HttpStatusCode.BadRequest, e.Message, e);
+            }
             catch (ArgumentException e)
             {
                 return request.CreateErrorResponse(HttpStatusCode.BadRequest, "InstanceId does not match a valid orchestration instance.", e);

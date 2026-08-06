@@ -1317,6 +1317,36 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task RestartInstance_Returns_HTTP_400_On_Disabled_Function()
+        {
+            const string ExceptionMessage =
+                "The function 'DisabledOrchestrator' doesn't exist, is disabled, or is not an orchestrator function.";
+            string instanceId = Guid.NewGuid().ToString("N");
+            var restartUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+            restartUriBuilder.Path += $"/Instances/{instanceId}/restart";
+            var request = new HttpRequestMessage
+            {
+                Method = HttpMethod.Post,
+                RequestUri = restartUriBuilder.Uri,
+            };
+            var clientMock = new Mock<IDurableClient>();
+            clientMock
+                .Setup(x => x.RestartAsync(instanceId, It.IsAny<bool>()))
+                .Throws(new OrchestratorFunctionUnavailableException(ExceptionMessage));
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+
+            HttpResponseMessage response = await httpApiHandler.HandleRequestAsync(
+                request,
+                CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            string content = await response.Content.ReadAsStringAsync();
+            var error = JsonConvert.DeserializeObject<JObject>(content);
+            Assert.Equal(ExceptionMessage, error["Message"].ToString());
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task RestartInstance_Returns_HTTP_409_On_Invalid_Existing_Instance()
         {
             string testBadInstanceId = Guid.NewGuid().ToString("N");
@@ -1948,7 +1978,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 "storageProviderName",
                 orchestrationServiceMock.Object,
                 orchestrationServiceClientMock.Object,
-                "connectionName");
+                TestConstants.ConnectionName);
 
             var options = new DurableTaskOptions
             {
@@ -1994,7 +2024,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 "storageProviderName",
                 orchestrationServiceMock.Object,
                 orchestrationServiceClientMock.Object,
-                "connectionName");
+                TestConstants.ConnectionName);
             var options = new DurableTaskOptions
             {
                 WebhookUriProviderOverride = () => new Uri("http://localhost/runtime/webhooks/durabletask"),
@@ -2018,13 +2048,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Times.Never);
         }
 
-        [Fact]
+        [Theory]
+        [InlineData("taskHub=RemoteHub", TestConstants.ConnectionName)]
+        [InlineData("connection=TestConnection", TestConstants.CustomConnectionName)]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task StartNewInstance_ExternalTaskHub_DoesNotValidateLocalFunction()
+        public async Task StartNewInstance_ExternalTarget_DoesNotValidateLocalFunction(
+            string query,
+            string providerConnectionName)
         {
             const string FunctionName = "RemoteOrchestrator";
             var requestUri = new Uri(
-                $"http://localhost/runtime/webhooks/durabletask/orchestrators/{FunctionName}?taskHub=RemoteHub");
+                $"http://localhost/runtime/webhooks/durabletask/orchestrators/{FunctionName}?{query}");
             var orchestrationServiceMock = new Mock<IOrchestrationService>(MockBehavior.Strict);
             var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
             orchestrationServiceClientMock
@@ -2036,7 +2070,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 "storageProviderName",
                 orchestrationServiceMock.Object,
                 orchestrationServiceClientMock.Object,
-                "connectionName");
+                providerConnectionName);
             var options = new DurableTaskOptions
             {
                 WebhookUriProviderOverride = () => new Uri("http://localhost/runtime/webhooks/durabletask"),

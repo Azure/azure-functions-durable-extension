@@ -1499,7 +1499,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (this.GetOrchestratorInfo(new FunctionName(name)) == null)
             {
-                throw new ArgumentException(this.GetInvalidOrchestratorFunctionMessage(name));
+                throw new OrchestratorFunctionUnavailableException(this.GetInvalidOrchestratorFunctionMessage(name));
             }
         }
 
