@@ -134,8 +134,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private class TokenSourceConverter : JsonConverter
         {
-            private static JsonSerializer tokenSerializer;
-
             private enum TokenSourceType
             {
                 None = 0,
@@ -149,8 +147,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
             {
-                var safeTokenSerializer = GetTokenSourceSerializer(serializer);
-
                 JToken json = JToken.ReadFrom(reader);
                 if (json.Type == JTokenType.Null)
                 {
@@ -163,15 +159,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     if (Enum.TryParse((string)kindValue, out TokenSourceType tokenSourceKind) &&
                         tokenSourceKind == TokenSourceType.AzureManagedIdentity)
                     {
-                        string resourceString = (string)jsonObject.GetValue("resource", StringComparison.Ordinal);
-
-                        if (jsonObject.TryGetValue("options", out JToken optionsToken))
-                        {
-                            ManagedIdentityOptions managedIdentityOptions = optionsToken.ToObject<JObject>().ToObject<ManagedIdentityOptions>();
-                            return new ManagedIdentityTokenSource(resourceString, managedIdentityOptions);
-                        }
-
-                        return new ManagedIdentityTokenSource(resourceString);
+                        return CreateManagedIdentityTokenSource(jsonObject);
                     }
 
                     throw new NotSupportedException($"The token source kind '{kindValue.ToString(Formatting.None)}' is not supported.");
@@ -179,18 +167,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 else if (jsonObject.TryGetValue("$type", StringComparison.Ordinal, out JToken clrTypeValue))
                 {
                     Type runtimeType = Type.GetType((string)clrTypeValue, throwOnError: true);
-                    return jsonObject.ToObject(runtimeType, safeTokenSerializer);
+                    if (!typeof(ITokenSource).IsAssignableFrom(runtimeType) || runtimeType.IsAbstract || runtimeType.IsInterface)
+                    {
+                        throw new JsonSerializationException($"Type '{runtimeType.FullName}' is not a supported token source.");
+                    }
+
+                    jsonObject.Remove("$type");
+                    return jsonObject.ToObject(runtimeType, GetTokenSourceSerializer(serializer));
                 }
-                else
-                {
-                    // Don't know how to deserialize this - use default behavior (this may fail)
-                    return jsonObject.ToObject(objectType);
-                }
+
+                throw new NotSupportedException("The token source kind is missing.");
             }
 
             public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
             {
-                if (value is ManagedIdentityTokenSource tokenSource)
+                if (value == null)
+                {
+                    writer.WriteNull();
+                }
+                else if (value is ManagedIdentityTokenSource tokenSource)
                 {
                     writer.WriteStartObject();
                     writer.WritePropertyName("kind");
@@ -208,28 +203,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else
                 {
-                    // Don't know how to serialize this - use default behavior, forcing TypeNameHandling.Objects to correctly serialize ITokenSource
-                    var safeTokenSerializer = GetTokenSourceSerializer(serializer);
-                    safeTokenSerializer.Serialize(writer, value);
+                    JObject jsonObject = JObject.FromObject(value, GetTokenSourceSerializer(serializer));
+                    jsonObject.AddFirst(new JProperty("$type", value.GetType().AssemblyQualifiedName));
+                    jsonObject.WriteTo(writer);
                 }
+            }
+
+            private static ManagedIdentityTokenSource CreateManagedIdentityTokenSource(JObject jsonObject)
+            {
+                string resourceString = (string)jsonObject.GetValue("resource", StringComparison.Ordinal);
+                if (jsonObject.TryGetValue("options", out JToken optionsToken))
+                {
+                    ManagedIdentityOptions managedIdentityOptions = optionsToken.ToObject<ManagedIdentityOptions>();
+                    return new ManagedIdentityTokenSource(resourceString, managedIdentityOptions);
+                }
+
+                return new ManagedIdentityTokenSource(resourceString);
             }
 
             private static JsonSerializer GetTokenSourceSerializer(JsonSerializer serializer)
             {
-                if (tokenSerializer != null)
-                {
-                    return tokenSerializer;
-                }
-
-                if (serializer.TypeNameHandling == TypeNameHandling.Objects
-                    || serializer.TypeNameHandling == TypeNameHandling.All)
-                {
-                    tokenSerializer = serializer;
-                    return tokenSerializer;
-                }
-
-                // Make sure these are all the settings when updating Newtonsoft.Json
-                tokenSerializer = new JsonSerializer
+                var tokenSourceSerializer = new JsonSerializer
                 {
                     Context = serializer.Context,
                     Culture = serializer.Culture,
@@ -255,17 +249,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     ReferenceLoopHandling = serializer.ReferenceLoopHandling,
                     StringEscapeHandling = serializer.StringEscapeHandling,
                     TraceWriter = serializer.TraceWriter,
-
-                    // Enforcing TypeNameHandling.Objects to make sure ITokenSource gets serialized/deserialized correctly
-                    TypeNameHandling = TypeNameHandling.Objects,
+                    TypeNameHandling = TypeNameHandling.None,
                 };
 
                 foreach (var converter in serializer.Converters)
                 {
-                    tokenSerializer.Converters.Add(converter);
+                    tokenSourceSerializer.Converters.Add(converter);
                 }
 
-                return tokenSerializer;
+                return tokenSourceSerializer;
             }
         }
     }
