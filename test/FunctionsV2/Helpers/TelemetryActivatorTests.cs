@@ -43,9 +43,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             ApplicationInsightsTokenCredentialOptions options =
                 ApplicationInsightsTokenCredentialOptions.ParseAuthenticationString("Authorization=AAD");
 
-            TelemetryActivator.ApplyAzureTokenCredential(durableConfiguration, hostConfiguration, options);
+            bool reusedHostCredential =
+                TelemetryActivator.ApplyAzureTokenCredential(durableConfiguration, hostConfiguration, options);
 
+            Assert.True(reusedHostCredential);
             Assert.Same(credential, TelemetryActivator.GetAzureTokenCredential(durableConfiguration));
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void ApplyAzureTokenCredential_WithHostConfigurationLackingCredential_ReportsFallback()
+        {
+            // A host configuration without a credential means the reflection lookup found nothing.
+            // The caller relies on the return value to warn instead of degrading silently.
+            using TelemetryConfiguration hostConfiguration = TelemetryConfiguration.CreateDefault();
+            using TelemetryConfiguration durableConfiguration = TelemetryConfiguration.CreateDefault();
+            ApplicationInsightsTokenCredentialOptions options =
+                ApplicationInsightsTokenCredentialOptions.ParseAuthenticationString("Authorization=AAD");
+
+            bool reusedHostCredential =
+                TelemetryActivator.ApplyAzureTokenCredential(durableConfiguration, hostConfiguration, options);
+
+            Assert.False(reusedHostCredential);
+            Assert.IsType<ManagedIdentityCredential>(
+                TelemetryActivator.GetAzureTokenCredential(durableConfiguration));
         }
 
         [Theory]
@@ -58,11 +79,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             ApplicationInsightsTokenCredentialOptions options =
                 ApplicationInsightsTokenCredentialOptions.ParseAuthenticationString(authenticationString);
 
-            TelemetryActivator.ApplyAzureTokenCredential(
+            bool reusedHostCredential = TelemetryActivator.ApplyAzureTokenCredential(
                 durableConfiguration,
                 hostConfiguration: null,
                 options);
 
+            Assert.False(reusedHostCredential);
             Assert.IsType<ManagedIdentityCredential>(
                 TelemetryActivator.GetAzureTokenCredential(durableConfiguration));
         }

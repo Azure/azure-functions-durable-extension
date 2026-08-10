@@ -267,7 +267,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                     ApplicationInsightsTokenCredentialOptions tokenCredentialOptions =
                         ApplicationInsightsTokenCredentialOptions.ParseAuthenticationString(resolvedAuthenticationString);
                     bool userAssignedIdentity = tokenCredentialOptions.ClientId != null;
-                    ApplyAzureTokenCredential(config, this.hostTelemetryConfiguration, tokenCredentialOptions);
+                    bool reusedHostCredential = ApplyAzureTokenCredential(config, this.hostTelemetryConfiguration, tokenCredentialOptions);
+                    if (this.hostTelemetryConfiguration != null && !reusedHostCredential)
+                    {
+                        this.LogHostCredentialUnavailable();
+                    }
+
                     this.endToEndTraceHelper.ExtensionInformationalEvent(
                         hubName: this.options.HubName,
                         functionName: string.Empty,
@@ -294,13 +299,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             return config;
         }
 
-        internal static void ApplyAzureTokenCredential(
+        internal static bool ApplyAzureTokenCredential(
             TelemetryConfiguration durableConfiguration,
             TelemetryConfiguration hostConfiguration,
             ApplicationInsightsTokenCredentialOptions tokenCredentialOptions)
         {
             object tokenCredential = GetAzureTokenCredential(hostConfiguration);
-            if (tokenCredential == null)
+            bool reusedHostCredential = tokenCredential != null;
+            if (!reusedHostCredential)
             {
                 ManagedIdentityId managedIdentityId = tokenCredentialOptions.ClientId != null
                     ? ManagedIdentityId.FromUserAssignedClientId(tokenCredentialOptions.ClientId)
@@ -309,6 +315,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             }
 
             durableConfiguration.SetAzureTokenCredential(tokenCredential);
+            return reusedHostCredential;
         }
 
         /// <summary>
@@ -340,6 +347,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                 functionName: string.Empty,
                 instanceId: string.Empty,
                 message: "APPLICATIONINSIGHTS_AUTHENTICATION_STRING is invalid and will not be used for Durable distributed tracing.");
+        }
+
+        private void LogHostCredentialUnavailable()
+        {
+            this.endToEndTraceHelper.ExtensionWarningEvent(
+                hubName: this.options.HubName,
+                functionName: string.Empty,
+                instanceId: string.Empty,
+                message: "The Application Insights credential owned by the Functions host could not be read, so Durable distributed tracing created its own managed identity credential. If Durable spans are missing, the host and the function app are likely loading different Azure.Core versions.");
         }
 
         private void LogAuthenticationStringCouldNotBeApplied()
