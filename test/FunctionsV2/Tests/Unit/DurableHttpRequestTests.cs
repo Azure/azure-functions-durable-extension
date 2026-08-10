@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 using Xunit;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
@@ -47,6 +48,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Fact]
         public void TokenSource_RoundTripsCustomImplementation()
         {
+            JsonSerializerSettings settings = CreateCustomTokenSourceSettings();
             var request = new DurableHttpRequest(
                 HttpMethod.Get,
                 new Uri("https://example.com"),
@@ -56,18 +58,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     Options = new ManagedIdentityOptions { TenantId = "tenant" },
                 });
 
-            string json = JsonConvert.SerializeObject(request);
-            DurableHttpRequest result = JsonConvert.DeserializeObject<DurableHttpRequest>(json);
+            string json = JsonConvert.SerializeObject(request, settings);
+            DurableHttpRequest result = JsonConvert.DeserializeObject<DurableHttpRequest>(json, settings);
 
             CustomTokenSource tokenSource = Assert.IsType<CustomTokenSource>(result.TokenSource);
             Assert.Equal("token", tokenSource.Token);
             Assert.Equal("tenant", tokenSource.Options.TenantId);
-            Assert.Equal(1, json.Split(new[] { "\"$type\"" }, StringSplitOptions.None).Length - 1);
+            JObject tokenSourceJson = (JObject)JObject.Parse(json)["tokenSource"];
+            Assert.NotNull(tokenSourceJson["$type"]);
+            Assert.Null(tokenSourceJson["Options"]["$type"]);
         }
 
         [Fact]
         public void TokenSource_DeserializesLegacyCustomImplementationWithNestedState()
         {
+            ManagedIdentityOptionsProbe.WasCreated = false;
             JObject json = CreateRequestJson(
                 new JObject
                 {
@@ -75,16 +80,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     ["Token"] = "token",
                     ["Options"] = new JObject
                     {
-                        ["$type"] = typeof(ManagedIdentityOptions).AssemblyQualifiedName,
+                        ["$type"] = typeof(ManagedIdentityOptionsProbe).AssemblyQualifiedName,
                         ["TenantId"] = "tenant",
                     },
                 });
+            JsonSerializer serializer = JsonSerializer.Create(CreateCustomTokenSourceSettings());
 
-            DurableHttpRequest result = json.ToObject<DurableHttpRequest>();
+            DurableHttpRequest result = json.ToObject<DurableHttpRequest>(serializer);
 
             CustomTokenSource tokenSource = Assert.IsType<CustomTokenSource>(result.TokenSource);
             Assert.Equal("token", tokenSource.Token);
+            Assert.IsType<ManagedIdentityOptions>(tokenSource.Options);
             Assert.Equal("tenant", tokenSource.Options.TenantId);
+            Assert.False(ManagedIdentityOptionsProbe.WasCreated);
         }
 
         [Fact]
@@ -99,6 +107,47 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Throws<JsonSerializationException>(() => json.ToObject<DurableHttpRequest>());
         }
 
+        [Fact]
+        public void TokenSource_RejectsCustomImplementationWithoutBinder()
+        {
+            var request = new DurableHttpRequest(
+                HttpMethod.Get,
+                new Uri("https://example.com"),
+                tokenSource: new CustomTokenSource());
+
+            Assert.Throws<JsonSerializationException>(() => JsonConvert.SerializeObject(request));
+        }
+
+        [Fact]
+        public void TokenSource_RequiresBinderForDerivedManagedIdentity()
+        {
+            var request = new DurableHttpRequest(
+                HttpMethod.Get,
+                new Uri("https://example.com"),
+                tokenSource: new DerivedManagedIdentityTokenSource());
+
+            Assert.Throws<JsonSerializationException>(() => JsonConvert.SerializeObject(request));
+        }
+
+        [Fact]
+        public void TokenSource_RoundTripsGenericCustomImplementation()
+        {
+            JsonSerializerSettings settings = CreateCustomTokenSourceSettings();
+            var request = new DurableHttpRequest(
+                HttpMethod.Get,
+                new Uri("https://example.com"),
+                tokenSource: new GenericCustomTokenSource<ManagedIdentityOptions>
+                {
+                    Value = new ManagedIdentityOptions { TenantId = "tenant" },
+                });
+
+            string json = JsonConvert.SerializeObject(request, settings);
+            DurableHttpRequest result = JsonConvert.DeserializeObject<DurableHttpRequest>(json, settings);
+
+            var tokenSource = Assert.IsType<GenericCustomTokenSource<ManagedIdentityOptions>>(result.TokenSource);
+            Assert.Equal("tenant", tokenSource.Value.TenantId);
+        }
+
         private static JObject CreateRequestJson(JObject tokenSource)
         {
             return new JObject
@@ -106,6 +155,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 ["method"] = "GET",
                 ["uri"] = "https://example.com",
                 ["tokenSource"] = tokenSource,
+            };
+        }
+
+        private static JsonSerializerSettings CreateCustomTokenSourceSettings()
+        {
+            return new JsonSerializerSettings
+            {
+                TypeNameHandling = TypeNameHandling.Objects,
+                SerializationBinder = new CustomTokenSourceBinder(),
             };
         }
 
@@ -118,6 +176,70 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             public Task<string> GetTokenAsync()
             {
                 return Task.FromResult(this.Token);
+            }
+        }
+
+        private class ManagedIdentityOptionsProbe : ManagedIdentityOptions
+        {
+            public ManagedIdentityOptionsProbe()
+            {
+                WasCreated = true;
+            }
+
+            public static bool WasCreated { get; set; }
+        }
+
+        private class DerivedManagedIdentityTokenSource : ManagedIdentityTokenSource
+        {
+            public DerivedManagedIdentityTokenSource()
+                : base("https://management.core.windows.net/.default")
+            {
+            }
+        }
+
+        private class GenericCustomTokenSource<T> : ITokenSource
+        {
+            public T Value { get; set; }
+
+            public Task<string> GetTokenAsync()
+            {
+                return Task.FromResult(string.Empty);
+            }
+        }
+
+        private class CustomTokenSourceBinder : ISerializationBinder
+        {
+            public Type BindToType(string assemblyName, string typeName)
+            {
+                if (typeName == typeof(CustomTokenSource).FullName)
+                {
+                    return typeof(CustomTokenSource);
+                }
+
+                if (typeName == typeof(DurableHttpRequest).FullName)
+                {
+                    return typeof(DurableHttpRequest);
+                }
+
+                if (typeName == typeof(GenericCustomTokenSource<ManagedIdentityOptions>).FullName)
+                {
+                    return typeof(GenericCustomTokenSource<ManagedIdentityOptions>);
+                }
+
+                throw new JsonSerializationException($"Type '{typeName}' is not allowed.");
+            }
+
+            public void BindToName(Type serializedType, out string assemblyName, out string typeName)
+            {
+                if (serializedType != typeof(CustomTokenSource) &&
+                    serializedType != typeof(DurableHttpRequest) &&
+                    serializedType != typeof(GenericCustomTokenSource<ManagedIdentityOptions>))
+                {
+                    throw new JsonSerializationException($"Type '{serializedType.FullName}' is not allowed.");
+                }
+
+                assemblyName = serializedType.Assembly.FullName;
+                typeName = serializedType.FullName;
             }
         }
 

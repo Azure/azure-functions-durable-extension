@@ -7,6 +7,7 @@ using System.Net.Http;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -166,10 +167,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else if (jsonObject.TryGetValue("$type", StringComparison.Ordinal, out JToken clrTypeValue))
                 {
-                    Type runtimeType = Type.GetType((string)clrTypeValue, throwOnError: true);
-                    if (!typeof(ITokenSource).IsAssignableFrom(runtimeType) || runtimeType.IsAbstract || runtimeType.IsInterface)
+                    ParseTypeName((string)clrTypeValue, out string assemblyName, out string typeName);
+                    if (string.Equals(typeName, typeof(ManagedIdentityTokenSource).FullName, StringComparison.Ordinal))
                     {
-                        throw new JsonSerializationException($"Type '{runtimeType.FullName}' is not a supported token source.");
+                        return CreateManagedIdentityTokenSource(jsonObject);
+                    }
+
+                    ISerializationBinder binder = GetCustomTokenSourceBinder(serializer);
+                    Type runtimeType = binder.BindToType(assemblyName, typeName);
+                    if (runtimeType == null || !typeof(ITokenSource).IsAssignableFrom(runtimeType) || runtimeType.IsAbstract || runtimeType.IsInterface)
+                    {
+                        throw new JsonSerializationException($"Type '{typeName}' is not a supported token source.");
                     }
 
                     jsonObject.Remove("$type");
@@ -185,8 +193,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     writer.WriteNull();
                 }
-                else if (value is ManagedIdentityTokenSource tokenSource)
+                else if (value.GetType() == typeof(ManagedIdentityTokenSource))
                 {
+                    var tokenSource = (ManagedIdentityTokenSource)value;
                     writer.WriteStartObject();
                     writer.WritePropertyName("kind");
                     writer.WriteValue(TokenSourceType.AzureManagedIdentity.ToString());
@@ -203,8 +212,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
                 else
                 {
+                    ISerializationBinder binder = GetCustomTokenSourceBinder(serializer);
+                    binder.BindToName(value.GetType(), out string assemblyName, out string typeName);
+                    if (string.IsNullOrWhiteSpace(typeName))
+                    {
+                        throw new JsonSerializationException($"The configured serialization binder did not provide a name for token source type '{value.GetType().FullName}'.");
+                    }
+
+                    string serializedTypeName = string.IsNullOrWhiteSpace(assemblyName) ? typeName : $"{typeName}, {assemblyName}";
                     JObject jsonObject = JObject.FromObject(value, GetTokenSourceSerializer(serializer));
-                    jsonObject.AddFirst(new JProperty("$type", value.GetType().AssemblyQualifiedName));
+                    jsonObject.AddFirst(new JProperty("$type", serializedTypeName));
                     jsonObject.WriteTo(writer);
                 }
             }
@@ -258,6 +275,50 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
 
                 return tokenSourceSerializer;
+            }
+
+            private static ISerializationBinder GetCustomTokenSourceBinder(JsonSerializer serializer)
+            {
+                if (serializer.SerializationBinder == null || serializer.SerializationBinder is DefaultSerializationBinder)
+                {
+                    throw new JsonSerializationException("Custom token sources require an explicitly configured serialization binder.");
+                }
+
+                return serializer.SerializationBinder;
+            }
+
+            private static void ParseTypeName(string serializedTypeName, out string assemblyName, out string typeName)
+            {
+                if (string.IsNullOrWhiteSpace(serializedTypeName))
+                {
+                    throw new JsonSerializationException("The token source '$type' value is missing.");
+                }
+
+                int separatorIndex = FindAssemblySeparator(serializedTypeName);
+                typeName = separatorIndex < 0 ? serializedTypeName.Trim() : serializedTypeName.Substring(0, separatorIndex).Trim();
+                assemblyName = separatorIndex < 0 ? null : serializedTypeName.Substring(separatorIndex + 1).Trim();
+            }
+
+            private static int FindAssemblySeparator(string serializedTypeName)
+            {
+                int bracketDepth = 0;
+                for (int i = 0; i < serializedTypeName.Length; i++)
+                {
+                    if (serializedTypeName[i] == '[')
+                    {
+                        bracketDepth++;
+                    }
+                    else if (serializedTypeName[i] == ']')
+                    {
+                        bracketDepth--;
+                    }
+                    else if (serializedTypeName[i] == ',' && bracketDepth == 0)
+                    {
+                        return i;
+                    }
+                }
+
+                return -1;
             }
         }
     }
