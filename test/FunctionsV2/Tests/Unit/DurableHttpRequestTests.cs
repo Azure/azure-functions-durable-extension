@@ -46,6 +46,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        public void TokenSource_DeserializesV3140ManagedIdentityHistory()
+        {
+            JObject json = CreateRequestJson(
+                new JObject
+                {
+                    ["kind"] = "AzureManagedIdentity",
+                    ["resource"] = "https://management.core.windows.net/.default",
+                    ["options"] = new JObject
+                    {
+                        ["tenantid"] = "tenant",
+                    },
+                });
+
+            DurableHttpRequest result = json.ToObject<DurableHttpRequest>();
+
+            ManagedIdentityTokenSource tokenSource = Assert.IsType<ManagedIdentityTokenSource>(result.TokenSource);
+            Assert.Equal("https://management.core.windows.net/.default", tokenSource.Resource);
+            Assert.Equal("tenant", tokenSource.Options.TenantId);
+        }
+
+        [Fact]
         public void TokenSource_RoundTripsCustomImplementation()
         {
             JsonSerializerSettings settings = CreateCustomTokenSourceSettings();
@@ -70,20 +91,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        public void TokenSource_DeserializesLegacyCustomImplementationWithNestedState()
+        public void TokenSource_DeserializesV3140CustomHistoryWithConfiguredBinder()
         {
             ManagedIdentityOptionsProbe.WasCreated = false;
-            JObject json = CreateRequestJson(
-                new JObject
-                {
-                    ["$type"] = typeof(CustomTokenSource).AssemblyQualifiedName,
-                    ["Token"] = "token",
-                    ["Options"] = new JObject
-                    {
-                        ["$type"] = typeof(ManagedIdentityOptionsProbe).AssemblyQualifiedName,
-                        ["TenantId"] = "tenant",
-                    },
-                });
+            JObject json = CreateV3140CustomTokenSourceHistory();
             JsonSerializer serializer = JsonSerializer.Create(CreateCustomTokenSourceSettings());
 
             DurableHttpRequest result = json.ToObject<DurableHttpRequest>(serializer);
@@ -92,6 +103,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal("token", tokenSource.Token);
             Assert.IsType<ManagedIdentityOptions>(tokenSource.Options);
             Assert.Equal("tenant", tokenSource.Options.TenantId);
+            Assert.False(ManagedIdentityOptionsProbe.WasCreated);
+        }
+
+        [Fact]
+        public void TokenSource_RejectsV3140CustomHistoryWithoutBinder()
+        {
+            ManagedIdentityOptionsProbe.WasCreated = false;
+            JObject json = CreateV3140CustomTokenSourceHistory();
+            JsonSerializer serializer = JsonSerializer.Create(
+                new JsonSerializerSettings
+                {
+                    TypeNameHandling = TypeNameHandling.Objects,
+                });
+
+            Assert.Throws<JsonSerializationException>(() => json.ToObject<DurableHttpRequest>(serializer));
             Assert.False(ManagedIdentityOptionsProbe.WasCreated);
         }
 
@@ -156,6 +182,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 ["uri"] = "https://example.com",
                 ["tokenSource"] = tokenSource,
             };
+        }
+
+        private static JObject CreateV3140CustomTokenSourceHistory()
+        {
+            return CreateRequestJson(
+                new JObject
+                {
+                    ["$type"] = typeof(CustomTokenSource).AssemblyQualifiedName,
+                    ["Token"] = "token",
+                    ["Options"] = new JObject
+                    {
+                        ["$type"] = typeof(ManagedIdentityOptionsProbe).AssemblyQualifiedName,
+                        ["TenantId"] = "tenant",
+                    },
+                });
         }
 
         private static JsonSerializerSettings CreateCustomTokenSourceSettings()
