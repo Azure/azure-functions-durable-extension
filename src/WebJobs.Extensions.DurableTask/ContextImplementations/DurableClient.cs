@@ -1059,7 +1059,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 historyItem["ScheduledTime"] = taskScheduledData.Date;
                 historyItem["FunctionName"] = taskScheduledData.Name;
-                if (taskScheduledData.InstanceId != null)
+                if (!string.IsNullOrEmpty(taskScheduledData.InstanceId))
                 {
                     historyItem["InstanceId"] = taskScheduledData.InstanceId;
                 }
