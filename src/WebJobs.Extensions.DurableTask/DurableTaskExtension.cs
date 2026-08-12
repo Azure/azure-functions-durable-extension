@@ -708,7 +708,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             RegisteredFunctionInfo info;
             if (!this.knownActivities.TryGetValue(activityFunction, out info))
             {
+                // The activity function is not registered at all (e.g. it was deleted or renamed).
                 return new TaskNonexistentActivityShim(this, name);
+            }
+
+            if (info.Executor == null)
+            {
+                // The activity function was indexed (so it is present in knownActivities) but no
+                // listener was ever started for it. This happens when the function is disabled but
+                // still deployed: the binding provider registers the name with a null executor
+                // during indexing, and the disabled function's listener never replaces it. Returning
+                // a shim that fails deterministically — instead of constructing a TaskActivityShim
+                // with a null executor, which throws ArgumentNullException during object construction
+                // and causes the work item to be abandoned and retried forever (a poison loop) — lets
+                // the orchestration receive a catchable failure.
+                // See https://github.com/Azure/azure-functions-durable-extension/issues/3471.
+                return new TaskNonexistentActivityShim(this, name, isDisabled: true);
             }
 
             return new TaskActivityShim(this, info.Executor, this.HostLifetimeService, name);
@@ -755,6 +770,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <summary>
+        /// Returns the <see cref="ExecutionTerminatedEvent"/> that was delivered with the current orchestration
+        /// work item, or <c>null</c> if this work item is not the result of a termination request.
+        /// </summary>
+        /// <remarks>
+        /// Only <see cref="OrchestrationRuntimeState.NewEvents"/> is inspected. The full event history would keep
+        /// matching on every subsequent replay of the instance, which would produce duplicate notifications.
+        /// </remarks>
+        /// <param name="runtimeState">The runtime state of the orchestration being dispatched.</param>
+#nullable enable
+        internal static ExecutionTerminatedEvent? GetTerminationEventOrNull(OrchestrationRuntimeState? runtimeState)
+        {
+            return runtimeState?.NewEvents?.OfType<ExecutionTerminatedEvent>().FirstOrDefault();
+        }
+#nullable restore
+
+        /// <summary>
         /// This DTFx orchestration middleware allows us to initialize Durable Functions-specific context
         /// and make the execution happen in a way that plays nice with the Azure Functions execution pipeline.
         /// </summary>
@@ -784,6 +815,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             context.IsReplaying = orchestrationRuntimeState.ExecutionStartedEvent.IsPlayed;
             context.History = orchestrationRuntimeState.Events;
             context.RawInput = orchestrationRuntimeState.Input;
+
+            // A termination is applied by the DTFx orchestration executor itself, which completes the instance
+            // without ever running the orchestrator shim to completion. The "Terminated" lifecycle notification
+            // therefore has to be raised from the dispatch middleware, which is the closest common ancestor of
+            // every orchestration work item. https://github.com/Azure/azure-functions-durable-extension/issues/286
+            ExecutionTerminatedEvent terminatedEvent = GetTerminationEventOrNull(orchestrationRuntimeState);
+            if (terminatedEvent != null)
+            {
+                context.AddDeferredTask(() => this.LifeCycleNotificationHelper.OrchestratorTerminatedAsync(
+                    context.HubName,
+                    context.Name,
+                    context.InstanceId,
+                    terminatedEvent.Input));
+            }
 
             RegisteredFunctionInfo info = shim.GetFunctionInfo();
             if (info == null)
@@ -1077,11 +1122,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             WrappedFunctionResult result;
 
-            if (entityShim.OperationBatch.Count > 0 && !this.HostLifetimeService.OnStopping.IsCancellationRequested)
+            RegisteredFunctionInfo entityFunctionInfo = entityShim.GetFunctionInfo();
+            bool functionUnavailable = entityFunctionInfo?.Executor == null;
+
+            if (entityShim.OperationBatch.Count > 0
+                && !this.HostLifetimeService.OnStopping.IsCancellationRequested
+                && !functionUnavailable)
             {
                 // 3a. (function execution) Start the functions invocation pipeline (billing, logging, bindings, and timeout tracking).
                 result = await FunctionExecutionHelper.ExecuteFunctionInOrchestrationMiddleware(
-                    entityShim.GetFunctionInfo().Executor,
+                    entityFunctionInfo.Executor,
                     new TriggeredFunctionData
                     {
                         TriggerValue = entityShim.Context,
@@ -1174,6 +1224,42 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     throw new SessionAbortedException(
                         $"An internal error occurred while attempting to execute '{entityContext.FunctionName}'.",
                         result.Exception);
+                }
+            }
+            else if (functionUnavailable
+                && entityShim.OperationBatch.Count > 0
+                && !this.HostLifetimeService.OnStopping.IsCancellationRequested)
+            {
+                // The entity function is registered/indexed but has no active listener — e.g. it is
+                // disabled but still deployed, or was deleted/renamed. Rather than dereferencing a
+                // null executor (which would surface as a transient work-item failure and poison-loop
+                // the batch forever), fail every operation in the batch deterministically. Each
+                // operation gets an exception response and is recorded as an application (not internal)
+                // error, so the batch is not aborted/retried. This mirrors the graceful handling in
+                // OutOfProcMiddleware.CallEntityAsync and the activity GetObject path.
+                // See https://github.com/Azure/azure-functions-durable-extension/issues/3471.
+                entityShim.AddTraceFlag(EntityTraceFlags.FunctionUnavailable);
+
+                this.TraceHelper.ExtensionWarningEvent(
+                    this.Options.HubName,
+                    entityContext.Name,
+                    entityContext.InstanceId,
+                    $"The entity function '{entityContext.Name}' is disabled or does not exist. Failing {entityShim.OperationBatch.Count} operation(s).");
+
+                var failureMessage = this.GetInvalidEntityFunctionMessage(entityContext.Name);
+                entityShim.SetFunctionInvocationCallback(() => throw new FunctionFailedException(failureMessage));
+
+                if (entityContext.InternalError == null)
+                {
+                    try
+                    {
+                        await entityShim.ExecuteBatch(this.HostLifetimeService.OnStopping);
+                        await next();
+                    }
+                    catch (Exception e)
+                    {
+                        entityContext.CaptureInternalError(e, entityShim);
+                    }
                 }
             }
             else
@@ -1477,7 +1563,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal string GetInvalidEntityFunctionMessage(string name)
         {
             string message = $"The function '{name}' doesn't exist, is disabled, or is not an entity function. Additional info: ";
-            if (this.knownOrchestrators.Keys.Count > 0)
+            if (this.knownEntities.Keys.Count > 0)
             {
                 message += $"The following are the known entity functions: '{string.Join("', '", this.knownEntities.Keys)}'.";
             }

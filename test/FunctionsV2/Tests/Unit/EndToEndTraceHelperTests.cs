@@ -3,17 +3,27 @@
 
 #nullable enable
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics.Tracing;
+using System.Linq;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace WebJobs.Extensions.DurableTask.Tests.V2
 {
     public class EndToEndTraceHelperTests
     {
+        private readonly ITestOutputHelper output;
+
+        public EndToEndTraceHelperTests(ITestOutputHelper output)
+        {
+            this.output = output;
+        }
+
         [Theory]
         [InlineData(true, "DO NOT LOG ME")]
         [InlineData(false, "DO NOT LOG ME")]
@@ -107,13 +117,104 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             }
         }
 
+        // FunctionType is internal, so it cannot appear as a parameter on a public xUnit test
+        // method (CS0051). The values are passed as int and cast back inside the test body.
+        [Theory]
+        [InlineData((int)FunctionType.Entity, "@counter@42", "@counter@42")]
+        [InlineData((int)FunctionType.Orchestrator, "child-orchestration-id", "child-orchestration-id")]
+        [InlineData((int)FunctionType.Activity, null, null)]
+
+        // Callers that do not supply an instance ID forward an empty string, most notably
+        // CallSubOrchestratorAsync(functionName, input). That must be logged as "not supplied"
+        // rather than as an empty target instance ID.
+        [InlineData((int)FunctionType.Orchestrator, "", null)]
+        [InlineData((int)FunctionType.Orchestrator, "   ", null)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void FunctionScheduled_LogsTargetInstanceIdInStructuredState(
+            int functionType,
+            string? targetInstanceId,
+            string? expectedLoggedTargetInstanceId)
+        {
+            // Arrange
+            var testLogger = new TestLogger(this.output, category: "UnitTest");
+            var traceHelper = new EndToEndTraceHelper(
+                logger: testLogger,
+                traceReplayEvents: false);
+
+            // Act
+            traceHelper.FunctionScheduled(
+                hubName: "TestHub",
+                functionName: "TargetFunction",
+                instanceId: "parent-instance-id",
+                reason: "TestCaller",
+                functionType: (FunctionType)functionType,
+                isReplay: false,
+                targetInstanceId: targetInstanceId);
+
+            // Assert
+            var logMessage = Assert.Single(testLogger.LogMessages);
+            var state = Assert.IsAssignableFrom<IEnumerable<KeyValuePair<string, object>>>(logMessage.State);
+            var targetInstanceIdState = Assert.Single(state, property => property.Key == "targetInstanceId");
+            Assert.Equal(expectedLoggedTargetInstanceId, targetInstanceIdState.Value);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void FunctionScheduled_PreservesExistingMessagePrefixAndAppendsTargetInstanceId()
+        {
+            var testLogger = new TestLogger(this.output, category: "UnitTest");
+            var traceHelper = new EndToEndTraceHelper(testLogger, traceReplayEvents: false);
+
+            traceHelper.FunctionScheduled(
+                hubName: "TestHub",
+                functionName: "Child",
+                instanceId: "parent-id",
+                reason: "Parent",
+                functionType: FunctionType.Orchestrator,
+                isReplay: false,
+                targetInstanceId: "child-id");
+
+            string message = Assert.Single(testLogger.LogMessages).FormattedMessage;
+            Assert.Contains("IsReplay: False. State: Scheduled. RuntimeStatus: Pending.", message);
+            Assert.EndsWith("TargetInstanceId: child-id.", message);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void FunctionScheduled_EtwEvent201V3AppendsTargetInstanceId()
+        {
+            using var listener = new CapturingEventListener();
+
+            EtwEventSource.Instance.FunctionScheduled(
+                "hub",
+                "app",
+                "slot",
+                "function",
+                "source-id",
+                "reason",
+                "Entity",
+                "version",
+                false,
+                "@counter@key");
+
+            EventWrittenEventArgs captured = Assert.Single(
+                listener.Events,
+                item => item.EventId == 201 && item.Payload?.LastOrDefault()?.ToString() == "@counter@key");
+            Assert.Equal(3, captured.Version);
+            Assert.Equal(
+                new[] { "TaskHub", "AppName", "SlotName", "FunctionName", "InstanceId", "Reason", "FunctionType", "ExtensionVersion", "IsReplay", "TargetInstanceId" },
+                captured.PayloadNames);
+            Assert.Equal(
+                new object[] { "hub", "app", "slot", "function", "source-id", "reason", "Entity", "version", false, "@counter@key" },
+                captured.Payload);
+        }
+
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void ClientOperationReceived_LogsWhenInvocationIdProvided()
         {
             // Arrange
-            var logMessages = new List<string>();
-            var testLogger = new TestLogger(logMessages);
+            var testLogger = new TestLogger(this.output, category: "UnitTest");
             var traceHelper = new EndToEndTraceHelper(
                 logger: testLogger,
                 traceReplayEvents: false);
@@ -126,10 +227,10 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 functionInvocationId: "invocation-456");
 
             // Assert
-            Assert.Single(logMessages);
-            Assert.Contains("StartOrchestration", logMessages[0]);
-            Assert.Contains("test-instance-123", logMessages[0]);
-            Assert.Contains("invocation-456", logMessages[0]);
+            var logMessage = Assert.Single(testLogger.LogMessages);
+            Assert.Contains("StartOrchestration", logMessage.FormattedMessage);
+            Assert.Contains("test-instance-123", logMessage.FormattedMessage);
+            Assert.Contains("invocation-456", logMessage.FormattedMessage);
         }
 
         [Fact]
@@ -137,8 +238,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         public void ClientOperationReceived_DoesNotLogWhenInvocationIdNull()
         {
             // Arrange
-            var logMessages = new List<string>();
-            var testLogger = new TestLogger(logMessages);
+            var testLogger = new TestLogger(this.output, category: "UnitTest");
             var traceHelper = new EndToEndTraceHelper(
                 logger: testLogger,
                 traceReplayEvents: false);
@@ -151,7 +251,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 functionInvocationId: null);
 
             // Assert - should not log when invocation ID is null
-            Assert.Empty(logMessages);
+            Assert.Empty(testLogger.LogMessages);
         }
 
         [Fact]
@@ -159,8 +259,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         public void ClientOperationReceived_DoesNotLogWhenInvocationIdEmpty()
         {
             // Arrange
-            var logMessages = new List<string>();
-            var testLogger = new TestLogger(logMessages);
+            var testLogger = new TestLogger(this.output, category: "UnitTest");
             var traceHelper = new EndToEndTraceHelper(
                 logger: testLogger,
                 traceReplayEvents: false);
@@ -173,34 +272,24 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 functionInvocationId: string.Empty);
 
             // Assert - should not log when invocation ID is empty
-            Assert.Empty(logMessages);
+            Assert.Empty(testLogger.LogMessages);
         }
 
-        /// <summary>
-        /// Simple test logger that captures log messages.
-        /// </summary>
-        private class TestLogger : ILogger
+        private sealed class CapturingEventListener : EventListener
         {
-            private readonly List<string> messages;
+            public ConcurrentQueue<EventWrittenEventArgs> Events { get; } = new ConcurrentQueue<EventWrittenEventArgs>();
 
-            public TestLogger(List<string> messages)
+            protected override void OnEventSourceCreated(EventSource eventSource)
             {
-                this.messages = messages;
+                if (eventSource.Name == "WebJobs-Extensions-DurableTask")
+                {
+                    this.EnableEvents(eventSource, EventLevel.LogAlways);
+                }
             }
 
-            public IDisposable? BeginScope<TState>(TState state)
-                where TState : notnull => null;
-
-            public bool IsEnabled(LogLevel logLevel) => true;
-
-            public void Log<TState>(
-                LogLevel logLevel,
-                EventId eventId,
-                TState state,
-                Exception? exception,
-                Func<TState, Exception?, string> formatter)
+            protected override void OnEventWritten(EventWrittenEventArgs eventData)
             {
-                this.messages.Add(formatter(state, exception));
+                this.Events.Enqueue(eventData);
             }
         }
     }

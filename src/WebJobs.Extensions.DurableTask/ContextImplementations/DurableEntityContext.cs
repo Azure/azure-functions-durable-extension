@@ -451,7 +451,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.InstanceId,
                 reason: this.FunctionName,
                 functionType: FunctionType.Entity,
-                isReplay: false);
+                isReplay: false,
+                targetInstanceId: target.InstanceId);
         }
 
         string IDurableEntityContext.StartNewOrchestration(string functionName, object input, string instanceId)
@@ -491,7 +492,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.InstanceId,
                 reason: this.FunctionName,
                 functionType: FunctionType.Orchestrator,
-                isReplay: false);
+                isReplay: false,
+                targetInstanceId: instanceId);
 
             return instanceId;
         }

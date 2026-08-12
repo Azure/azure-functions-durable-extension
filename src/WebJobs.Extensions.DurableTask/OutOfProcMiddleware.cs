@@ -115,6 +115,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     isReplay: false);
             }
 
+            // A termination is applied by the orchestration executor itself, which completes the instance
+            // without the orchestrator function ever running to completion. The "Terminated" lifecycle
+            // notification therefore has to be raised from this middleware rather than from the orchestrator.
+            // Only new events are inspected, since the full history would keep matching on every replay.
+            // https://github.com/Azure/azure-functions-durable-extension/issues/286
+            ExecutionTerminatedEvent? terminatedEvent = DurableTaskExtension.GetTerminationEventOrNull(runtimeState);
+
             WorkItemMetadata workItemMetadata = dispatchContext.GetProperty<WorkItemMetadata>();
             var context = new RemoteOrchestratorContext(
                 runtimeState,
@@ -231,12 +238,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         OrchestrationRuntimeStatus.Completed,
                         instance.InstanceId);
 
-                    await this.LifeCycleNotificationHelper.OrchestratorCompletedAsync(
-                        this.Options.HubName,
-                        functionName.Name,
-                        instance.InstanceId,
-                        context.ContinuedAsNew,
-                        isReplay: false);
+                    if (terminatedEvent != null)
+                    {
+                        // The instance completed because it was terminated, not because the orchestrator
+                        // function ran to completion, so raise the "Terminated" notification instead.
+                        await this.LifeCycleNotificationHelper.OrchestratorTerminatedAsync(
+                            this.Options.HubName,
+                            functionName.Name,
+                            instance.InstanceId,
+                            terminatedEvent.Input);
+                    }
+                    else
+                    {
+                        await this.LifeCycleNotificationHelper.OrchestratorCompletedAsync(
+                            this.Options.HubName,
+                            functionName.Name,
+                            instance.InstanceId,
+                            context.ContinuedAsNew,
+                            isReplay: false);
+                    }
                 }
                 else
                 {
@@ -338,8 +358,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 });
             }
 
-            if (functionInfo == null)
+            if (functionInfo?.Executor == null)
             {
+                // The entity is not registered (deleted/renamed) or is registered/indexed but disabled
+                // but still deployed, so it has no active listener (null executor). Fail the batch
+                // deterministically instead of dereferencing the null executor below, which would
+                // surface as a transient failure and retry the work item forever.
+                // See https://github.com/Azure/azure-functions-durable-extension/issues/3471.
                 SetErrorResult(new FailureDetails(
                     errorType: "EntityFunctionNotFound",
                     errorMessage: this.extension.GetInvalidEntityFunctionMessage(functionName.Name),
@@ -531,9 +556,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return;
             }
 
-            if (!this.extension.TryGetActivityInfo(functionName, out RegisteredFunctionInfo? function))
+            if (!this.extension.TryGetActivityInfo(functionName, out RegisteredFunctionInfo? function)
+                || function?.Executor == null)
             {
                 // Fail the activity call with an error explaining that the function name is invalid.
+                // This covers two cases that must both fail deterministically rather than poison-loop:
+                //   1. the activity is not registered (deleted/renamed), and
+                //   2. the activity is registered/indexed but is disabled and still deployed, so it has
+                //      no active listener and its Executor is null. Dereferencing that null executor
+                //      below would surface as a transient runtime failure and retry the work item
+                //      forever. See https://github.com/Azure/azure-functions-durable-extension/issues/3471.
                 string errorMessage = this.extension.GetInvalidActivityFunctionMessage(functionName.Name);
                 dispatchContext.SetProperty(new ActivityExecutionResult
                 {

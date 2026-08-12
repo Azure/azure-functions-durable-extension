@@ -4,6 +4,8 @@ permissions:
 
 env:
   CORE_TOOLS_VERSION: '4.8.0'
+  NPM_CONFIG_USERCONFIG: ${{ github.workspace }}/eng/cfs/.npmrc
+  PIP_INDEX_URL: https://pkgs.dev.azure.com/azfunc/public/_packaging/upstream-public/pypi/simple/
 
 on:
   workflow_dispatch:
@@ -58,9 +60,9 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Set up Node.js (needed for Azurite)
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '20.x'
+          node-version: '22.x'
 
       - name: Set up Python
         if: matrix.language.name == 'python'
@@ -162,9 +164,9 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Set up Node.js (needed for Azurite)
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '20.x'
+          node-version: '22.x'
           
       - name: Set up Python
         uses: actions/setup-python@v2

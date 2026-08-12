@@ -24,6 +24,9 @@ on:
 permissions:
   contents: read
 
+env:
+  NPM_CONFIG_USERCONFIG: ${{ github.workspace }}/eng/cfs/.npmrc
+
 jobs:
   # ====================================================================================
   # Job 1: .NET Isolated Smoke Test (Worker extension)
@@ -40,7 +43,7 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with: { dotnet-version: '8.0.x' }
       - uses: actions/setup-node@v4
-        with: { node-version: '20.x' }
+        with: { node-version: '22.x' }
       - run: npm install -g azure-functions-core-tools@4 --unsafe-perm true
 
       - name: Parse and bump Worker extension version
@@ -73,23 +76,15 @@ jobs:
           find bin/Release -name "*.nupkg" -exec cp {} "../../$PKG/" \;
 
       - name: Generate NuGet.config
+        shell: pwsh
         run: |
-          cat > test/SmokeTests/DepValidation/Isolated/NuGet.config << 'NUGET'
-          <?xml version="1.0" encoding="utf-8"?>
-          <configuration>
-            <packageSources><clear />
-              <add key="local-packages" value="./local-packages" />
-              <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
-            </packageSources>
-            <packageSourceMapping>
-              <packageSource key="local-packages">
-                <package pattern="Microsoft.Azure.Functions.Worker.Extensions.DurableTask" />
-                <package pattern="Microsoft.Azure.WebJobs.Extensions.DurableTask" />
-              </packageSource>
-              <packageSource key="nuget.org"><package pattern="*" /></packageSource>
-            </packageSourceMapping>
-          </configuration>
-          NUGET
+          ./eng/cfs/New-LocalNuGetConfig.ps1 `
+            -DestinationPath "test/SmokeTests/DepValidation/Isolated/NuGet.config" `
+            -LocalSourcePath "./local-packages" `
+            -PackagePatterns @(
+              "Microsoft.Azure.Functions.Worker.Extensions.DurableTask",
+              "Microsoft.Azure.WebJobs.Extensions.DurableTask"
+            )
 
       - name: Build smoke test app
         run: dotnet build test/SmokeTests/DepValidation/Isolated/DepValidationApp.csproj -c Release -p:SmokeTestExtVersion=${{ steps.version.outputs.ext_version }}
@@ -159,7 +154,7 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with: { dotnet-version: '8.0.x' }
       - uses: actions/setup-node@v4
-        with: { node-version: '20.x' }
+        with: { node-version: '22.x' }
       - run: npm install -g azure-functions-core-tools@4 --unsafe-perm true
 
       - name: Parse and bump WebJobs extension version
@@ -187,22 +182,12 @@ jobs:
           ls -la "../../$PKG/"
 
       - name: Generate NuGet.config
+        shell: pwsh
         run: |
-          cat > test/SmokeTests/DepValidation/InProcess/NuGet.config << 'NUGET'
-          <?xml version="1.0" encoding="utf-8"?>
-          <configuration>
-            <packageSources><clear />
-              <add key="local-packages" value="./local-packages" />
-              <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
-            </packageSources>
-            <packageSourceMapping>
-              <packageSource key="local-packages">
-                <package pattern="Microsoft.Azure.WebJobs.Extensions.DurableTask" />
-              </packageSource>
-              <packageSource key="nuget.org"><package pattern="*" /></packageSource>
-            </packageSourceMapping>
-          </configuration>
-          NUGET
+          ./eng/cfs/New-LocalNuGetConfig.ps1 `
+            -DestinationPath "test/SmokeTests/DepValidation/InProcess/NuGet.config" `
+            -LocalSourcePath "./local-packages" `
+            -PackagePatterns "Microsoft.Azure.WebJobs.Extensions.DurableTask"
 
       - name: Build in-process smoke test app
         run: dotnet build test/SmokeTests/DepValidation/InProcess/InProcessSmokeTest.csproj -c Release -p:SmokeTestWebJobsVersion=${{ steps.version.outputs.ext_version }}

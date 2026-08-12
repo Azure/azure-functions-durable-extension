@@ -12,12 +12,14 @@ using DurableTask.Core.Entities.OperationFormat;
 using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Middleware;
+using Google.Protobuf;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
+using P = Microsoft.DurableTask.Protobuf;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
@@ -145,6 +147,66 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CallActivityAsync_DisabledActivity_FailsDeterministicallyWithoutAbort()
+        {
+            // Reproduces https://github.com/Azure/azure-functions-durable-extension/issues/3471 for the
+            // passthrough/out-of-proc activity middleware. A disabled-but-still-deployed activity is
+            // indexed (present in knownActivities) but has a null executor because its listener never
+            // started. The middleware must fail the activity with a deterministic TaskFailedEvent instead
+            // of dereferencing the null executor (which surfaced as a SessionAbortedException and made the
+            // work item retry forever).
+            DurableTaskExtension extension = CreateDurableTaskExtension();
+            extension.RegisterActivity(new FunctionName("TestActivity"), executor: null!);
+
+            var middleware = new OutOfProcMiddleware(extension);
+            var dispatchContext = new DispatchMiddlewareContext();
+            dispatchContext.SetProperty(new TaskScheduledEvent(-1) { Name = "TestActivity" });
+            dispatchContext.SetProperty(new OrchestrationInstance { InstanceId = "test-instance-id" });
+
+            // Act: must NOT throw (no SessionAbortedException / NullReferenceException poison loop).
+            await middleware.CallActivityAsync(dispatchContext, () => Task.CompletedTask);
+
+            // Assert: a deterministic (non-transient) failure was set on the dispatch context.
+            ActivityExecutionResult result = dispatchContext.GetProperty<ActivityExecutionResult>();
+            Assert.NotNull(result);
+            TaskFailedEvent failedEvent = Assert.IsType<TaskFailedEvent>(result.ResponseEvent);
+            Assert.Contains("TestActivity", failedEvent.Reason);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CallEntityAsync_DisabledEntity_FailsDeterministicallyWithoutAbort()
+        {
+            // Reproduces https://github.com/Azure/azure-functions-durable-extension/issues/3471 for the
+            // passthrough/out-of-proc entity middleware. A disabled-but-still-deployed entity is indexed
+            // (present in knownEntities) but has a null executor because its listener never started. The
+            // middleware must fail the batch with a non-retriable FailureDetails result instead of
+            // dereferencing the null executor (which surfaced as a transient failure and retried forever).
+            DurableTaskExtension extension = CreateDurableTaskExtension();
+            extension.RegisterEntity(new FunctionName("TestEntity"), new RegisteredFunctionInfo(executor: null!, isOutOfProc: true));
+
+            var middleware = new OutOfProcMiddleware(extension);
+            var dispatchContext = new DispatchMiddlewareContext();
+            dispatchContext.SetProperty(new EntityBatchRequest
+            {
+                InstanceId = "@TestEntity@test-key",
+                EntityState = null,
+                Operations = new List<OperationRequest>(),
+            });
+            dispatchContext.SetProperty(CreateWorkItemMetadata(isExtendedSession: false, includeState: false));
+
+            // Act: must NOT throw (no SessionAbortedException / NullReferenceException poison loop).
+            await middleware.CallEntityAsync(dispatchContext, () => Task.CompletedTask);
+
+            // Assert: a deterministic, non-retriable failure was set on the dispatch context.
+            EntityBatchResult result = dispatchContext.GetProperty<EntityBatchResult>();
+            Assert.NotNull(result);
+            Assert.NotNull(result.FailureDetails);
+            Assert.Contains("TestEntity", result.FailureDetails.ErrorMessage);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void TryGetStructuredFailureDetails_StructuredPayload_ReturnsFailureDetailsWithProperties()
         {
             // Arrange: an out-of-proc worker exception whose message embeds a serialized
@@ -216,6 +278,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             // Act + Assert: no structured payload, so null is returned.
             Assert.Null(OutOfProcMiddleware.TryGetStructuredFailureDetails(exception));
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData("sayōnara")]
+        [InlineData(null)]
+        public async Task CallOrchestratorAsync_TerminatedInstance_RaisesTerminatedNotification(string terminationReason)
+        {
+            // Regression test for https://github.com/Azure/azure-functions-durable-extension/issues/286.
+            // A termination is applied by the orchestration executor and never reaches orchestrator user
+            // code, so the middleware is responsible for raising the "Terminated" lifecycle notification.
+            // Both cases here are terminated; the null case covers terminating without supplying a reason.
+            var notificationHelper = new RecordingLifeCycleNotificationHelper();
+            (OutOfProcMiddleware middleware, DispatchMiddlewareContext dispatchContext) =
+                this.SetupCompletedOrchestratorTest(notificationHelper, isTerminated: true, terminationReason);
+
+            await middleware.CallOrchestratorAsync(dispatchContext, () => Task.CompletedTask);
+
+            Assert.Equal(new[] { $"Terminated:{terminationReason}" }, notificationHelper.Notifications);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CallOrchestratorAsync_CompletedInstance_RaisesCompletedNotification()
+        {
+            // Control case for the regression above: an instance that completed normally must still
+            // raise "Completed", so the termination handling does not swallow the ordinary path.
+            var notificationHelper = new RecordingLifeCycleNotificationHelper();
+            (OutOfProcMiddleware middleware, DispatchMiddlewareContext dispatchContext) =
+                this.SetupCompletedOrchestratorTest(notificationHelper, isTerminated: false, terminationReason: null);
+
+            await middleware.CallOrchestratorAsync(dispatchContext, () => Task.CompletedTask);
+
+            Assert.Equal(new[] { "Completed" }, notificationHelper.Notifications);
         }
 
         public static IEnumerable<object[]> PlatformLevelExceptions()
@@ -290,6 +386,65 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return (middleware, dispatchContext);
         }
 
+        private (OutOfProcMiddleware middleware, DispatchMiddlewareContext context) SetupCompletedOrchestratorTest(
+            ILifeCycleNotificationHelper notificationHelper,
+            bool isTerminated,
+            string terminationReason)
+        {
+            DurableTaskExtension extension = CreateDurableTaskExtension(notificationHelper);
+
+            // Model what a language worker returns after processing the work item: an orchestration
+            // completion action whose status is either Terminated or Completed.
+            var response = new P.OrchestratorResponse();
+            response.Actions.Add(new P.OrchestratorAction
+            {
+                CompleteOrchestration = new P.CompleteOrchestrationAction
+                {
+                    OrchestrationStatus = isTerminated
+                        ? P.OrchestrationStatus.Terminated
+                        : P.OrchestrationStatus.Completed,
+                    Result = terminationReason ?? "\"done\"",
+                },
+            });
+
+            string encodedResponse = Convert.ToBase64String(response.ToByteArray());
+
+            var mockExecutor = new Mock<ITriggeredFunctionExecutor>();
+            mockExecutor
+                .Setup(e => e.TryExecuteAsync(It.IsAny<TriggeredFunctionData>(), It.IsAny<CancellationToken>()))
+                .Returns(async (TriggeredFunctionData data, CancellationToken _) =>
+                {
+#pragma warning disable CS0618 // Approved for use by this extension
+                    await data.InvokeHandler(() => Task.FromResult<object>(encodedResponse));
+#pragma warning restore CS0618
+                    return new FunctionResult(succeeded: true);
+                });
+
+            extension.RegisterOrchestrator(
+                new FunctionName("TestOrchestrator"),
+                new RegisteredFunctionInfo(mockExecutor.Object, isOutOfProc: true));
+
+            // The ExecutionStartedEvent lands in PastEvents, so the instance is not treated as brand new
+            // and no "Started" notification is expected. The termination event is a new event delivered
+            // with this work item.
+            var runtimeState = new OrchestrationRuntimeState(
+                [
+                    new ExecutionStartedEvent(-1, null) { Name = "TestOrchestrator" },
+                ]);
+
+            if (isTerminated)
+            {
+                runtimeState.AddEvent(new ExecutionTerminatedEvent(-1, terminationReason));
+            }
+
+            var dispatchContext = new DispatchMiddlewareContext();
+            dispatchContext.SetProperty(CreateWorkItemMetadata(isExtendedSession: false, includeState: false));
+            dispatchContext.SetProperty(runtimeState);
+            dispatchContext.SetProperty(new OrchestrationInstance { InstanceId = "test-instance-id" });
+
+            return (new OutOfProcMiddleware(extension), dispatchContext);
+        }
+
         private (OutOfProcMiddleware middleware, DispatchMiddlewareContext context) CreateMiddleware(
             Exception executorException, string functionName, FunctionType functionType)
         {
@@ -326,7 +481,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return (new OutOfProcMiddleware(extension), dispatchContext);
         }
 
-        private static DurableTaskExtension CreateDurableTaskExtension()
+        private static DurableTaskExtension CreateDurableTaskExtension(
+            ILifeCycleNotificationHelper lifeCycleNotificationHelper = null)
         {
             var options = new DurableTaskOptions
             {
@@ -348,6 +504,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 ],
                 new TestHostShutdownNotificationService(),
                 new DurableHttpMessageHandlerFactory(),
+                lifeCycleNotificationHelper,
                 platformInformationService: TestHelpers.GetMockPlatformInformationService());
         }
 
@@ -361,6 +518,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 modifiers: null);
             Assert.NotNull(ctor);
             return (WorkItemMetadata)ctor.Invoke([isExtendedSession, includeState]);
+        }
+
+        /// <summary>
+        /// Records the lifecycle notifications raised by the middleware so tests can assert on them.
+        /// </summary>
+        private sealed class RecordingLifeCycleNotificationHelper : ILifeCycleNotificationHelper
+        {
+            public List<string> Notifications { get; } = new List<string>();
+
+            public Task OrchestratorStartingAsync(string hubName, string functionName, string instanceId, bool isReplay)
+            {
+                this.Notifications.Add("Started");
+                return Task.CompletedTask;
+            }
+
+            public Task OrchestratorCompletedAsync(string hubName, string functionName, string instanceId, bool continuedAsNew, bool isReplay)
+            {
+                this.Notifications.Add("Completed");
+                return Task.CompletedTask;
+            }
+
+            public Task OrchestratorFailedAsync(string hubName, string functionName, string instanceId, string reason, bool isReplay)
+            {
+                this.Notifications.Add($"Failed:{reason}");
+                return Task.CompletedTask;
+            }
+
+            public Task OrchestratorTerminatedAsync(string hubName, string functionName, string instanceId, string reason)
+            {
+                this.Notifications.Add($"Terminated:{reason}");
+                return Task.CompletedTask;
+            }
         }
 
         /// <summary>
