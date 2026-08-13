@@ -25,7 +25,7 @@
     <PackageVersion Include="Microsoft.Azure.WebJobs" Version="3.0.45" />
     <PackageVersion Include="Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers" Version="0.5.0" />
     <PackageVersion Include="Microsoft.Azure.WebJobs.Extensions.Rpc" Version="3.0.39" />
-    <PackageVersion Include="Microsoft.Azure.WebJobs.Logging.ApplicationInsights" Version="3.0.41" />
+    <PackageVersion Include="Microsoft.Azure.WebJobs.Logging.ApplicationInsights" Version="3.0.45" />
     <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.2" />
     <PackageVersion Include="Microsoft.Bcl.Memory" Version="10.0.5" />
     <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4" />

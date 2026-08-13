@@ -5,14 +5,18 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
+using Azure.Identity;
 using DurableTask.Core;
 using Microsoft.ApplicationInsights.Channel;
 using Microsoft.ApplicationInsights.DataContracts;
+using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.ApplicationInsights.Extensibility.Implementation;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Xunit;
 using Xunit.Abstractions;
@@ -202,29 +206,72 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-        [Fact]
+        [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task DistributedTracingV2_EntraAuthentication_PreservesModuleSpans()
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task DistributedTracingV2_EntraAuthentication_PreservesModuleSpans(bool hostCredentialAvailable)
         {
             string[] orchestrationFunctionNames =
             {
                 nameof(TestOrchestrations.SayHelloWithActivity),
             };
 
+            using TelemetryConfiguration hostTelemetryConfiguration = TelemetryConfiguration.CreateDefault();
+            var hostCredential = new ManagedIdentityCredential(ManagedIdentityId.SystemAssigned);
+            if (hostCredentialAvailable)
+            {
+                hostTelemetryConfiguration.SetAzureTokenCredential(hostCredential);
+            }
+
+            TelemetryActivator activator = null;
+
             var result = await this.ExecuteOrchestrationWithExceptionAsync(
                 orchestrationFunctionNames,
-                "DistributedTracingV2EntraAuthentication",
+                hostCredentialAvailable ? "DTV2EntraReuse" : "DTV2EntraFallback",
                 "world",
                 extendedSessions: false,
                 protocol: "W3CTraceContext",
                 version: DurableDistributedTracingVersion.V2,
-                authenticationString: "Authorization=AAD");
+                authenticationString: "Authorization=AAD",
+                hostTelemetryConfiguration: hostTelemetryConfiguration,
+                inspectTelemetryActivator: telemetryActivator => activator = telemetryActivator);
+
+            // The activator must come from production DI with the host-aware constructor selected,
+            // otherwise this test would silently degrade to the standalone credential path.
+            Assert.NotNull(activator);
+            FieldInfo hostConfigurationField = typeof(TelemetryActivator).GetField(
+                "hostTelemetryConfiguration",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(hostConfigurationField);
+            Assert.Same(hostTelemetryConfiguration, hostConfigurationField.GetValue(activator));
 
             const string expectedMessage =
                 "Microsoft Entra authentication enabled for Durable distributed tracing using the system-assigned managed identity.";
             Assert.Contains(
                 this.loggerProvider.GetAllLogMessages(),
                 log => log.FormattedMessage?.StartsWith(expectedMessage, StringComparison.Ordinal) == true);
+
+            const string fallbackWarning =
+                "The Application Insights credential owned by the Functions host could not be read";
+            bool fallbackWarningLogged = this.loggerProvider.GetAllLogMessages().Any(
+                log => log.FormattedMessage?.Contains(fallbackWarning) == true);
+            object durableCredential =
+                TelemetryActivator.GetAzureTokenCredential(activator.TelemetryConfiguration);
+
+            if (hostCredentialAvailable)
+            {
+                // The root cause of #3497: Durable must hand its own configuration the very same
+                // credential instance the host created, not an equivalent one it built itself.
+                Assert.Same(hostCredential, durableCredential);
+                Assert.False(fallbackWarningLogged);
+            }
+            else
+            {
+                Assert.NotSame(hostCredential, durableCredential);
+                Assert.IsType<ManagedIdentityCredential>(durableCredential);
+                Assert.True(fallbackWarningLogged);
+            }
 
             List<OperationTelemetry> telemetry = result.Item1;
             DependencyTelemetry createOrchestration = Assert.Single(
@@ -333,7 +380,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 bool extendedSessions,
                 string protocol,
                 DurableDistributedTracingVersion version = DurableDistributedTracingVersion.V1,
-                string authenticationString = null)
+                string authenticationString = null,
+                TelemetryConfiguration hostTelemetryConfiguration = null,
+                Action<TelemetryActivator> inspectTelemetryActivator = null)
         {
             ConcurrentQueue<ITelemetry> sendItems = new ConcurrentQueue<ITelemetry>();
             TraceOptions traceOptions = new TraceOptions()
@@ -363,9 +412,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 extendedSessions,
                 options: options,
                 nameResolver: mockNameResolver.Object,
-                onSend: sendAction))
+                onSend: sendAction,
+                hostTelemetryConfiguration: hostTelemetryConfiguration))
             {
                 await host.StartAsync();
+
+                if (inspectTelemetryActivator != null)
+                {
+                    IServiceProvider services =
+                        ((PlatformSpecificHelpers.FunctionsV2HostWrapper)host).InnerHost.Services;
+                    inspectTelemetryActivator(
+                        Assert.IsType<TelemetryActivator>(services.GetRequiredService<ITelemetryActivator>()));
+                }
+
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], input, this.output);
                 await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(90));
                 await host.StopAsync();

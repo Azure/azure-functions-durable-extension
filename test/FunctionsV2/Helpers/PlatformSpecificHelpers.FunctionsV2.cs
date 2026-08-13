@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.ApplicationInsights.Channel;
+using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
@@ -40,7 +41,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Action<ITelemetry> onSend,
             bool addDurableClientFactory,
             ITypeLocator typeLocator,
-            Action<ScaleOptions> configureScaleOptions = null)
+            Action<ScaleOptions> configureScaleOptions = null,
+            TelemetryConfiguration hostTelemetryConfiguration = null)
         {
             // Unless specified, use table partition management for tests as it makes the task hubs start up faster.
             // These tests run on a single task hub workers, so they don't test partition management anyways, and that is tested
@@ -87,16 +89,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                             serviceCollection.AddSingleton(serializerSettingsFactory);
                         }
 
+                        if (hostTelemetryConfiguration != null)
+                        {
+                            // Mirrors the Application Insights configuration the Functions host registers,
+                            // so DI can select the host-aware TelemetryActivator constructor.
+                            serviceCollection.AddSingleton(hostTelemetryConfiguration);
+                        }
+
                         if (onSend != null)
                         {
                             serviceCollection.AddSingleton<ITelemetryActivator>(serviceProvider =>
                             {
-                                var durableTaskOptions = serviceProvider.GetService<IOptions<DurableTaskOptions>>();
-                                var nameResolver = serviceProvider.GetService<INameResolver>();
-                                var telemetryActivator = new TelemetryActivator(durableTaskOptions, nameResolver)
-                                {
-                                    OnSend = onSend,
-                                };
+                                // Let the container pick the constructor exactly as the production
+                                // AddSingleton<ITelemetryActivator, TelemetryActivator>() registration does.
+                                var telemetryActivator =
+                                    ActivatorUtilities.CreateInstance<TelemetryActivator>(serviceProvider);
+                                telemetryActivator.OnSend = onSend;
                                 return telemetryActivator;
                             });
                         }

@@ -66,6 +66,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 
         internal IAsyncDisposable WebJobsTelemetryModule { get; set; }
 
+        /// <summary>
+        /// Gets the private configuration Durable builds for its own telemetry. Exposed so tests can
+        /// assert which credential was applied without reaching into Application Insights internals.
+        /// </summary>
+        internal TelemetryConfiguration TelemetryConfiguration { get; private set; }
+
         /// <inheritdoc/>
         public ValueTask DisposeAsync()
         {
@@ -111,6 +117,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                 }
 
                 TelemetryConfiguration telemetryConfiguration = this.SetupTelemetryConfiguration();
+                this.TelemetryConfiguration = telemetryConfiguration;
 
                 if (this.options.Tracing.Version == Options.DurableDistributedTracingVersion.V2)
                 {
