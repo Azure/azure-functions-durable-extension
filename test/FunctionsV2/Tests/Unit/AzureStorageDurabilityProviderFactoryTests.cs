@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using DurableTask.Core;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
@@ -20,6 +21,66 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
 {
     public class AzureStorageDurabilityProviderFactoryTests
     {
+        [Theory]
+        [InlineData("Started", MigrationMode.MigrationStarted)]
+        [InlineData("started", MigrationMode.MigrationStarted)]
+        [InlineData("Ending", MigrationMode.MigrationEnding)]
+        [InlineData("ending", MigrationMode.MigrationEnding)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void MigrationState_IsMappedToMigrationMode(string migrationState, MigrationMode expectedMode)
+        {
+            var nameResolver = new SimpleNameResolver(new Dictionary<string, string>
+            {
+                { AzureStorageDurabilityProviderFactory.MigrationStateSettingName, migrationState },
+            });
+            var factory = new AzureStorageDurabilityProviderFactory(
+                new OptionsWrapper<DurableTaskOptions>(new DurableTaskOptions()),
+                new TestStorageServiceClientProviderFactory(),
+                nameResolver,
+                NullLoggerFactory.Instance,
+                TestHelpers.GetMockPlatformInformationService());
+
+            var provider = Assert.IsType<AzureStorageDurabilityProvider>(factory.GetDurabilityProvider());
+
+            Assert.Equal(expectedMode, provider.MigrationMode);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void MigrationState_WhenNotConfigured_DoesNotSetMigrationMode()
+        {
+            var factory = new AzureStorageDurabilityProviderFactory(
+                new OptionsWrapper<DurableTaskOptions>(new DurableTaskOptions()),
+                new TestStorageServiceClientProviderFactory(),
+                new SimpleNameResolver(),
+                NullLoggerFactory.Instance,
+                TestHelpers.GetMockPlatformInformationService());
+
+            var provider = Assert.IsType<AzureStorageDurabilityProvider>(factory.GetDurabilityProvider());
+
+            Assert.Null(provider.MigrationMode);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void MigrationState_WhenInvalid_Throws()
+        {
+            var nameResolver = new SimpleNameResolver(new Dictionary<string, string>
+            {
+                { AzureStorageDurabilityProviderFactory.MigrationStateSettingName, "Invalid" },
+            });
+
+            InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
+                () => new AzureStorageDurabilityProviderFactory(
+                    new OptionsWrapper<DurableTaskOptions>(new DurableTaskOptions()),
+                    new TestStorageServiceClientProviderFactory(),
+                    nameResolver,
+                    NullLoggerFactory.Instance,
+                    TestHelpers.GetMockPlatformInformationService()));
+
+            Assert.Contains(AzureStorageDurabilityProviderFactory.MigrationStateSettingName, exception.Message);
+        }
+
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void DefaultWorkerId_IsMachineName()

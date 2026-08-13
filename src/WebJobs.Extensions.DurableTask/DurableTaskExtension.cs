@@ -195,6 +195,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal DurabilityProvider DefaultDurabilityProvider => this.defaultDurabilityProvider;
 
+        internal MigrationMode? StorageMigrationMode =>
+            (this.defaultDurabilityProvider as AzureStorageDurabilityProvider)?.MigrationMode;
+
         internal HttpApiHandler HttpApiHandler { get; private set; }
 
         internal ILifeCycleNotificationHelper LifeCycleNotificationHelper { get; private set; }
@@ -1602,7 +1605,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             activityNames: activeFunctions.activityNames,
                             entityNames: activeFunctions.entityNames);
 
-                        await this.EnsureTaskHubWorker().StartAsync();
+                        TaskHubWorker taskHubWorker = this.EnsureTaskHubWorker();
+                        if (this.StorageMigrationMode is MigrationMode migrationMode)
+                        {
+                            await taskHubWorker.StartAsync(migrationMode);
+                        }
+                        else
+                        {
+                            await taskHubWorker.StartAsync();
+                        }
 
                         this.GetTaskHubWorkerOrThrow().TaskOrchestrationDispatcher.EntitiesEnabled = true;
 

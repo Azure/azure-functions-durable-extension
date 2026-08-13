@@ -30,6 +30,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         // gRPC metadata key for correlating client operations with function invocations
         private const string FunctionInvocationIdMetadataKey = "x-azure-functions-invocationid";
+        private const string MigrationEndingMessage =
+            "The Azure Storage backend is temporarily unavailable because a migration is ending. " +
+            "Requests will be serviced by the new backend once migration finishes.";
 
         private readonly DurableTaskExtension extension;
 
@@ -45,18 +48,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.CreateTaskHubResponse> CreateTaskHub(P.CreateTaskHubRequest request, ServerCallContext context)
         {
+            this.ThrowIfMigrationEnding();
             await this.GetDurabilityProvider(context).CreateAsync(request.RecreateIfExists);
             return new P.CreateTaskHubResponse();
         }
 
         public async override Task<P.DeleteTaskHubResponse> DeleteTaskHub(P.DeleteTaskHubRequest request, ServerCallContext context)
         {
+            this.ThrowIfMigrationEnding();
             await this.GetDurabilityProvider(context).DeleteAsync();
             return new P.DeleteTaskHubResponse();
         }
 
         public async override Task<P.CreateInstanceResponse> StartInstance(P.CreateInstanceRequest request, ServerCallContext context)
         {
+            this.ThrowIfMigrationEnding();
             try
             {
                 List<OrchestrationStatus> allStatuses = System.Enum
@@ -147,6 +153,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.RaiseEventResponse> RaiseEvent(P.RaiseEventRequest request, ServerCallContext context)
         {
+            this.ThrowIfMigrationEnding();
             bool throwStatusExceptionsOnRaiseEvent = this.extension.Options.ThrowStatusExceptionsOnRaiseEvent ?? this.extension.DefaultDurabilityProvider.CheckStatusBeforeRaiseEvent;
 
             // Log correlation information for client operations
@@ -188,6 +195,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.SignalEntityResponse> SignalEntity(P.SignalEntityRequest request, ServerCallContext context)
         {
+            this.ThrowIfMigrationEnding();
             this.CheckEntitySupport(context, out var durabilityProvider, out var entityOrchestrationService);
 
             // Log correlation information for client operations
@@ -229,6 +237,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.GetEntityResponse> GetEntity(P.GetEntityRequest request, ServerCallContext context)
         {
+            this.ThrowIfMigrationEnding();
             this.LogClientOperationReceived(context, "GetEntity", request.InstanceId);
             this.CheckEntitySupport(context, out var durabilityProvider, out var entityOrchestrationService);
 
@@ -247,6 +256,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.QueryEntitiesResponse> QueryEntities(P.QueryEntitiesRequest request, ServerCallContext context)
         {
+            this.ThrowIfMigrationEnding();
             this.LogClientOperationReceived(context, "QueryEntities", string.Empty);
             this.CheckEntitySupport(context, out var durabilityProvider, out var entityOrchestrationService);
 
@@ -279,6 +289,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.CleanEntityStorageResponse> CleanEntityStorage(P.CleanEntityStorageRequest request, ServerCallContext context)
         {
+            this.ThrowIfMigrationEnding();
             this.LogClientOperationReceived(context, "CleanEntityStorage", string.Empty);
             this.CheckEntitySupport(context, out var durabilityProvider, out var entityOrchestrationService);
 
@@ -301,6 +312,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.TerminateResponse> TerminateInstance(P.TerminateRequest request, ServerCallContext context)
         {
+            this.ThrowIfMigrationEnding();
+
             // Log correlation information for client operations
             this.LogClientOperationReceived(context, "Terminate", request.InstanceId);
 
@@ -310,6 +323,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.SuspendResponse> SuspendInstance(P.SuspendRequest request, ServerCallContext context)
         {
+            this.ThrowIfMigrationEnding();
+
             // Log correlation information for client operations
             this.LogClientOperationReceived(context, "Suspend", request.InstanceId);
 
@@ -319,6 +334,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.ResumeResponse> ResumeInstance(P.ResumeRequest request, ServerCallContext context)
         {
+            this.ThrowIfMigrationEnding();
+
             // Log correlation information for client operations
             this.LogClientOperationReceived(context, "Resume", request.InstanceId);
 
@@ -328,6 +345,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.RewindInstanceResponse> RewindInstance(P.RewindInstanceRequest request, ServerCallContext context)
         {
+            this.ThrowIfMigrationEnding();
+
             // Log correlation information for client operations
             this.LogClientOperationReceived(context, "Rewind", request.InstanceId);
 
@@ -363,6 +382,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.GetInstanceResponse> GetInstance(P.GetInstanceRequest request, ServerCallContext context)
         {
+            this.ThrowIfMigrationEnding();
             this.LogClientOperationReceived(context, "GetInstance", request.InstanceId);
 
             OrchestrationState state = await this.GetDurabilityProvider(context)
@@ -377,6 +397,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.QueryInstancesResponse> QueryInstances(P.QueryInstancesRequest request, ServerCallContext context)
         {
+            this.ThrowIfMigrationEnding();
             this.LogClientOperationReceived(context, "QueryInstances", string.Empty);
 
             var query = ProtobufUtils.ToOrchestrationQuery(request);
@@ -387,6 +408,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.PurgeInstancesResponse> PurgeInstances(P.PurgeInstancesRequest request, ServerCallContext context)
         {
+            this.ThrowIfMigrationEnding();
             var purgeClient = (IOrchestrationServicePurgeClient)this.GetDurabilityProvider(context);
 
             // Log correlation information for client operations
@@ -472,6 +494,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.GetInstanceResponse> WaitForInstanceStart(P.GetInstanceRequest request, ServerCallContext context)
         {
+            this.ThrowIfMigrationEnding();
             this.LogClientOperationReceived(context, "WaitForInstanceStart", request.InstanceId);
 
             int retryCount = 0;
@@ -496,6 +519,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.GetInstanceResponse> WaitForInstanceCompletion(P.GetInstanceRequest request, ServerCallContext context)
         {
+            this.ThrowIfMigrationEnding();
             this.LogClientOperationReceived(context, "WaitForInstanceCompletion", request.InstanceId);
 
             OrchestrationState state = await this.GetDurabilityProvider(context).WaitForOrchestrationAsync(
@@ -514,6 +538,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public override async Task<P.RestartInstanceResponse> RestartInstance(P.RestartInstanceRequest request, ServerCallContext context)
         {
+            this.ThrowIfMigrationEnding();
             this.LogClientOperationReceived(context, "Restart", request.InstanceId);
 
             try
@@ -579,6 +604,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             IServerStreamWriter<P.HistoryChunk> responseStream,
             ServerCallContext context)
         {
+            this.ThrowIfMigrationEnding();
             this.LogClientOperationReceived(context, "StreamInstanceHistory", request.InstanceId);
 
             if (await this.GetClient(context).GetStatusAsync(request.InstanceId, showInput: false) is null)
@@ -687,6 +713,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string? taskHub = context.RequestHeaders.GetValue("Durable-TaskHub");
             string? connectionName = context.RequestHeaders.GetValue("Durable-ConnectionName");
             return new DurableClientAttribute() { TaskHub = taskHub, ConnectionName = connectionName };
+        }
+
+        private void ThrowIfMigrationEnding()
+        {
+            if (this.extension.StorageMigrationMode == MigrationMode.MigrationEnding)
+            {
+                throw new RpcException(new Status(StatusCode.Unavailable, MigrationEndingMessage));
+            }
         }
 
         private DurabilityProvider GetDurabilityProvider(ServerCallContext context)

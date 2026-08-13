@@ -6,11 +6,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.History;
+using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Grpc.Net.Client;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc;
@@ -74,6 +76,46 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // Test boh two version of grpc lisnter mode can start and stop successfully.
             var internalMode = (LocalGrpcListenerMode)(int)testMode;
             await this.GrpcListener_StartAndStopSuccessfully(internalMode);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task TaskHubGrpcServer_RejectsEveryOperationalRpcExceptHello_WhenMigrationIsEnding()
+        {
+            var nameResolver = new SimpleNameResolver(new Dictionary<string, string>
+            {
+                { AzureStorageDurabilityProviderFactory.MigrationStateSettingName, "Ending" },
+            });
+            using DurableTaskExtension extension = this.CreateExtension(
+                new DurableTaskOptions { HubName = "MigrationEnding" },
+                WorkerRuntimeType.DotNetIsolated,
+                nameResolver);
+            var server = new TaskHubGrpcServer(extension);
+            Empty helloResponse = await server.Hello(new Empty(), context: null);
+            MethodInfo[] rpcMethods = typeof(TaskHubGrpcServer).GetMethods(
+                BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+                .Where(method => method.Name != nameof(TaskHubGrpcServer.Hello))
+                .ToArray();
+
+            Assert.NotNull(helloResponse);
+            Assert.NotEmpty(rpcMethods);
+            foreach (MethodInfo method in rpcMethods)
+            {
+                object[] arguments = method.GetParameters().Select(_ => (object)null).ToArray();
+                Exception exception;
+                try
+                {
+                    Task invocation = (Task)method.Invoke(server, arguments);
+                    exception = await Record.ExceptionAsync(() => invocation);
+                }
+                catch (TargetInvocationException invocationException)
+                {
+                    exception = invocationException.InnerException;
+                }
+
+                RpcException rpcException = Assert.IsType<RpcException>(exception);
+                Assert.Equal(StatusCode.Unavailable, rpcException.StatusCode);
+            }
         }
 
         [Fact]
@@ -962,10 +1004,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return this.CreateExtension(new DurableTaskOptions { HubName = hubName }, runtimeType);
         }
 
-        private DurableTaskExtension CreateExtension(DurableTaskOptions options, WorkerRuntimeType runtimeType)
+        private DurableTaskExtension CreateExtension(
+            DurableTaskOptions options,
+            WorkerRuntimeType runtimeType,
+            INameResolver nameResolver = null)
         {
             var wrappedOptions = new OptionsWrapper<DurableTaskOptions>(options);
-            var nameResolver = TestHelpers.GetTestNameResolver();
+            nameResolver ??= TestHelpers.GetTestNameResolver();
             var serviceFactory = new AzureStorageDurabilityProviderFactory(
                 wrappedOptions,
                 new TestStorageServiceClientProviderFactory(),

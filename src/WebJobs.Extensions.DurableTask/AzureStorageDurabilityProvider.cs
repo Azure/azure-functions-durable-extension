@@ -25,7 +25,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// <summary>
     /// The Azure Storage implementation of additional methods not required by IOrchestrationService.
     /// </summary>
-    internal class AzureStorageDurabilityProvider : DurabilityProvider
+    internal class AzureStorageDurabilityProvider : DurabilityProvider, IMigratableOrchestrationService
     {
         private readonly AzureStorageOrchestrationService serviceClient;
         private readonly IStorageServiceClientProviderFactory clientProviderFactory;
@@ -42,6 +42,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             IStorageServiceClientProviderFactory clientProviderFactory,
             string connectionName,
             AzureStorageOptions options,
+            MigrationMode? migrationMode,
             ILogger logger)
             : base("Azure Storage", service, service, connectionName)
         {
@@ -55,6 +56,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     Converters = { new StringEnumConverter() },
                     ContractResolver = new CamelCasePropertyNamesContractResolver(),
                 });
+            this.MigrationMode = migrationMode;
             this.logger = logger;
         }
 
@@ -72,6 +74,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public override TimeSpan LongRunningTimerIntervalLength { get; set; } = TimeSpan.FromDays(3);
 
         public override string EventSourceName { get; set; } = "DurableTask-AzureStorage";
+
+        internal MigrationMode? MigrationMode { get; }
+
+        /// <inheritdoc/>
+        Task IMigratableOrchestrationService.StartAsync(MigrationMode migrationMode)
+        {
+            return this.serviceClient.StartAsync(migrationMode);
+        }
 
         /// <inheritdoc/>
         public async override Task<IList<OrchestrationState>> GetAllOrchestrationStates(CancellationToken cancellationToken)
