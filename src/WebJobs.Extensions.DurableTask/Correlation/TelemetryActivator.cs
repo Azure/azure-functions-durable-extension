@@ -1,8 +1,7 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Reflection;
 using System.Security.Authentication;
 using System.Threading.Tasks;
 using Azure.Identity;
@@ -274,10 +273,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                     ApplicationInsightsTokenCredentialOptions tokenCredentialOptions =
                         ApplicationInsightsTokenCredentialOptions.ParseAuthenticationString(resolvedAuthenticationString);
                     bool userAssignedIdentity = tokenCredentialOptions.ClientId != null;
-                    bool reusedHostCredential = ApplyAzureTokenCredential(config, this.hostTelemetryConfiguration, tokenCredentialOptions);
-                    if (this.hostTelemetryConfiguration != null && !reusedHostCredential)
+                    bool reusedHostChannel = ApplyEntraAuthentication(
+                        config,
+                        this.hostTelemetryConfiguration,
+                        tokenCredentialOptions,
+                        preserveExistingChannel: this.OnSend != null);
+                    if (this.hostTelemetryConfiguration != null && !reusedHostChannel && this.OnSend == null)
                     {
-                        this.LogHostCredentialUnavailable();
+                        this.LogHostChannelUnavailable();
                     }
 
                     this.endToEndTraceHelper.ExtensionInformationalEvent(
@@ -306,45 +309,45 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             return config;
         }
 
-        internal static bool ApplyAzureTokenCredential(
+        /// <summary>
+        /// Enables Microsoft Entra authenticated ingestion for the private Durable telemetry
+        /// configuration.
+        /// </summary>
+        /// <remarks>
+        /// When the Functions host exposes its telemetry configuration, Durable forwards telemetry
+        /// to the host's channel, which already holds the host's credential and Entra ingestion
+        /// endpoint. Durable therefore never creates an <c>Azure.Core.TokenCredential</c>, which is
+        /// important because the Application Insights SDK resolves that type in the host load
+        /// context and rejects a credential created in the function app load context.
+        /// Outside the Functions host there is no channel to reuse, so Durable falls back to
+        /// creating its own managed identity credential.
+        /// </remarks>
+        /// <param name="durableConfiguration">The private Durable telemetry configuration.</param>
+        /// <param name="hostConfiguration">The host telemetry configuration, if available.</param>
+        /// <param name="tokenCredentialOptions">The parsed authentication string.</param>
+        /// <param name="preserveExistingChannel">
+        /// True when the configuration already has a channel that must not be replaced, such as the
+        /// test channel installed by <see cref="OnSend"/>.
+        /// </param>
+        /// <returns>True when the host channel was reused.</returns>
+        internal static bool ApplyEntraAuthentication(
             TelemetryConfiguration durableConfiguration,
             TelemetryConfiguration hostConfiguration,
-            ApplicationInsightsTokenCredentialOptions tokenCredentialOptions)
+            ApplicationInsightsTokenCredentialOptions tokenCredentialOptions,
+            bool preserveExistingChannel = false)
         {
-            object tokenCredential = GetAzureTokenCredential(hostConfiguration);
-            bool reusedHostCredential = tokenCredential != null;
-            if (!reusedHostCredential)
+            ITelemetryChannel hostChannel = hostConfiguration?.TelemetryChannel;
+            if (hostChannel != null && !preserveExistingChannel)
             {
-                ManagedIdentityId managedIdentityId = tokenCredentialOptions.ClientId != null
-                    ? ManagedIdentityId.FromUserAssignedClientId(tokenCredentialOptions.ClientId)
-                    : ManagedIdentityId.SystemAssigned;
-                tokenCredential = new ManagedIdentityCredential(managedIdentityId);
+                durableConfiguration.TelemetryChannel = new HostForwardingTelemetryChannel(hostChannel);
+                return true;
             }
 
-            durableConfiguration.SetAzureTokenCredential(tokenCredential);
-            return reusedHostCredential;
-        }
-
-        /// <summary>
-        /// Gets the host credential so the private Durable telemetry configuration uses the same
-        /// Azure.Core type loaded by the Functions host. Creating a new credential in the function
-        /// app load context can be rejected by the host's Application Insights SDK.
-        /// </summary>
-        internal static object GetAzureTokenCredential(TelemetryConfiguration configuration)
-        {
-            if (configuration == null)
-            {
-                return null;
-            }
-
-            PropertyInfo envelopeProperty = typeof(TelemetryConfiguration).GetProperty(
-                "CredentialEnvelope",
-                BindingFlags.Instance | BindingFlags.NonPublic);
-            object credentialEnvelope = envelopeProperty?.GetValue(configuration);
-            PropertyInfo credentialProperty = credentialEnvelope?.GetType().GetProperty(
-                "Credential",
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            return credentialProperty?.GetValue(credentialEnvelope);
+            ManagedIdentityId managedIdentityId = tokenCredentialOptions.ClientId != null
+                ? ManagedIdentityId.FromUserAssignedClientId(tokenCredentialOptions.ClientId)
+                : ManagedIdentityId.SystemAssigned;
+            durableConfiguration.SetAzureTokenCredential(new ManagedIdentityCredential(managedIdentityId));
+            return false;
         }
 
         private void LogInvalidAuthenticationString()
@@ -356,13 +359,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                 message: "APPLICATIONINSIGHTS_AUTHENTICATION_STRING is invalid and will not be used for Durable distributed tracing.");
         }
 
-        private void LogHostCredentialUnavailable()
+        private void LogHostChannelUnavailable()
         {
             this.endToEndTraceHelper.ExtensionWarningEvent(
                 hubName: this.options.HubName,
                 functionName: string.Empty,
                 instanceId: string.Empty,
-                message: "The Application Insights credential owned by the Functions host could not be read, so Durable distributed tracing created its own managed identity credential. If Durable spans are missing, the host and the function app are likely loading different Azure.Core versions.");
+                message: "The Application Insights telemetry channel owned by the Functions host could not be read, so Durable distributed tracing created its own managed identity credential. If Durable spans are missing, the host and the function app are likely loading different Azure.Core versions.");
         }
 
         private void LogAuthenticationStringCouldNotBeApplied()

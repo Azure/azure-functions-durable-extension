@@ -206,11 +206,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-        [Theory]
+        /*
+         * Reproduces the root cause of #3497 end to end. Durable keeps a private
+         * TelemetryConfiguration, which has no Microsoft Entra credential of its own, so with
+         * DisableLocalAuth=true its spans are rejected at ingestion. The fix forwards them to the
+         * host channel, which already carries the host's credential. Capturing on that host channel
+         * proves the spans really traverse it, and leaving onSend unset means the TelemetryActivator
+         * comes purely from the production DI registration.
+         */
+        [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task DistributedTracingV2_EntraAuthentication_PreservesModuleSpans(bool hostCredentialAvailable)
+        public async Task DistributedTracingV2_EntraAuthentication_ForwardsModuleSpansThroughHostChannel()
         {
             string[] orchestrationFunctionNames =
             {
@@ -218,24 +224,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
 
             using TelemetryConfiguration hostTelemetryConfiguration = TelemetryConfiguration.CreateDefault();
-            var hostCredential = new ManagedIdentityCredential(ManagedIdentityId.SystemAssigned);
-            if (hostCredentialAvailable)
-            {
-                hostTelemetryConfiguration.SetAzureTokenCredential(hostCredential);
-            }
-
             TelemetryActivator activator = null;
 
             var result = await this.ExecuteOrchestrationWithExceptionAsync(
                 orchestrationFunctionNames,
-                hostCredentialAvailable ? "DTV2EntraReuse" : "DTV2EntraFallback",
+                "DTV2EntraForward",
                 "world",
                 extendedSessions: false,
                 protocol: "W3CTraceContext",
                 version: DurableDistributedTracingVersion.V2,
                 authenticationString: "Authorization=AAD",
                 hostTelemetryConfiguration: hostTelemetryConfiguration,
-                inspectTelemetryActivator: telemetryActivator => activator = telemetryActivator);
+                inspectTelemetryActivator: telemetryActivator => activator = telemetryActivator,
+                captureThroughHostChannel: true);
 
             // The activator must come from production DI with the host-aware constructor selected,
             // otherwise this test would silently degrade to the standalone credential path.
@@ -246,6 +247,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.NotNull(hostConfigurationField);
             Assert.Same(hostTelemetryConfiguration, hostConfigurationField.GetValue(activator));
 
+            var forwardingChannel = Assert.IsType<HostForwardingTelemetryChannel>(
+                activator.TelemetryConfiguration.TelemetryChannel);
+            Assert.Same(hostTelemetryConfiguration.TelemetryChannel, forwardingChannel.HostChannel);
+
             const string expectedMessage =
                 "Microsoft Entra authentication enabled for Durable distributed tracing using the system-assigned managed identity.";
             Assert.Contains(
@@ -253,27 +258,54 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 log => log.FormattedMessage?.StartsWith(expectedMessage, StringComparison.Ordinal) == true);
 
             const string fallbackWarning =
-                "The Application Insights credential owned by the Functions host could not be read";
-            bool fallbackWarningLogged = this.loggerProvider.GetAllLogMessages().Any(
+                "The Application Insights telemetry channel owned by the Functions host could not be read";
+            Assert.DoesNotContain(
+                this.loggerProvider.GetAllLogMessages(),
                 log => log.FormattedMessage?.Contains(fallbackWarning) == true);
-            object durableCredential =
-                TelemetryActivator.GetAzureTokenCredential(activator.TelemetryConfiguration);
 
-            if (hostCredentialAvailable)
-            {
-                // The root cause of #3497: Durable must hand its own configuration the very same
-                // credential instance the host created, not an equivalent one it built itself.
-                Assert.Same(hostCredential, durableCredential);
-                Assert.False(fallbackWarningLogged);
-            }
-            else
-            {
-                Assert.NotSame(hostCredential, durableCredential);
-                Assert.IsType<ManagedIdentityCredential>(durableCredential);
-                Assert.True(fallbackWarningLogged);
-            }
+            AssertSayHelloWithActivitySpans(result.Item1);
+        }
 
-            List<OperationTelemetry> telemetry = result.Item1;
+        /*
+         * Outside the Functions host there is no host configuration to forward to, so Durable still
+         * has to authenticate on its own. This keeps the pre-existing behaviour covered and guards
+         * the missing-spans regression that caused #3009 to be reverted by #3053.
+         */
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task DistributedTracingV2_EntraAuthentication_WithoutHostConfiguration_PreservesModuleSpans()
+        {
+            string[] orchestrationFunctionNames =
+            {
+                nameof(TestOrchestrations.SayHelloWithActivity),
+            };
+
+            TelemetryActivator activator = null;
+
+            var result = await this.ExecuteOrchestrationWithExceptionAsync(
+                orchestrationFunctionNames,
+                "DTV2EntraFallback",
+                "world",
+                extendedSessions: false,
+                protocol: "W3CTraceContext",
+                version: DurableDistributedTracingVersion.V2,
+                authenticationString: "Authorization=AAD",
+                inspectTelemetryActivator: telemetryActivator => activator = telemetryActivator);
+
+            Assert.NotNull(activator);
+            Assert.IsNotType<HostForwardingTelemetryChannel>(activator.TelemetryConfiguration.TelemetryChannel);
+
+            const string expectedMessage =
+                "Microsoft Entra authentication enabled for Durable distributed tracing using the system-assigned managed identity.";
+            Assert.Contains(
+                this.loggerProvider.GetAllLogMessages(),
+                log => log.FormattedMessage?.StartsWith(expectedMessage, StringComparison.Ordinal) == true);
+
+            AssertSayHelloWithActivitySpans(result.Item1);
+        }
+
+        private static void AssertSayHelloWithActivitySpans(List<OperationTelemetry> telemetry)
+        {
             DependencyTelemetry createOrchestration = Assert.Single(
                 telemetry.OfType<DependencyTelemetry>(),
                 item => item.Name.StartsWith($"{TraceActivityConstants.CreateOrchestration}:", StringComparison.Ordinal));
@@ -382,7 +414,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 DurableDistributedTracingVersion version = DurableDistributedTracingVersion.V1,
                 string authenticationString = null,
                 TelemetryConfiguration hostTelemetryConfiguration = null,
-                Action<TelemetryActivator> inspectTelemetryActivator = null)
+                Action<TelemetryActivator> inspectTelemetryActivator = null,
+                bool captureThroughHostChannel = false)
         {
             ConcurrentQueue<ITelemetry> sendItems = new ConcurrentQueue<ITelemetry>();
             TraceOptions traceOptions = new TraceOptions()
@@ -395,6 +428,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             options.Tracing = traceOptions;
             var sendAction = new Action<ITelemetry>(
                 delegate(ITelemetry telemetry) { sendItems.Enqueue(telemetry); });
+
+            // Capturing on the host channel instead of the OnSend hook leaves the TelemetryActivator
+            // entirely to the production registration and proves telemetry really travels through
+            // the host channel, which is what carries the host's Entra credential.
+            if (captureThroughHostChannel)
+            {
+                hostTelemetryConfiguration.TelemetryChannel = new NoOpTelemetryChannel { OnSend = sendAction };
+            }
 
             string siteNameEnvironmentVarName = "WEBSITE_SITE_NAME";
             string siteNameEnvironmentVarValue = TestSiteName;
@@ -412,7 +453,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 extendedSessions,
                 options: options,
                 nameResolver: mockNameResolver.Object,
-                onSend: sendAction,
+                onSend: captureThroughHostChannel ? null : sendAction,
                 hostTelemetryConfiguration: hostTelemetryConfiguration))
             {
                 await host.StartAsync();
