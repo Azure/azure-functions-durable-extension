@@ -4,7 +4,10 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 using Azure.Identity;
+using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.Channel;
 using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.ApplicationInsights.Extensibility;
@@ -129,6 +132,70 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Single(sent);
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task HostForwardingTelemetryChannel_FlushAsyncForwardsToAsyncHostChannelExactlyOnce()
+        {
+            using var cancellationSource = new CancellationTokenSource();
+            var hostChannel = new AsyncTelemetryChannel(flushResult: true);
+            using TelemetryConfiguration durableConfiguration = TelemetryConfiguration.CreateDefault();
+            durableConfiguration.TelemetryChannel = new HostForwardingTelemetryChannel(hostChannel);
+            var telemetryClient = new TelemetryClient(durableConfiguration);
+
+            bool result = await telemetryClient.FlushAsync(cancellationSource.Token);
+
+            Assert.True(result);
+            Assert.Equal(1, hostChannel.AsyncFlushCalls);
+            Assert.Equal(0, hostChannel.FlushCalls);
+            Assert.Equal(cancellationSource.Token, hostChannel.LastCancellationToken);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task HostForwardingTelemetryChannel_FlushAsyncFallsBackToSyncHostChannelExactlyOnce()
+        {
+            int flushCalls = 0;
+            var hostChannel = new NoOpTelemetryChannel { OnFlush = () => flushCalls++ };
+            using TelemetryConfiguration durableConfiguration = TelemetryConfiguration.CreateDefault();
+            durableConfiguration.TelemetryChannel = new HostForwardingTelemetryChannel(hostChannel);
+            var telemetryClient = new TelemetryClient(durableConfiguration);
+
+            bool result = await telemetryClient.FlushAsync(CancellationToken.None);
+
+            Assert.False(result);
+            Assert.Equal(1, flushCalls);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task DisposeAsync_AwaitsTelemetryModulesSequentially()
+        {
+            var firstModule = new ControlledAsyncDisposable();
+            var secondModule = new ControlledAsyncDisposable();
+            var activator = new TelemetryActivator(
+                Microsoft.Extensions.Options.Options.Create(new DurableTaskOptions()),
+                Mock.Of<INameResolver>())
+            {
+                TelemetryModule = firstModule,
+                WebJobsTelemetryModule = secondModule,
+            };
+
+            ValueTask disposal = activator.DisposeAsync();
+
+            Assert.False(disposal.IsCompleted);
+            Assert.Equal(1, firstModule.DisposeCalls);
+            Assert.Equal(0, secondModule.DisposeCalls);
+
+            firstModule.CompleteDisposal();
+            await secondModule.DisposalStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+            Assert.False(disposal.IsCompleted);
+            Assert.Equal(1, secondModule.DisposeCalls);
+
+            secondModule.CompleteDisposal();
+            await disposal;
+        }
+
         /// <summary>
         /// The OnSend test hook installs its own channel. Forwarding would silently swallow it.
         /// </summary>
@@ -237,6 +304,69 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 "Credential",
                 BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             return credentialProperty?.GetValue(envelope);
+        }
+
+        private sealed class AsyncTelemetryChannel : ITelemetryChannel, IAsyncFlushable
+        {
+            private readonly bool flushResult;
+
+            public AsyncTelemetryChannel(bool flushResult)
+            {
+                this.flushResult = flushResult;
+            }
+
+            public bool? DeveloperMode { get; set; }
+
+            public string EndpointAddress { get; set; }
+
+            public int AsyncFlushCalls { get; private set; }
+
+            public int FlushCalls { get; private set; }
+
+            public CancellationToken LastCancellationToken { get; private set; }
+
+            public void Dispose()
+            {
+            }
+
+            public void Flush()
+            {
+                this.FlushCalls++;
+            }
+
+            public Task<bool> FlushAsync(CancellationToken cancellationToken)
+            {
+                this.AsyncFlushCalls++;
+                this.LastCancellationToken = cancellationToken;
+                return Task.FromResult(this.flushResult);
+            }
+
+            public void Send(ITelemetry item)
+            {
+            }
+        }
+
+        private sealed class ControlledAsyncDisposable : IAsyncDisposable
+        {
+            private readonly TaskCompletionSource<bool> disposalCompletion =
+                new (TaskCreationOptions.RunContinuationsAsynchronously);
+
+            public TaskCompletionSource<bool> DisposalStarted { get; } =
+                new (TaskCreationOptions.RunContinuationsAsynchronously);
+
+            public int DisposeCalls { get; private set; }
+
+            public ValueTask DisposeAsync()
+            {
+                this.DisposeCalls++;
+                this.DisposalStarted.TrySetResult(true);
+                return new ValueTask(this.disposalCompletion.Task);
+            }
+
+            public void CompleteDisposal()
+            {
+                this.disposalCompletion.TrySetResult(true);
+            }
         }
     }
 }

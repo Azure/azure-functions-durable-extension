@@ -2,6 +2,8 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.ApplicationInsights.Channel;
 using Microsoft.ApplicationInsights.Extensibility;
 
@@ -30,7 +32,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
     /// configuring the Durable configuration cannot mutate host state.
     /// </para>
     /// </remarks>
-    internal sealed class HostForwardingTelemetryChannel : ITelemetryChannel
+    internal sealed class HostForwardingTelemetryChannel : ITelemetryChannel, IAsyncFlushable
     {
         private readonly ITelemetryChannel hostChannel;
 
@@ -78,6 +80,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         /// Flushes the host channel.
         /// </summary>
         public void Flush() => this.hostChannel.Flush();
+
+        /// <summary>
+        /// Asynchronously flushes the host channel when supported.
+        /// </summary>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The host channel's asynchronous flush result, or false after a synchronous flush.</returns>
+        public Task<bool> FlushAsync(CancellationToken cancellationToken)
+        {
+            if (this.hostChannel is IAsyncFlushable asyncFlushable)
+            {
+                return asyncFlushable.FlushAsync(cancellationToken);
+            }
+
+            this.hostChannel.Flush();
+            return Task.FromResult(false);
+        }
 
         /// <summary>
         /// Does nothing. The host owns the wrapped channel's lifetime.

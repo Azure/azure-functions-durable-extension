@@ -72,19 +72,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         internal TelemetryConfiguration TelemetryConfiguration { get; private set; }
 
         /// <inheritdoc/>
-        public ValueTask DisposeAsync()
+        public async ValueTask DisposeAsync()
         {
             if (this.TelemetryModule != null)
             {
-                this.TelemetryModule.DisposeAsync();
+                await this.TelemetryModule.DisposeAsync();
             }
 
             if (this.WebJobsTelemetryModule != null)
             {
-                this.WebJobsTelemetryModule.DisposeAsync();
+                await this.WebJobsTelemetryModule.DisposeAsync();
             }
-
-            return default;
         }
 
         /// <inheritdoc/>
