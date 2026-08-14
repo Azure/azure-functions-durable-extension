@@ -51,10 +51,36 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.False(DeserializationCallback.WasCreated);
         }
 
-        private static MessagePayloadDataConverter CreateDataConverter()
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void GetResult_HonorsConfiguredDateParseHandling()
+        {
+            const string Timestamp = "2026-08-14T12:34:56Z";
+            var response = new ResponseMessage
+            {
+                ExceptionType = typeof(ExceptionWithPayload).AssemblyQualifiedName,
+                Result = new JObject
+                {
+                    [nameof(ExceptionWithPayload.Payload)] = Timestamp,
+                }.ToString(Formatting.None),
+            };
+            MessagePayloadDataConverter dataConverter = CreateDataConverter(DateParseHandling.None);
+
+            ExceptionWithPayload exception = Assert.Throws<ExceptionWithPayload>(
+                () => response.GetResult<object>(dataConverter, dataConverter));
+
+            Assert.Equal(Timestamp, Assert.IsType<string>(exception.Payload));
+        }
+
+        private static MessagePayloadDataConverter CreateDataConverter(
+            DateParseHandling dateParseHandling = DateParseHandling.DateTime)
         {
             return new MessagePayloadDataConverter(
-                new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Objects },
+                new JsonSerializerSettings
+                {
+                    TypeNameHandling = TypeNameHandling.Objects,
+                    DateParseHandling = dateParseHandling,
+                },
                 isDefault: true);
         }
 

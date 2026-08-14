@@ -67,7 +67,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     {
                         JsonSerializer serializer = JsonSerializer.Create(errorDataConverter.JsonSettings);
                         serializer.TypeNameHandling = TypeNameHandling.None;
-                        e = (Exception)JToken.Parse(this.Result).ToObject(type, serializer);
+                        using (var stringReader = new System.IO.StringReader(this.Result))
+                        using (var jsonReader = new JsonTextReader(stringReader) { DateParseHandling = serializer.DateParseHandling })
+                        {
+                            e = (Exception)JToken.Load(jsonReader).ToObject(type, serializer);
+                        }
                     }
                 }
                 catch
