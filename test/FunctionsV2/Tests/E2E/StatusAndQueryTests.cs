@@ -57,6 +57,54 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task DisabledOrchestrator_CaseVariantTaskHub_IsRejectedWithoutPersistingInstance()
+        {
+            const string InstanceId = "disabled-case-variant-instance";
+            string taskHubName = TestHelpers.GetTaskHubNameFromTestName(
+                nameof(this.DisabledOrchestrator_CaseVariantTaskHub_IsRejectedWithoutPersistingInstance),
+                enableExtendedSessions: false).ToLowerInvariant();
+            string hostTaskHubName = char.ToUpperInvariant(taskHubName[0]) + taskHubName.Substring(1);
+            var nameResolver = new SimpleNameResolver(
+                new Dictionary<string, string>
+                {
+                    { "TestTaskHub", taskHubName },
+                });
+
+            using (ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DisabledOrchestrator_CaseVariantTaskHub_IsRejectedWithoutPersistingInstance),
+                enableExtendedSessions: false,
+                nameResolver: nameResolver,
+                storageProviderType: TestHelpers.AzureStorageProviderType,
+                exactTaskHubName: hostTaskHubName))
+            {
+                await host.StartAsync();
+
+                Exception exception = await Record.ExceptionAsync(
+                    () => host.StartOrchestratorAsync(
+                        nameof(TestOrchestrations.DisabledOrchestrator),
+                        input: null,
+                        this.output,
+                        instanceId: InstanceId,
+                        useTaskHubFromAppSettings: true));
+
+                IDurableOrchestrationClient defaultClient =
+                    await host.GetOrchestrationClientBindingTest(this.output);
+                Assert.Null(await defaultClient.GetStatusAsync(InstanceId));
+
+                FunctionInvocationException invocationException =
+                    Assert.IsType<FunctionInvocationException>(exception);
+                Assert.NotNull(invocationException.InnerException);
+                Assert.Contains(
+                    "doesn't exist, is disabled, or is not an orchestrator function",
+                    invocationException.InnerException.ToString());
+
+                await host.StopAsync();
+            }
+        }
+
         /// <summary>
         /// End-to-end test which creates an external client that calls a non-existent orchestrator function.
         /// </summary>
