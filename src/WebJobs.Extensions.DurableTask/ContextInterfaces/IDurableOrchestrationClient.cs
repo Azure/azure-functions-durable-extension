@@ -349,9 +349,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// reuse the old instanceId. Defaults to <c>true</c>.</param>
         /// <returns>A task that completes when the orchestration is started. The task contains the instance id of the started
         /// orchestration instance.</returns>
-        /// <exception cref="ArgumentException">
-        /// The orchestrator function for the specified instance is disabled.
-        /// </exception>
         Task<string> RestartAsync(string instanceId, bool restartWithNewInstanceId = true);
 
         /// <summary>

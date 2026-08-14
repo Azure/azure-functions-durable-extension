@@ -59,14 +59,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             try
             {
-                var instance = new OrchestrationInstance
-                {
-                    InstanceId = string.IsNullOrEmpty(request.InstanceId) ? Guid.NewGuid().ToString("N") : request.InstanceId,
-                    ExecutionId = Guid.NewGuid().ToString(),
-                };
-
-                this.LogClientOperationReceived(context, "StartOrchestration", instance.InstanceId);
-
                 if (this.GetClient(context) is DurableClient durableClient && durableClient.ReferencesCurrentApp())
                 {
                     this.extension.ThrowIfOrchestratorFunctionIsDisabled(request.Name);
@@ -87,6 +79,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     .Except(reusableStatuses)
                     .Union(this.extension.Options.OverridableExistingInstanceStates.ToDedupeStatuses())
                     .ToArray();
+
+                // Create the orchestration instance
+                var instance = new OrchestrationInstance
+                {
+                    InstanceId = string.IsNullOrEmpty(request.InstanceId) ? Guid.NewGuid().ToString("N") : request.InstanceId,
+                    ExecutionId = Guid.NewGuid().ToString(),
+                };
+
+                // Log correlation information for client operations
+                this.LogClientOperationReceived(context, "StartOrchestration", instance.InstanceId);
 
                 // Create the ExecutionStartedEvent
                 ExecutionStartedEvent executionStartedEvent = new ExecutionStartedEvent(-1, request.Input)

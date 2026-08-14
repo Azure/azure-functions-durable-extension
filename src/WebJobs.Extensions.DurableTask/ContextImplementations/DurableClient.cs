@@ -30,8 +30,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #pragma warning restore 618
     {
         private const int MaxInstanceIdLength = 256;
-        private const string AzureStorageProviderName = "Azure Storage";
-        private const string AzureManagedProviderName = "azureManaged";
 
         private static readonly JValue NullJValue = JValue.CreateNull();
         private static readonly OrchestrationRuntimeStatus[] RunningStatus
@@ -372,17 +370,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private bool TaskHubMatchesCurrentApp(DurableClient client)
         {
             var taskHubName = this.durableTaskOptions.HubName;
-            StringComparison comparison = UsesCaseInsensitiveTaskHubNames(this.config?.DefaultDurabilityProvider)
-                ? StringComparison.OrdinalIgnoreCase
-                : StringComparison.Ordinal;
-            return string.Equals(client.TaskHubName, taskHubName, comparison);
-        }
-
-        private static bool UsesCaseInsensitiveTaskHubNames(DurabilityProvider provider)
-        {
-            return provider != null &&
-                (string.Equals(provider.Name, AzureStorageProviderName, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(provider.Name, AzureManagedProviderName, StringComparison.OrdinalIgnoreCase));
+            return string.Equals(client.TaskHubName, taskHubName, StringComparison.OrdinalIgnoreCase);
         }
 
         private bool ConnectionNameMatchesCurrentApp(DurableClient client)

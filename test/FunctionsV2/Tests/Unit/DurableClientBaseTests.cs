@@ -81,31 +81,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
-        [InlineData("Azure Storage", null, true)]
-        [InlineData("Azure Storage", "durabletaskhub", true)]
-        [InlineData("azureManaged", "durabletaskhub", true)]
-        [InlineData("mssql", "durabletaskhub", false)]
-        [InlineData("mssql", "DurableTaskHub", true)]
-        [InlineData("Netherite", "durabletaskhub", false)]
-        [InlineData("Netherite", "DurableTaskHub", true)]
-        [InlineData("custom", "durabletaskhub", false)]
-        [InlineData("custom", "DurableTaskHub", true)]
+        [InlineData(null)]
+        [InlineData("durabletaskhub")]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task StartNewAsync_DisabledOrchestrator_UsesDefaultProviderTaskHubCaseSensitivity(
-            string defaultProviderName,
-            string taskHub,
-            bool rejectStart)
+        public async Task StartNewAsync_DisabledOrchestrator_ThrowsException(string taskHub)
         {
             var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
             orchestrationServiceClientMock
                 .Setup(x => x.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()))
                 .Returns(Task.CompletedTask);
             var storageProvider = new DurabilityProvider(
-                "clientProvider",
+                "test",
                 new Mock<IOrchestrationService>().Object,
                 orchestrationServiceClientMock.Object,
                 TestConstants.ConnectionName);
-            var durableExtension = GetDurableTaskConfig(defaultProviderName);
+            var durableExtension = GetDurableTaskConfig();
             durableExtension.RegisterOrchestrator(new FunctionName("DisabledOrchestrator"), orchestratorInfo: null);
             var durableClient = (IDurableOrchestrationClient)new DurableClient(
                 storageProvider,
@@ -113,20 +103,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 durableExtension.HttpApiHandler,
                 new DurableClientAttribute { TaskHub = taskHub });
 
-            if (rejectStart)
-            {
-                ArgumentException exception = await Assert.ThrowsAnyAsync<ArgumentException>(
-                    () => durableClient.StartNewAsync("DisabledOrchestrator"));
-                Assert.Contains("doesn't exist, is disabled, or is not an orchestrator function", exception.Message);
-            }
-            else
-            {
-                await durableClient.StartNewAsync("DisabledOrchestrator");
-            }
+            ArgumentException exception = await Assert.ThrowsAnyAsync<ArgumentException>(
+                () => durableClient.StartNewAsync("DisabledOrchestrator"));
 
+            Assert.Contains("doesn't exist, is disabled, or is not an orchestrator function", exception.Message);
             orchestrationServiceClientMock.Verify(
                 x => x.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()),
-                rejectStart ? Times.Never() : Times.Once());
+                Times.Never());
         }
 
         [Theory]
@@ -236,69 +219,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             var entityId = new EntityId("test", entityKey);
             await Assert.ThrowsAnyAsync<ArgumentException>(async () => await durableClient.SignalEntityAsync(entityId, "test"));
-        }
-
-        [Theory]
-        [InlineData(null, TestConstants.ConnectionName)]
-        [InlineData("durabletaskhub", TestConstants.ConnectionName)]
-        [InlineData(null, "storage")]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task SignalEntityAsync_CurrentAppMissingEntity_ThrowsException(
-            string taskHub,
-            string connectionName)
-        {
-            var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
-            orchestrationServiceClientMock
-                .Setup(client => client.SendTaskOrchestrationMessageAsync(It.IsAny<TaskMessage>()))
-                .Returns(Task.CompletedTask);
-            var storageProvider = new DurabilityProvider(
-                "test",
-                new Mock<IOrchestrationService>().Object,
-                orchestrationServiceClientMock.Object,
-                connectionName);
-            var durableExtension = GetDurableTaskConfig();
-            var durableClient = (IDurableEntityClient)new DurableClient(
-                storageProvider,
-                durableExtension,
-                durableExtension.HttpApiHandler,
-                new DurableClientAttribute { TaskHub = taskHub });
-
-            await Assert.ThrowsAnyAsync<ArgumentException>(
-                () => durableClient.SignalEntityAsync(new EntityId("MissingEntity", "key"), "operation"));
-            orchestrationServiceClientMock.Verify(
-                client => client.SendTaskOrchestrationMessageAsync(It.IsAny<TaskMessage>()),
-                Times.Never);
-        }
-
-        [Theory]
-        [InlineData("RemoteHub", TestConstants.ConnectionName)]
-        [InlineData(null, TestConstants.CustomConnectionName)]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task SignalEntityAsync_ExternalTarget_DoesNotValidateLocalEntity(
-            string taskHub,
-            string connectionName)
-        {
-            var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
-            orchestrationServiceClientMock
-                .Setup(client => client.SendTaskOrchestrationMessageAsync(It.IsAny<TaskMessage>()))
-                .Returns(Task.CompletedTask);
-            var storageProvider = new DurabilityProvider(
-                "test",
-                new Mock<IOrchestrationService>().Object,
-                orchestrationServiceClientMock.Object,
-                connectionName);
-            var durableExtension = GetDurableTaskConfig();
-            var durableClient = (IDurableEntityClient)new DurableClient(
-                storageProvider,
-                durableExtension,
-                durableExtension.HttpApiHandler,
-                new DurableClientAttribute { TaskHub = taskHub });
-
-            await durableClient.SignalEntityAsync(new EntityId("RemoteEntity", "key"), "operation");
-
-            orchestrationServiceClientMock.Verify(
-                client => client.SendTaskOrchestrationMessageAsync(It.IsAny<TaskMessage>()),
-                Times.Once);
         }
 
         [Theory]
@@ -659,35 +579,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 new LoggerFactory(),
                 nameResolver,
                 new[] { serviceFactory },
-                new TestHostShutdownNotificationService(),
-                new DurableHttpMessageHandlerFactory(),
-                platformInformationService: platformInformationService);
-        }
-
-        private static DurableTaskExtension GetDurableTaskConfig(string defaultProviderName)
-        {
-            var options = new DurableTaskOptions
-            {
-                HubName = "DurableTaskHub",
-                WebhookUriProviderOverride = () => new Uri("https://sampleurl.net"),
-            };
-            options.StorageProvider["type"] = defaultProviderName;
-            var wrappedOptions = new OptionsWrapper<DurableTaskOptions>(options);
-            var nameResolver = TestHelpers.GetTestNameResolver();
-            var platformInformationService = TestHelpers.GetMockPlatformInformationService();
-            var defaultProvider = new DurabilityProvider(
-                defaultProviderName,
-                new Mock<IOrchestrationService>().Object,
-                new Mock<IOrchestrationServiceClient>().Object,
-                TestConstants.ConnectionName);
-            var serviceFactory = new Mock<IDurabilityProviderFactory>();
-            serviceFactory.SetupGet(factory => factory.Name).Returns(defaultProviderName);
-            serviceFactory.Setup(factory => factory.GetDurabilityProvider()).Returns(defaultProvider);
-            return new DurableTaskExtension(
-                wrappedOptions,
-                new LoggerFactory(),
-                nameResolver,
-                new[] { serviceFactory.Object },
                 new TestHostShutdownNotificationService(),
                 new DurableHttpMessageHandlerFactory(),
                 platformInformationService: platformInformationService);

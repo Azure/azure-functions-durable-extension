@@ -51,7 +51,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     public class LocalGrpcListenerTests
     {
         private const string TaskHubMetadataKey = "Durable-TaskHub";
-        private const string FunctionInvocationIdMetadataKey = "x-azure-functions-invocationid";
 
         // Host's configured hub for the task hub attribution test. Must be a constant so it can be
         // referenced from [InlineData].
@@ -232,17 +231,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task TestGrpcListener_RejectsDisabledOrchestrator(bool useCaseVariantTaskHub)
         {
             const string FunctionName = "DisabledOrchestrator";
-            const string InstanceId = "disabled-instance";
-            const string FunctionInvocationId = "7ee6ad9a-0f87-468a-8d3c-40c51f91549a";
-            var headers = new Metadata
-            {
-                { FunctionInvocationIdMetadataKey, FunctionInvocationId },
-            };
-            if (useCaseVariantTaskHub)
-            {
-                headers.Add(TaskHubMetadataKey, "disabledorchestratorstart");
-            }
-
+            Metadata headers = useCaseVariantTaskHub
+                ? new Metadata { { TaskHubMetadataKey, "disabledorchestratorstart" } }
+                : null;
             Mock<DurabilityProvider> durabilityProvider = CreateDurabilityProviderMock(
                 new Mock<IOrchestrationService>().Object,
                 new Mock<IOrchestrationServiceClient>().Object);
@@ -257,7 +248,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 "DisabledOrchestratorStart",
                 durabilityProvider.Object,
                 async client => await client.StartInstanceAsync(
-                    new P.CreateInstanceRequest { Name = FunctionName, InstanceId = InstanceId },
+                    new P.CreateInstanceRequest { Name = FunctionName },
                     headers).ResponseAsync,
                 extension => extension.RegisterOrchestrator(
                     new FunctionName(FunctionName),
@@ -271,11 +262,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     It.IsAny<OrchestrationStatus[]>(),
                     It.IsAny<CancellationToken>()),
                 Times.Never);
-            Assert.Contains(
-                this.loggerProvider.GetAllLogMessages(),
-                message => message.Level == LogLevel.Information &&
-                    message.FormattedMessage.Contains($"Client operation 'StartOrchestration' received for instance '{InstanceId}'") &&
-                    message.FormattedMessage.Contains(FunctionInvocationId));
         }
 
         [Theory]
@@ -1311,7 +1297,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string connectionName = "TestConnection")
         {
             var durabilityProvider = new Mock<DurabilityProvider>(
-                "Azure Storage",
+                "Test",
                 orchestrationService,
                 orchestrationServiceClient,
                 connectionName)
