@@ -2110,6 +2110,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 HubName = TestConstants.TaskHub,
             };
             var extension = TestDurableTaskExtension.CreateWithProvider(options, durabilityProvider);
+            extension.RegisterOrchestrator(new FunctionName(FunctionName), orchestratorInfo: null);
             var handler = new HttpApiHandler(extension, NullLogger.Instance);
 
             HttpResponseMessage response = await handler.HandleRequestAsync(

@@ -66,6 +66,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         public virtual string ConnectionName => this.connectionName;
 
+        internal string Name => this.name;
+
         /// <summary>
         /// Specifies whether the durability provider supports Durable Entities.
         /// </summary>
@@ -613,7 +615,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <returns>A boolean indicating whether the connection names match.</returns>
         internal virtual bool ConnectionNameMatches(DurabilityProvider durabilityProvider)
         {
-            return this.ConnectionName.Equals(durabilityProvider.ConnectionName);
+            return string.Equals(this.ConnectionName, durabilityProvider.ConnectionName, StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
