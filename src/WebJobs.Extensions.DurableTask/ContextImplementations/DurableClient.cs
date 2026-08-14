@@ -1057,7 +1057,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private static void TrackNameAndScheduledTime(JObject historyItem, EventType eventType, int index, Dictionary<string, EventIndexDateMapping> eventMapper)
         {
-            eventMapper.Add($"{eventType}_{historyItem["EventId"]}", new EventIndexDateMapping { Index = index, Name = (string)historyItem["Name"], Date = (DateTime)historyItem["Timestamp"], Input = (string)historyItem["Input"] });
+            eventMapper.Add($"{eventType}_{historyItem["EventId"]}", new EventIndexDateMapping { Index = index, Name = (string)historyItem["Name"], Date = (DateTime)historyItem["Timestamp"], Input = (string)historyItem["Input"], InstanceId = (string)historyItem["InstanceId"] });
         }
 
         private static void AddScheduledEventDataAndAggregate(ref Dictionary<string, EventIndexDateMapping> eventMapper, string prefix, JToken historyItem, int[] eventsToRemove, bool showInput)
@@ -1066,6 +1066,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 historyItem["ScheduledTime"] = taskScheduledData.Date;
                 historyItem["FunctionName"] = taskScheduledData.Name;
+                if (!string.IsNullOrEmpty(taskScheduledData.InstanceId))
+                {
+                    historyItem["InstanceId"] = taskScheduledData.InstanceId;
+                }
+
                 if (showInput)
                 {
                     historyItem["Input"] = taskScheduledData.Input;
@@ -1379,6 +1384,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             public string Name { get; set; }
 
             public string Input { get; set; }
+
+            public string InstanceId { get; set; }
         }
     }
 }
