@@ -1297,7 +1297,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string connectionName = "TestConnection")
         {
             var durabilityProvider = new Mock<DurabilityProvider>(
-                "Test",
+                "Azure Storage",
                 orchestrationService,
                 orchestrationServiceClient,
                 connectionName)

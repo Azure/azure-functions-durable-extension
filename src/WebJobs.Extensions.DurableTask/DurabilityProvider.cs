@@ -66,6 +66,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         public virtual string ConnectionName => this.connectionName;
 
+        internal string Name => this.name;
+
         /// <summary>
         /// Specifies whether the durability provider supports Durable Entities.
         /// </summary>
