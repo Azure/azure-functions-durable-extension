@@ -62,8 +62,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // do a best-effort attempt at deserializing this exception
                 try
                 {
-                    var type = Type.GetType(this.ExceptionType, true);
-                    e = (Exception)errorDataConverter.Deserialize(this.Result, type);
+                    Type type = Type.GetType(this.ExceptionType, true);
+                    if (typeof(Exception).IsAssignableFrom(type))
+                    {
+                        JsonSerializer serializer = JsonSerializer.Create(errorDataConverter.JsonSettings);
+                        serializer.TypeNameHandling = TypeNameHandling.None;
+                        e = (Exception)JToken.Parse(this.Result).ToObject(type, serializer);
+                    }
                 }
                 catch
                 {
