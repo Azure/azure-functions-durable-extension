@@ -7,6 +7,7 @@ using DurableTask.Core.History;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.DurableTask.Entities;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -33,6 +34,36 @@ public class GetOrchestrationHistoryTests
         this.fixture = fixture;
         this.fixture.TestLogs.UseTestLogger(testOutputHelper);
         this.output = testOutputHelper;
+    }
+
+    [Fact]
+    [Trait("Java", "Skip")] // GetOrchestrationHistory_HttpStart is only defined in the .NET isolated test app
+    [Trait("Python", "Skip")] // GetOrchestrationHistory_HttpStart is only defined in the .NET isolated test app
+    [Trait("PowerShell", "Skip")] // GetOrchestrationHistory_HttpStart is only defined in the .NET isolated test app
+    [Trait("Node", "Skip")] // GetOrchestrationHistory_HttpStart is only defined in the .NET isolated test app
+    [Trait("MSSQL", "Skip")] // MSSQL does not include InstanceId in SubOrchestrationInstanceCreated events
+    public async Task GetStatusHistory_CompletedSubOrchestrationIncludesInstanceId()
+    {
+        string subOrchestrationInstanceId = Guid.NewGuid().ToString();
+
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(
+            "GetOrchestrationHistory_HttpStart",
+            $"?orchestrationType=succeed&subOrchestrationInstanceId={subOrchestrationInstanceId}&outputSize=16&callEntities=false&tagsKey={TagsKey}&tagsValue={TagsValue}");
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+
+        string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
+
+        string separator = statusQueryGetUri.Contains('?') ? "&" : "?";
+        using var httpClient = new HttpClient();
+        string statusJson = await httpClient.GetStringAsync($"{statusQueryGetUri}{separator}showHistory=true");
+        JObject status = JObject.Parse(statusJson);
+        JArray historyEvents = Assert.IsType<JArray>(status["historyEvents"]);
+        JObject completedEvent = Assert.Single(
+            historyEvents.OfType<JObject>(),
+            historyEvent => (string?)historyEvent["EventType"] == nameof(EventType.SubOrchestrationInstanceCompleted));
+
+        Assert.Equal(subOrchestrationInstanceId, (string?)completedEvent["InstanceId"]);
     }
 
     [Fact]

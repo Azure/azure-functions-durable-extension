@@ -770,6 +770,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <summary>
+        /// Returns the <see cref="ExecutionTerminatedEvent"/> that was delivered with the current orchestration
+        /// work item, or <c>null</c> if this work item is not the result of a termination request.
+        /// </summary>
+        /// <remarks>
+        /// Only <see cref="OrchestrationRuntimeState.NewEvents"/> is inspected. The full event history would keep
+        /// matching on every subsequent replay of the instance, which would produce duplicate notifications.
+        /// </remarks>
+        /// <param name="runtimeState">The runtime state of the orchestration being dispatched.</param>
+#nullable enable
+        internal static ExecutionTerminatedEvent? GetTerminationEventOrNull(OrchestrationRuntimeState? runtimeState)
+        {
+            return runtimeState?.NewEvents?.OfType<ExecutionTerminatedEvent>().FirstOrDefault();
+        }
+#nullable restore
+
+        /// <summary>
         /// This DTFx orchestration middleware allows us to initialize Durable Functions-specific context
         /// and make the execution happen in a way that plays nice with the Azure Functions execution pipeline.
         /// </summary>
@@ -799,6 +815,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             context.IsReplaying = orchestrationRuntimeState.ExecutionStartedEvent.IsPlayed;
             context.History = orchestrationRuntimeState.Events;
             context.RawInput = orchestrationRuntimeState.Input;
+
+            // A termination is applied by the DTFx orchestration executor itself, which completes the instance
+            // without ever running the orchestrator shim to completion. The "Terminated" lifecycle notification
+            // therefore has to be raised from the dispatch middleware, which is the closest common ancestor of
+            // every orchestration work item. https://github.com/Azure/azure-functions-durable-extension/issues/286
+            ExecutionTerminatedEvent terminatedEvent = GetTerminationEventOrNull(orchestrationRuntimeState);
+            if (terminatedEvent != null)
+            {
+                context.AddDeferredTask(() => this.LifeCycleNotificationHelper.OrchestratorTerminatedAsync(
+                    context.HubName,
+                    context.Name,
+                    context.InstanceId,
+                    terminatedEvent.Input));
+            }
 
             RegisteredFunctionInfo info = shim.GetFunctionInfo();
             if (info == null)

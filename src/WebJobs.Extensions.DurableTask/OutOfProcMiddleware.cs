@@ -115,6 +115,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     isReplay: false);
             }
 
+            // A termination is applied by the orchestration executor itself, which completes the instance
+            // without the orchestrator function ever running to completion. The "Terminated" lifecycle
+            // notification therefore has to be raised from this middleware rather than from the orchestrator.
+            // Only new events are inspected, since the full history would keep matching on every replay.
+            // https://github.com/Azure/azure-functions-durable-extension/issues/286
+            ExecutionTerminatedEvent? terminatedEvent = DurableTaskExtension.GetTerminationEventOrNull(runtimeState);
+
             WorkItemMetadata workItemMetadata = dispatchContext.GetProperty<WorkItemMetadata>();
             var context = new RemoteOrchestratorContext(
                 runtimeState,
@@ -231,12 +238,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         OrchestrationRuntimeStatus.Completed,
                         instance.InstanceId);
 
-                    await this.LifeCycleNotificationHelper.OrchestratorCompletedAsync(
-                        this.Options.HubName,
-                        functionName.Name,
-                        instance.InstanceId,
-                        context.ContinuedAsNew,
-                        isReplay: false);
+                    if (terminatedEvent != null)
+                    {
+                        // The instance completed because it was terminated, not because the orchestrator
+                        // function ran to completion, so raise the "Terminated" notification instead.
+                        await this.LifeCycleNotificationHelper.OrchestratorTerminatedAsync(
+                            this.Options.HubName,
+                            functionName.Name,
+                            instance.InstanceId,
+                            terminatedEvent.Input);
+                    }
+                    else
+                    {
+                        await this.LifeCycleNotificationHelper.OrchestratorCompletedAsync(
+                            this.Options.HubName,
+                            functionName.Name,
+                            instance.InstanceId,
+                            context.ContinuedAsNew,
+                            isReplay: false);
+                    }
                 }
                 else
                 {
