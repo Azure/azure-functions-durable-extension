@@ -354,7 +354,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                 hubName: this.options.HubName,
                 functionName: string.Empty,
                 instanceId: string.Empty,
-                message: "APPLICATIONINSIGHTS_AUTHENTICATION_STRING is invalid and will not be used for Durable distributed tracing.");
+                message: "APPLICATIONINSIGHTS_AUTHENTICATION_STRING is invalid and will not be used for Durable Functions distributed tracing.");
         }
 
         private void LogHostChannelUnavailable()

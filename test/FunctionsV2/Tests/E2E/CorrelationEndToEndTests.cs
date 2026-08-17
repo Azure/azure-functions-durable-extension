@@ -199,7 +199,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 options: options))
             {
                 const string expectedMessage =
-                    "APPLICATIONINSIGHTS_AUTHENTICATION_STRING is invalid and will not be used for Durable distributed tracing.";
+                    "APPLICATIONINSIGHTS_AUTHENTICATION_STRING is invalid and will not be used for Durable Functions distributed tracing.";
                 Assert.Contains(
                     this.loggerProvider.GetAllLogMessages(),
                     log => log.FormattedMessage?.StartsWith(expectedMessage, StringComparison.Ordinal) == true);
