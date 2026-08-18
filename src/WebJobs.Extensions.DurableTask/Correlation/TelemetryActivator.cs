@@ -278,7 +278,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                         preserveExistingChannel: this.OnSend != null);
                     if (this.hostTelemetryConfiguration != null && !reusedHostChannel && this.OnSend == null)
                     {
-                        this.LogHostChannelUnavailable();
+                        this.LogTracingWarning(
+                            "The Application Insights telemetry channel owned by the Functions host could not be read, so Durable distributed tracing created its own managed identity credential. If Durable spans are missing, the host and the function app are likely loading different Azure.Core versions.");
                     }
 
                     this.endToEndTraceHelper.ExtensionInformationalEvent(
@@ -292,15 +293,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                 }
                 catch (AuthenticationException)
                 {
-                    this.LogInvalidAuthenticationString();
+                    this.LogTracingWarning(
+                        "APPLICATIONINSIGHTS_AUTHENTICATION_STRING is invalid and will not be used for Durable Functions distributed tracing.");
                 }
                 catch (FormatException)
                 {
-                    this.LogInvalidAuthenticationString();
+                    this.LogTracingWarning(
+                        "APPLICATIONINSIGHTS_AUTHENTICATION_STRING is invalid and will not be used for Durable Functions distributed tracing.");
                 }
                 catch (ArgumentException)
                 {
-                    this.LogAuthenticationStringCouldNotBeApplied();
+                    this.LogTracingWarning(
+                        "APPLICATIONINSIGHTS_AUTHENTICATION_STRING could not be applied and will not be used for Durable Functions distributed tracing.");
                 }
             }
 
@@ -348,31 +352,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             return false;
         }
 
-        private void LogInvalidAuthenticationString()
+        private void LogTracingWarning(string message)
         {
             this.endToEndTraceHelper.ExtensionWarningEvent(
                 hubName: this.options.HubName,
                 functionName: string.Empty,
                 instanceId: string.Empty,
-                message: "APPLICATIONINSIGHTS_AUTHENTICATION_STRING is invalid and will not be used for Durable Functions distributed tracing.");
-        }
-
-        private void LogHostChannelUnavailable()
-        {
-            this.endToEndTraceHelper.ExtensionWarningEvent(
-                hubName: this.options.HubName,
-                functionName: string.Empty,
-                instanceId: string.Empty,
-                message: "The Application Insights telemetry channel owned by the Functions host could not be read, so Durable distributed tracing created its own managed identity credential. If Durable spans are missing, the host and the function app are likely loading different Azure.Core versions.");
-        }
-
-        private void LogAuthenticationStringCouldNotBeApplied()
-        {
-            this.endToEndTraceHelper.ExtensionWarningEvent(
-                hubName: this.options.HubName,
-                functionName: string.Empty,
-                instanceId: string.Empty,
-                message: "APPLICATIONINSIGHTS_AUTHENTICATION_STRING could not be applied and will not be used for Durable Functions distributed tracing.");
+                message: message);
         }
     }
 }
