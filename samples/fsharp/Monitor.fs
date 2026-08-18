@@ -12,7 +12,6 @@ open Microsoft.Extensions.Logging
 open Newtonsoft.Json.Linq
 open Twilio.Rest.Api.V2010.Account
 open Twilio.Types
-open FSharp.Control.Tasks
 
 type WeatherCondition =  Other | Clear | Precipitation
 
