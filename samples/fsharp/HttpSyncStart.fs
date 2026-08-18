@@ -9,7 +9,6 @@ open Microsoft.Azure.WebJobs
 open Microsoft.Azure.WebJobs.Extensions.DurableTask
 open Microsoft.Azure.WebJobs.Extensions.Http
 open Microsoft.Extensions.Logging
-open FSharp.Control.Tasks
 
 module HttpSyncStart = 
 
