@@ -80,6 +80,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Times.Never());
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task StartNewAsync_DifferentConnection_DoesNotValidateLocalOrchestrator()
+        {
+            (DurableClient durableClient, Mock<IOrchestrationServiceClient> serviceClient) =
+                CreateCrossConnectionClient();
+
+            await ((IDurableOrchestrationClient)durableClient).StartNewAsync("RemoteOrchestrator");
+
+            serviceClient.Verify(
+                x => x.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()),
+                Times.Once());
+        }
+
         [Theory]
         [InlineData("Azure Storage", null, true)]
         [InlineData("Azure Storage", "durabletaskhub", true)]
@@ -236,6 +250,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             var entityId = new EntityId("test", entityKey);
             await Assert.ThrowsAnyAsync<ArgumentException>(async () => await durableClient.SignalEntityAsync(entityId, "test"));
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task SignalEntityAsync_DifferentConnection_DoesNotValidateLocalEntity()
+        {
+            (DurableClient durableClient, Mock<IOrchestrationServiceClient> serviceClient) =
+                CreateCrossConnectionClient();
+
+            await ((IDurableEntityClient)durableClient).SignalEntityAsync(
+                new EntityId("RemoteEntity", "entity-key"),
+                "operation",
+                new { Value = 1 });
+
+            serviceClient.Verify(
+                x => x.SendTaskOrchestrationMessageAsync(It.IsAny<TaskMessage>()),
+                Times.Once());
         }
 
         [Theory]
@@ -485,6 +516,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             var durableOrchestrationClient = (IDurableOrchestrationClient)new DurableClient(storageProvider, null, attribute, messagePayloadDataConverter, traceHelper, durableTaskOptions);
             return durableOrchestrationClient;
+        }
+
+        private static (DurableClient Client, Mock<IOrchestrationServiceClient> ServiceClient) CreateCrossConnectionClient()
+        {
+            const string TargetConnectionName = "TargetStorage";
+            var serviceClient = new Mock<IOrchestrationServiceClient>();
+            serviceClient
+                .Setup(x => x.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()))
+                .Returns(Task.CompletedTask);
+            serviceClient
+                .Setup(x => x.SendTaskOrchestrationMessageAsync(It.IsAny<TaskMessage>()))
+                .Returns(Task.CompletedTask);
+            var storageProvider = new DurabilityProvider(
+                "clientProvider",
+                new Mock<IOrchestrationService>().Object,
+                serviceClient.Object,
+                TargetConnectionName);
+            var durableExtension = GetDurableTaskConfig();
+            Assert.NotEqual(
+                durableExtension.DefaultDurabilityProvider.ConnectionName,
+                storageProvider.ConnectionName);
+            var attribute = new DurableClientAttribute
+            {
+                TaskHub = durableExtension.Options.HubName,
+                ConnectionName = TargetConnectionName,
+                ExternalClient = false,
+            };
+            var client = new DurableClient(
+                storageProvider,
+                durableExtension,
+                durableExtension.HttpApiHandler,
+                attribute);
+            return (client, serviceClient);
         }
 
         [Fact]
