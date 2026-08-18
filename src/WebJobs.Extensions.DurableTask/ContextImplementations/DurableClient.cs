@@ -1200,6 +1200,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 Name = orchestrationState.Name,
                 InstanceId = orchestrationState.OrchestrationInstance.InstanceId,
+                ParentInstanceId = orchestrationState.ParentInstance?.OrchestrationInstance?.InstanceId,
                 CreatedTime = orchestrationState.CreatedTime,
                 LastUpdatedTime = orchestrationState.LastUpdatedTime,
                 RuntimeStatus = (OrchestrationRuntimeStatus)orchestrationState.OrchestrationStatus,
