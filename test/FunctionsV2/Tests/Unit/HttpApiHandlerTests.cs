@@ -550,6 +550,53 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task GetAllStatus_IncludesParentInstanceId()
+        {
+            const string ParentInstanceId = "parent-instance";
+            DurableOrchestrationStatus childStatus = DurableClient.ConvertOrchestrationStateToStatus(
+                new OrchestrationState
+                {
+                    Name = "ChildOrchestration",
+                    OrchestrationInstance = new OrchestrationInstance
+                    {
+                        InstanceId = "child-instance",
+                    },
+                    ParentInstance = new ParentInstance
+                    {
+                        OrchestrationInstance = new OrchestrationInstance
+                        {
+                            InstanceId = ParentInstanceId,
+                        },
+                    },
+                    OrchestrationStatus = OrchestrationStatus.Running,
+                });
+            var result = new OrchestrationStatusQueryResult
+            {
+                DurableOrchestrationState = new List<DurableOrchestrationStatus> { childStatus },
+            };
+            var clientMock = new Mock<IDurableClient>();
+            clientMock
+                .Setup(x => x.ListInstancesAsync(It.IsAny<OrchestrationStatusQueryCondition>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(result));
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+            var getStatusRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+            getStatusRequestUriBuilder.Path += "/Instances/";
+
+            HttpResponseMessage responseMessage = await httpApiHandler.HandleRequestAsync(
+                new HttpRequestMessage
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = getStatusRequestUriBuilder.Uri,
+                },
+                CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
+            JArray responsePayload = JArray.Parse(await responseMessage.Content.ReadAsStringAsync());
+            Assert.Equal(ParentInstanceId, (string)responsePayload[0]["parentInstanceId"]);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task GetQueryStatus_is_Success()
         {
             // Build mock

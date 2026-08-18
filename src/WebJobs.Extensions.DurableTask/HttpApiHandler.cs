@@ -748,6 +748,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 Name = status.Name,
                 InstanceId = status.InstanceId,
+                ParentInstanceId = status.ParentInstanceId,
                 RuntimeStatus = status.RuntimeStatus.ToString(),
                 Input = status.Input,
                 CustomStatus = status.CustomStatus,

@@ -436,6 +436,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task GetStatusAsync_IncludesParentInstanceId()
+        {
+            const string ParentInstanceId = "parent-instance";
+            var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
+            orchestrationServiceClientMock.Setup(x => x.GetOrchestrationStateAsync(It.IsAny<string>(), It.IsAny<bool>()))
+                .ReturnsAsync(GetInstanceState(OrchestrationStatus.Running, ParentInstanceId));
+
+            var durableOrchestrationClient = this.GetDurableClient(orchestrationServiceClientMock.Object);
+            DurableOrchestrationStatus status = await durableOrchestrationClient.GetStatusAsync("testInstanceId");
+
+            Assert.Equal(ParentInstanceId, status.ParentInstanceId);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task DurableClient_ExternalApp_TerminateAsync_TerminateEventPlaced()
         {
             var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
@@ -625,7 +640,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return null;
         }
 
-        private static List<OrchestrationState> GetInstanceState(OrchestrationStatus status)
+        private static List<OrchestrationState> GetInstanceState(OrchestrationStatus status, string parentInstanceId = null)
         {
             return new List<OrchestrationState>()
             {
@@ -635,6 +650,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     {
                         InstanceId = "valid_instance_id",
                     },
+                    ParentInstance = parentInstanceId == null
+                        ? null
+                        : new ParentInstance
+                        {
+                            OrchestrationInstance = new OrchestrationInstance
+                            {
+                                InstanceId = parentInstanceId,
+                            },
+                        },
                     OrchestrationStatus = status,
                 },
             };

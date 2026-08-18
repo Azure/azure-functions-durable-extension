@@ -96,6 +96,61 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             this.AssertWarning(ErrorMessage, "GetInstance", nameof(InvalidOperationException));
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task TestGrpcListener_GetInstanceIncludesParentInstanceId()
+        {
+            const string InstanceId = "child-instance";
+            const string ParentInstanceId = "parent-instance";
+            var orchestrationState = new OrchestrationState
+            {
+                Name = "ChildOrchestration",
+                OrchestrationInstance = new OrchestrationInstance
+                {
+                    InstanceId = InstanceId,
+                    ExecutionId = "child-execution",
+                },
+                ParentInstance = new ParentInstance
+                {
+                    OrchestrationInstance = new OrchestrationInstance
+                    {
+                        InstanceId = ParentInstanceId,
+                        ExecutionId = "parent-execution",
+                    },
+                },
+                CreatedTime = DateTime.UtcNow,
+                LastUpdatedTime = DateTime.UtcNow,
+                OrchestrationStatus = OrchestrationStatus.Running,
+            };
+            var orchestrationServiceClient = new Mock<IOrchestrationServiceClient>();
+            orchestrationServiceClient
+                .Setup(client => client.GetOrchestrationStateAsync(InstanceId, (string)null))
+                .ReturnsAsync(orchestrationState);
+            DurabilityProvider durabilityProvider = CreateDurabilityProvider(
+                new Mock<IOrchestrationService>().Object,
+                orchestrationServiceClient.Object);
+            using DurableTaskExtension extension = this.CreateExtension(
+                "GetInstanceIncludesParentInstanceId",
+                durabilityProvider);
+            ILocalGrpcListener listener = LocalGrpcListener.Create(extension, LocalGrpcListenerMode.AspNetCore);
+
+            try
+            {
+                await listener.StartAsync(default);
+                using GrpcChannel channel = GrpcChannel.ForAddress(listener.ListenAddress);
+                var client = new P.TaskHubSidecarService.TaskHubSidecarServiceClient(channel);
+
+                P.GetInstanceResponse response = await client.GetInstanceAsync(
+                    new P.GetInstanceRequest { InstanceId = InstanceId }).ResponseAsync;
+
+                Assert.Equal(ParentInstanceId, response.OrchestrationState.ParentInstanceId);
+            }
+            finally
+            {
+                await listener.StopAsync(default);
+            }
+        }
+
         [Theory]
         [InlineData("AttributionOtherHub", "AttributionOtherHub")]
         [InlineData(null, AttributionDefaultHubName)]
