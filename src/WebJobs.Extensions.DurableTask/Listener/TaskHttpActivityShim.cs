@@ -95,11 +95,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        private static DurableHttpRequest ReconstructDurableHttpRequest(string serializedRequest)
+        private DurableHttpRequest ReconstructDurableHttpRequest(string serializedRequest)
         {
-            // DeserializeObject deserializes into a List and then the first element
-            // of that list is the DurableHttpRequest
-            IList<DurableHttpRequest> input = JsonConvert.DeserializeObject<IList<DurableHttpRequest>>(serializedRequest);
+            // DTFx wraps activity inputs in a list. Use the configured converter so custom
+            // token sources are resolved by the same allowlisting binder used to serialize them.
+            IList<DurableHttpRequest> input =
+                this.config.MessageDataConverter.Deserialize<IList<DurableHttpRequest>>(serializedRequest);
             DurableHttpRequest durableHttpRequest = input.First();
             return durableHttpRequest;
         }

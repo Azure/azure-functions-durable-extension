@@ -18,6 +18,7 @@ using Moq;
 using Moq.Protected;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -29,6 +30,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private readonly ITestOutputHelper output;
 
         private readonly TestLoggerProvider loggerProvider;
+
+        private static readonly IMessageSerializerSettingsFactory MockTokenSourceSerializerSettings =
+            new MockTokenSourceSerializerSettingsFactory();
 
         private static int mockSynchronousHttpMessageHandlerCount;
 
@@ -1411,17 +1415,116 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 nameof(this.DurableHttpAsync_Synchronous_AddsBearerToken),
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,
-                durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler)))
+                durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler),
+                serializerSettings: MockTokenSourceSerializerSettings))
             {
                 await host.StartAsync();
 
                 Dictionary<string, string> headers = new Dictionary<string, string>();
                 headers.Add("Accept", "application/json");
-                headers.Add("Authorization", "Bearer dummy test token");
+                MockTokenSource mockTokenSource = new MockTokenSource("dummy test token");
 
                 TestDurableHttpRequest testRequest = new TestDurableHttpRequest(
                     httpMethod: HttpMethod.Get,
-                    headers: headers);
+                    headers: headers,
+                    tokenSource: mockTokenSource);
+
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CallHttpAsyncOrchestrator), testRequest, this.output);
+                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 90));
+                Assert.NotNull(status);
+                var output = status.Output;
+                Assert.NotNull(output);
+                DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
+
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which checks if the CallHttpAsync Orchestrator returns an OK (200) status code
+        /// when the MockTokenSource object takes in a ManagedIdentityOptions object and
+        /// a Bearer Token is added to the DurableHttpRequest object.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task DurableHttpAsync_Synchronous_TokenWithOptions(string storageProvider)
+        {
+            HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandlerForTestingTokenSource();
+
+            using (ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableHttpAsync_Synchronous_TokenWithOptions),
+                enableExtendedSessions: false,
+                storageProviderType: storageProvider,
+                durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler),
+                serializerSettings: MockTokenSourceSerializerSettings))
+            {
+                await host.StartAsync();
+
+                ManagedIdentityOptions credentialOptions = new ManagedIdentityOptions();
+                credentialOptions.AuthorityHost = new Uri("https://dummy.login.microsoftonline.com/");
+                credentialOptions.TenantId = "tenant_id";
+
+                Dictionary<string, string> headers = new Dictionary<string, string>();
+                headers.Add("Accept", "application/json");
+                MockTokenSource mockTokenSource = new MockTokenSource("dummy test token", credentialOptions);
+
+                TestDurableHttpRequest testRequest = new TestDurableHttpRequest(
+                    httpMethod: HttpMethod.Get,
+                    headers: headers,
+                    tokenSource: mockTokenSource);
+
+                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CallHttpAsyncOrchestrator), testRequest, this.output);
+                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 90));
+                Assert.NotNull(status);
+                var output = status.Output;
+                Assert.NotNull(output);
+                DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
+
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                await host.StopAsync();
+            }
+        }
+
+        /// <summary>
+        /// End-to-end test which checks if the CallHttpAsync Orchestrator returns an OK (200) status code
+        /// when the MockTokenSource object takes in a ManagedIdentityOptions object,
+        /// a Bearer Token is added to the DurableHttpRequest object, and follows the
+        /// asynchronous pattern.
+        /// </summary>
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task DurableHttpAsync_Asynchronous_TokenWithOptions(string storageProvider)
+        {
+            HttpMessageHandler httpMessageHandler = MockAsynchronousHttpMessageHandlerForTestingTokenSource(crossOrigin: false);
+
+            using (ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.DurableHttpAsync_Asynchronous_TokenWithOptions),
+                enableExtendedSessions: false,
+                storageProviderType: storageProvider,
+                durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler),
+                serializerSettings: MockTokenSourceSerializerSettings))
+            {
+                await host.StartAsync();
+
+                ManagedIdentityOptions credentialOptions = new ManagedIdentityOptions();
+                credentialOptions.AuthorityHost = new Uri("https://dummy.login.microsoftonline.com/");
+                credentialOptions.TenantId = "tenant_id";
+
+                Dictionary<string, string> headers = new Dictionary<string, string>();
+                headers.Add("Accept", "application/json");
+                MockTokenSource mockTokenSource = new MockTokenSource("dummy test token", credentialOptions);
+
+                TestDurableHttpRequest testRequest = new TestDurableHttpRequest(
+                    httpMethod: HttpMethod.Get,
+                    headers: headers,
+                    tokenSource: mockTokenSource);
 
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CallHttpAsyncOrchestrator), testRequest, this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 90));
@@ -1453,17 +1556,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,
                 httpAsyncSleepTime: 1000,
-                durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler)))
+                durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler),
+                serializerSettings: MockTokenSourceSerializerSettings))
             {
                 await host.StartAsync();
 
                 Dictionary<string, string> headers = new Dictionary<string, string>();
                 headers.Add("Accept", "application/json");
                 headers.Add("x-functions-key", "function-level-key");
+                MockTokenSource mockTokenSource = new MockTokenSource("dummy test token");
 
                 TestDurableHttpRequest testRequest = new TestDurableHttpRequest(
                     httpMethod: HttpMethod.Get,
-                    headers: headers);
+                    headers: headers,
+                    tokenSource: mockTokenSource);
 
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CallHttpAsyncOrchestrator), testRequest, this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 90));
@@ -1522,7 +1628,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         /// <summary>
         /// End-to-end test which checks that when a 202 Location redirect goes to a different
-        /// origin, the bearer token is NOT forwarded to the poll requests. The mock
+        /// origin, the bearer token (TokenSource) is NOT forwarded to the poll requests. The mock
         /// handler returns OK only when the poll request does NOT carry a bearer token, proving
         /// that cross-origin credential stripping works correctly.
         /// </summary>
@@ -1541,17 +1647,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 testName,
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,
-                durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler)))
+                durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler),
+                serializerSettings: MockTokenSourceSerializerSettings))
             {
                 await host.StartAsync();
 
                 Dictionary<string, string> headers = new Dictionary<string, string>();
                 headers.Add("Accept", "application/json");
-                headers.Add("Authorization", "Bearer dummy test token");
+                MockTokenSource mockTokenSource = new MockTokenSource("dummy test token");
 
                 TestDurableHttpRequest testRequest = new TestDurableHttpRequest(
                     httpMethod: HttpMethod.Get,
-                    headers: headers);
+                    headers: headers,
+                    tokenSource: mockTokenSource);
 
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CallHttpAsyncOrchestrator), testRequest, this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 90));
@@ -2108,6 +2216,47 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 Assert.False(poll.Headers.ContainsKey("Authorization"));
                 Assert.False(poll.Headers.ContainsKey("Cookie"));
+            }
+        }
+
+        private class MockTokenSourceSerializerSettingsFactory : IMessageSerializerSettingsFactory
+        {
+            public JsonSerializerSettings CreateJsonSerializerSettings()
+            {
+                return new JsonSerializerSettings
+                {
+                    TypeNameHandling = TypeNameHandling.None,
+                    DateParseHandling = DateParseHandling.None,
+                    SerializationBinder = new MockTokenSourceBinder(),
+                };
+            }
+        }
+
+        private class MockTokenSourceBinder : ISerializationBinder
+        {
+            public Type BindToType(string assemblyName, string typeName)
+            {
+                Type allowedType = typeof(MockTokenSource);
+                bool allowedAssembly =
+                    string.Equals(assemblyName, allowedType.Assembly.FullName, StringComparison.Ordinal) ||
+                    string.Equals(assemblyName, allowedType.Assembly.GetName().Name, StringComparison.Ordinal);
+                if (allowedAssembly && typeName == allowedType.FullName)
+                {
+                    return allowedType;
+                }
+
+                throw new JsonSerializationException($"Type '{typeName}, {assemblyName}' is not allowed.");
+            }
+
+            public void BindToName(Type serializedType, out string assemblyName, out string typeName)
+            {
+                if (serializedType != typeof(MockTokenSource))
+                {
+                    throw new JsonSerializationException($"Type '{serializedType.FullName}' is not allowed.");
+                }
+
+                assemblyName = serializedType.Assembly.FullName;
+                typeName = serializedType.FullName;
             }
         }
 
