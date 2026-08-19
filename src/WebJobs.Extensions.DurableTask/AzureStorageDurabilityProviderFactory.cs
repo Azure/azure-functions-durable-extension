@@ -87,7 +87,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.useSeparateQueueForEntityWorkItems = true;
             }
 
-            // The following defaults are only applied if the customer did not explicitely set them on `host.json`
+            // The following defaults are only applied if the customer did not explicitly set them on `host.json`
             this.options.MaxConcurrentOrchestratorFunctions = this.options.MaxConcurrentOrchestratorFunctions ?? maxConcurrentOrchestratorsDefault;
             this.options.MaxConcurrentActivityFunctions = this.options.MaxConcurrentActivityFunctions ?? maxConcurrentActivitiesDefault;
             this.options.MaxConcurrentEntityFunctions = this.options.MaxConcurrentEntityFunctions ?? maxConcurrentEntitiesDefault;
