@@ -14,6 +14,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     public class DurableHttpRequestTests
     {
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void TokenSource_RoundTripsManagedIdentity()
         {
             var request = new DurableHttpRequest(
@@ -30,6 +31,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void TokenSource_DeserializesLegacyManagedIdentity()
         {
             JObject json = CreateRequestJson(
@@ -46,6 +48,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void TokenSource_DeserializesV3140ManagedIdentityHistory()
         {
             JObject json = CreateRequestJson(
@@ -67,6 +70,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void TokenSource_RoundTripsCustomImplementation()
         {
             JsonSerializerSettings settings = CreateCustomTokenSourceSettings();
@@ -91,6 +95,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void TokenSource_DeserializesV3140CustomHistoryWithConfiguredBinder()
         {
             ManagedIdentityOptionsProbe.WasCreated = false;
@@ -107,6 +112,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void TokenSource_RejectsV3140CustomHistoryWithoutBinder()
         {
             ManagedIdentityOptionsProbe.WasCreated = false;
@@ -122,6 +128,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void TokenSource_RejectsTypeThatDoesNotImplementInterface()
         {
             JObject json = CreateRequestJson(
@@ -134,6 +141,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void TokenSource_RejectsCustomImplementationWithoutBinder()
         {
             var request = new DurableHttpRequest(
@@ -145,6 +153,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void TokenSource_RequiresBinderForDerivedManagedIdentity()
         {
             var request = new DurableHttpRequest(
@@ -156,6 +165,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void TokenSource_RoundTripsGenericCustomImplementation()
         {
             JsonSerializerSettings settings = CreateCustomTokenSourceSettings();
