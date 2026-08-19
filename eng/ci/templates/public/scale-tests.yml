@@ -14,6 +14,11 @@ jobs:
         inputs:
           packageType: sdk
           useGlobalJson: true
+      - task: UseDotNet@2
+        displayName: Install .NET 8 SDK
+        inputs:
+          packageType: sdk
+          version: 8.x
       - task: NodeTool@0
         displayName: Install Node.js 22
         inputs:
@@ -63,6 +68,11 @@ jobs:
         inputs:
           packageType: sdk
           useGlobalJson: true
+      - task: UseDotNet@2
+        displayName: Install .NET 8 SDK
+        inputs:
+          packageType: sdk
+          version: 8.x
       - task: NodeTool@0
         displayName: Install Node.js 22
         inputs:
@@ -128,6 +138,11 @@ jobs:
         inputs:
           packageType: sdk
           useGlobalJson: true
+      - task: UseDotNet@2
+        displayName: Install .NET 8 SDK
+        inputs:
+          packageType: sdk
+          version: 8.x
       - task: NodeTool@0
         displayName: Install Node.js 22
         inputs:
@@ -198,6 +213,11 @@ jobs:
         inputs:
           packageType: sdk
           useGlobalJson: true
+      - task: UseDotNet@2
+        displayName: Install .NET 8 SDK
+        inputs:
+          packageType: sdk
+          version: 8.x
       - task: NodeTool@0
         displayName: Install Node.js 22
         inputs:

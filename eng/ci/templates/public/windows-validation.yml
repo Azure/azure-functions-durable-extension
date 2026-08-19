@@ -148,14 +148,14 @@ jobs:
       - template: publish-test-results.yml
 
   - job: FunctionsV2E2E
-    displayName: Functions V2 E2E ($(targetFramework))
+    displayName: Functions V2 E2E ($(testTargetFramework))
     timeoutInMinutes: 90
     strategy:
       matrix:
         Net8:
-          targetFramework: net8.0
+          testTargetFramework: net8.0
         Net10:
-          targetFramework: net10.0
+          testTargetFramework: net10.0
     variables:
       AzureWebJobsStorage: UseDevelopmentStorage=true
     steps:
@@ -211,10 +211,10 @@ jobs:
 
       - pwsh: |
           dotnet test ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj `
-            --framework $(targetFramework) `
+            --framework $(testTargetFramework) `
             --no-build `
             --filter 'TestType=E2E' `
-            --logger 'trx;LogFileName=functions-v2-e2e-$(targetFramework).trx' `
+            --logger 'trx;LogFileName=functions-v2-e2e-$(testTargetFramework).trx' `
             --results-directory "$env:AGENT_TEMPDIRECTORY/TestResults" `
             -- xunit.maxParallelThreads=1
         displayName: Run Functions V2 E2E tests

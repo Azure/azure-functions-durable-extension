@@ -7,7 +7,7 @@ parameters:
 
 jobs:
   - job: LanguageE2E
-    displayName: $(backendName) ($(targetFramework))
+    displayName: $(backendName) ($(testTargetFramework))
     timeoutInMinutes: 180
     strategy:
       matrix:
@@ -15,36 +15,36 @@ jobs:
           AzureStorageNet8:
             backendName: AzureStorage
             backendFilter: AzureStorage
-            targetFramework: net8.0
+            testTargetFramework: net8.0
           AzureStorageNet10:
             backendName: AzureStorage
             backendFilter: AzureStorage
-            targetFramework: net10.0
+            testTargetFramework: net10.0
         ${{ if eq(parameters.platform, 'linux') }}:
           AzureStorageNet8:
             backendName: AzureStorage
             backendFilter: AzureStorage
-            targetFramework: net8.0
+            testTargetFramework: net8.0
           AzureStorageNet10:
             backendName: AzureStorage
             backendFilter: AzureStorage
-            targetFramework: net10.0
+            testTargetFramework: net10.0
           DTSNet8:
             backendName: DTS
             backendFilter: DTS
-            targetFramework: net8.0
+            testTargetFramework: net8.0
           DTSNet10:
             backendName: DTS
             backendFilter: DTS
-            targetFramework: net10.0
+            testTargetFramework: net10.0
           MSSQLNet8:
             backendName: MSSQL
             backendFilter: MSSQL
-            targetFramework: net8.0
+            testTargetFramework: net8.0
           MSSQLNet10:
             backendName: MSSQL
             backendFilter: MSSQL
-            targetFramework: net10.0
+            testTargetFramework: net10.0
     steps:
       - checkout: self
         clean: true
@@ -114,7 +114,7 @@ jobs:
       - pwsh: |
           $ErrorActionPreference = 'Stop'
           $arguments = @{
-            TargetFramework = '$(targetFramework)'
+            TargetFramework = '$(testTargetFramework)'
             SkipStorageEmulator = $true
           }
 
@@ -150,7 +150,7 @@ jobs:
           )
 
           $testProject = './test/e2e/Tests'
-          dotnet build $testProject -f $(targetFramework)
+          dotnet build $testProject -f $(testTargetFramework)
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
 
           foreach ($case in $cases) {
@@ -159,10 +159,10 @@ jobs:
             $backendFilter = '$(backendFilter)'
             $filter = "$($backendFilter)!=Skip&$($case.Filter)!=Skip&$($case.Filter)-$($backendFilter)!=Skip"
             dotnet test $testProject `
-              -f $(targetFramework) `
+              -f $(testTargetFramework) `
               --no-build `
               --filter $filter `
-              --logger "trx;LogFileName=language-e2e-$(backendName)-$(targetFramework)-$($case.Name).trx" `
+              --logger "trx;LogFileName=language-e2e-$(backendName)-$(testTargetFramework)-$($case.Name).trx" `
               --results-directory "$env:AGENT_TEMPDIRECTORY/TestResults"
             if ($LASTEXITCODE) { exit $LASTEXITCODE }
           }

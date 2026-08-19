@@ -80,30 +80,22 @@ jobs:
         clean: true
       - template: cfs-authentication.yml
       - task: JavaToolInstaller@0
-        displayName: Install JDK 8
+        displayName: Install JDK 17
         inputs:
-          versionSpec: 8
+          versionSpec: 17
           jdkArchitectureOption: x64
           jdkSourceOption: PreInstalled
       - pwsh: |
-          $archive = Join-Path $env:AGENT_TEMPDIRECTORY 'gradle.zip'
-          Invoke-WebRequest `
-            -Uri 'https://services.gradle.org/distributions/gradle-6.9.4-bin.zip' `
-            -OutFile $archive
-          Expand-Archive -LiteralPath $archive -DestinationPath $env:AGENT_TEMPDIRECTORY
-          Write-Host "##vso[task.prependpath]$env:AGENT_TEMPDIRECTORY/gradle-6.9.4/bin"
-        displayName: Install Gradle 6.9.4
-      - bash: gradle azureFunctionsPackage -p test/SmokeTests/OOProcSmokeTests/durableJava/
+          $project = './test/SmokeTests/OOProcSmokeTests/durableJava/pom.xml'
+          mvn --batch-mode --file $project clean package
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+
+          $appDirectory = Split-Path -Parent $project
+          $mavenOutput = Join-Path $appDirectory 'target/azure-functions/durableJava'
+          $dockerOutput = Join-Path $appDirectory 'build/azure-functions/durableJava'
+          New-Item -ItemType Directory -Path (Split-Path -Parent $dockerOutput) -Force | Out-Null
+          Copy-Item -LiteralPath $mavenOutput -Destination $dockerOutput -Recurse -Force
         displayName: Build Java Functions sample
-        continueOnError: true
-      - bash: |
-          set -euo pipefail
-          destination='test/SmokeTests/OOProcSmokeTests/durableJava/build/azure-functions/durableJava/lib'
-          mkdir -p "$destination"
-          curl -fsSL -u "AzureDevOps:$VSS_NUGET_ACCESSTOKEN" \
-            'https://pkgs.dev.azure.com/azfunc/public/_packaging/upstream-public/maven/v1/com/microsoft/azure/functions/azure-functions-java-library/2.0.1/azure-functions-java-library-2.0.1.jar' \
-            -o "$destination/azure-functions-java-library-2.0.1.jar"
-        displayName: Download Azure Functions Java library from CFS
       - pwsh: >
           ./test/SmokeTests/e2e-test.ps1
           -DockerfilePath test/SmokeTests/OOProcSmokeTests/durableJava/Dockerfile
@@ -114,14 +106,14 @@ jobs:
         displayName: Run Java 8 smoke test
 
   - job: DotNetIsolatedSmoke
-    displayName: Smoke test - .NET isolated ($(targetFramework))
+    displayName: Smoke test - .NET isolated ($(testTargetFramework))
     timeoutInMinutes: 90
     strategy:
       matrix:
         Net8:
-          targetFramework: net8.0
+          testTargetFramework: net8.0
         Net10:
-          targetFramework: net10.0
+          testTargetFramework: net10.0
     steps:
       - checkout: self
         clean: true
@@ -181,8 +173,8 @@ jobs:
           $configPath = Join-Path $env:AGENT_TEMPDIRECTORY 'NuGet.config'
           Push-Location ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated
           try {
-            dotnet restore --configfile $configPath --verbosity normal -p:TargetFramework=$(targetFramework)
-            dotnet build -c Release -f $(targetFramework) --no-restore
+            dotnet restore --configfile $configPath --verbosity normal -p:TargetFramework=$(testTargetFramework)
+            dotnet build -c Release -f $(testTargetFramework) --no-restore
           } finally {
             Pop-Location
           }
