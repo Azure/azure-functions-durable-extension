@@ -279,16 +279,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     message.FormattedMessage.Contains("StartInstance"));
         }
 
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
+        [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task TestGrpcListener_RejectsDisabledOrchestrator(bool useCaseVariantTaskHub)
+        public async Task TestGrpcListener_RejectsDisabledOrchestrator()
         {
             const string FunctionName = "DisabledOrchestrator";
-            Metadata headers = useCaseVariantTaskHub
-                ? new Metadata { { TaskHubMetadataKey, "disabledorchestratorstart" } }
-                : null;
             Mock<DurabilityProvider> durabilityProvider = CreateDurabilityProviderMock(
                 new Mock<IOrchestrationService>().Object,
                 new Mock<IOrchestrationServiceClient>().Object);
@@ -303,8 +298,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 "DisabledOrchestratorStart",
                 durabilityProvider.Object,
                 async client => await client.StartInstanceAsync(
-                    new P.CreateInstanceRequest { Name = FunctionName },
-                    headers).ResponseAsync,
+                    new P.CreateInstanceRequest { Name = FunctionName }).ResponseAsync,
                 extension => extension.RegisterOrchestrator(
                     new FunctionName(FunctionName),
                     orchestratorInfo: null));
@@ -319,34 +313,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Times.Never);
         }
 
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
+        [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task TestGrpcListener_ExternalTarget_DoesNotRejectLocallyDisabledFunction(bool useRemoteTaskHub)
+        public async Task TestGrpcListener_CaseVariantTaskHub_DoesNotRejectLocallyDisabledFunction()
         {
             const string FunctionName = "RemoteOrchestrator";
-            const string RemoteConnectionName = "RemoteConnection";
             Mock<DurabilityProvider> durabilityProvider = CreateDurabilityProviderMock(
                 new Mock<IOrchestrationService>().Object,
-                new Mock<IOrchestrationServiceClient>().Object,
-                useRemoteTaskHub ? "TestConnection" : RemoteConnectionName);
+                new Mock<IOrchestrationServiceClient>().Object);
             durabilityProvider
                 .Setup(provider => provider.CreateTaskOrchestrationAsync(
                     It.IsAny<TaskMessage>(),
                     It.IsAny<OrchestrationStatus[]>(),
                     It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask);
-            DurabilityProvider defaultDurabilityProvider = useRemoteTaskHub
-                ? durabilityProvider.Object
-                : CreateDurabilityProviderMock(
-                    new Mock<IOrchestrationService>().Object,
-                    new Mock<IOrchestrationServiceClient>().Object,
-                    "DefaultConnection").Object;
             using DurableTaskExtension extension = this.CreateExtension(
                 "CurrentHub",
                 durabilityProvider.Object,
-                defaultDurabilityProvider);
+                durabilityProvider.Object);
             extension.RegisterOrchestrator(new FunctionName(FunctionName), orchestratorInfo: null);
             ILocalGrpcListener listener = LocalGrpcListener.Create(
                 extension,
@@ -357,9 +341,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await listener.StartAsync(default);
                 using GrpcChannel channel = GrpcChannel.ForAddress(listener.ListenAddress);
                 var client = new P.TaskHubSidecarService.TaskHubSidecarServiceClient(channel);
-                var headers = useRemoteTaskHub
-                    ? new Metadata { { TaskHubMetadataKey, "RemoteHub" } }
-                    : new Metadata { { "Durable-ConnectionName", RemoteConnectionName } };
+                var headers = new Metadata { { TaskHubMetadataKey, "currenthub" } };
 
                 await client.StartInstanceAsync(
                     new P.CreateInstanceRequest { Name = FunctionName },
@@ -378,17 +360,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Times.Once);
         }
 
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
+        [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task TestGrpcListener_RestartRejectsDisabledOrchestrator(bool useCaseVariantTaskHub)
+        public async Task TestGrpcListener_UnknownOrchestrator_SchedulesInstance()
+        {
+            Mock<DurabilityProvider> durabilityProvider = CreateDurabilityProviderMock(
+                new Mock<IOrchestrationService>().Object,
+                new Mock<IOrchestrationServiceClient>().Object);
+            durabilityProvider
+                .Setup(provider => provider.CreateTaskOrchestrationAsync(
+                    It.IsAny<TaskMessage>(),
+                    It.IsAny<OrchestrationStatus[]>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            await this.InvokeRpcAsync(
+                durabilityProvider.Object,
+                async client => await client.StartInstanceAsync(
+                    new P.CreateInstanceRequest { Name = "UnknownOrchestrator" }).ResponseAsync);
+
+            durabilityProvider.Verify(
+                provider => provider.CreateTaskOrchestrationAsync(
+                    It.IsAny<TaskMessage>(),
+                    It.IsAny<OrchestrationStatus[]>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task TestGrpcListener_RestartRejectsDisabledOrchestrator()
         {
             const string InstanceId = "completed-instance";
             const string FunctionName = "DisabledOrchestrator";
-            Metadata headers = useCaseVariantTaskHub
-                ? new Metadata { { TaskHubMetadataKey, "disabledorchestratorrestart" } }
-                : null;
             var orchestrationServiceClient = new Mock<IOrchestrationServiceClient>();
             orchestrationServiceClient
                 .Setup(client => client.GetOrchestrationStateAsync(InstanceId, false))
@@ -415,8 +419,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     {
                         InstanceId = InstanceId,
                         RestartWithNewInstanceId = false,
-                    },
-                    headers).ResponseAsync,
+                    }).ResponseAsync,
                 extension => extension.RegisterOrchestrator(
                     new FunctionName(FunctionName),
                     orchestratorInfo: null));
@@ -1152,6 +1155,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        private async Task InvokeRpcAsync(
+            DurabilityProvider durabilityProvider,
+            Func<P.TaskHubSidecarService.TaskHubSidecarServiceClient, Task> invoke)
+        {
+            using DurableTaskExtension extension = this.CreateExtension("TestHub", durabilityProvider);
+            ILocalGrpcListener listener = LocalGrpcListener.Create(extension, LocalGrpcListenerMode.AspNetCore);
+
+            try
+            {
+                await listener.StartAsync(default);
+                using GrpcChannel channel = GrpcChannel.ForAddress(listener.ListenAddress);
+                var client = new P.TaskHubSidecarService.TaskHubSidecarServiceClient(channel);
+                await invoke(client);
+            }
+            finally
+            {
+                await listener.StopAsync(default);
+            }
+        }
+
         private LogMessage AssertWarning(string errorMessage, string methodName, string exceptionType)
         {
             LogMessage warning = Assert.Single(
@@ -1352,7 +1375,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string connectionName = "TestConnection")
         {
             var durabilityProvider = new Mock<DurabilityProvider>(
-                "Azure Storage",
+                "Test",
                 orchestrationService,
                 orchestrationServiceClient,
                 connectionName)

@@ -59,13 +59,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task DisabledOrchestrator_CaseVariantTaskHub_IsRejectedWithoutPersistingInstance()
+        public async Task DisabledOrchestrator_IsRejectedWithoutPersistingInstance()
         {
-            const string InstanceId = "disabled-case-variant-instance";
+            const string InstanceId = "disabled-orchestrator-instance";
             string taskHubName = TestHelpers.GetTaskHubNameFromTestName(
-                nameof(this.DisabledOrchestrator_CaseVariantTaskHub_IsRejectedWithoutPersistingInstance),
-                enableExtendedSessions: false).ToLowerInvariant();
-            string hostTaskHubName = char.ToUpperInvariant(taskHubName[0]) + taskHubName.Substring(1);
+                nameof(this.DisabledOrchestrator_IsRejectedWithoutPersistingInstance),
+                enableExtendedSessions: false);
             var nameResolver = new SimpleNameResolver(
                 new Dictionary<string, string>
                 {
@@ -74,11 +73,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.DisabledOrchestrator_CaseVariantTaskHub_IsRejectedWithoutPersistingInstance),
+                nameof(this.DisabledOrchestrator_IsRejectedWithoutPersistingInstance),
                 enableExtendedSessions: false,
                 nameResolver: nameResolver,
                 storageProviderType: TestHelpers.AzureStorageProviderType,
-                exactTaskHubName: hostTaskHubName))
+                exactTaskHubName: taskHubName))
             {
                 await host.StartAsync();
 

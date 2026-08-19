@@ -30,8 +30,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #pragma warning restore 618
     {
         private const int MaxInstanceIdLength = 256;
-        private const string AzureStorageProviderName = "Azure Storage";
-        private const string AzureManagedProviderName = "azureManaged";
 
         private static readonly JValue NullJValue = JValue.CreateNull();
         private static readonly OrchestrationRuntimeStatus[] RunningStatus
@@ -367,9 +365,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal void ThrowIfOrchestratorFunctionIsDisabled(string name)
         {
-            if (this.ClientTargetsCurrentAppForDisabledCheck())
+            if (this.ClientReferencesCurrentApp(this))
             {
-                this.config.ThrowIfOrchestratorFunctionIsDisabled(name);
+                this.config?.ThrowIfOrchestratorFunctionIsDisabled(name);
             }
         }
 
@@ -377,29 +375,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             var taskHubName = this.durableTaskOptions.HubName;
             return client.TaskHubName.Equals(taskHubName);
-        }
-
-        private bool ClientTargetsCurrentAppForDisabledCheck()
-        {
-            return this.config != null &&
-                !this.attribute.ExternalClient &&
-                this.TaskHubMatchesCurrentAppForDisabledCheck() &&
-                this.config.DefaultDurabilityProvider.ConnectionNameMatches(this.DurabilityProvider);
-        }
-
-        private bool TaskHubMatchesCurrentAppForDisabledCheck()
-        {
-            StringComparison comparison = UsesCaseInsensitiveTaskHubNames(this.config.DefaultDurabilityProvider)
-                ? StringComparison.OrdinalIgnoreCase
-                : StringComparison.Ordinal;
-            return string.Equals(this.TaskHubName, this.durableTaskOptions.HubName, comparison);
-        }
-
-        private static bool UsesCaseInsensitiveTaskHubNames(DurabilityProvider provider)
-        {
-            return provider != null &&
-                (string.Equals(provider.Name, AzureStorageProviderName, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(provider.Name, AzureManagedProviderName, StringComparison.OrdinalIgnoreCase));
         }
 
         private bool ConnectionNameMatchesCurrentApp(DurableClient client)
