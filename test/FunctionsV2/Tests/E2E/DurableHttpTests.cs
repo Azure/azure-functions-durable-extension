@@ -1417,107 +1417,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 Dictionary<string, string> headers = new Dictionary<string, string>();
                 headers.Add("Accept", "application/json");
-                MockTokenSource mockTokenSource = new MockTokenSource("dummy test token");
+                headers.Add("Authorization", "Bearer dummy test token");
 
                 TestDurableHttpRequest testRequest = new TestDurableHttpRequest(
                     httpMethod: HttpMethod.Get,
-                    headers: headers,
-                    tokenSource: mockTokenSource);
-
-                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CallHttpAsyncOrchestrator), testRequest, this.output);
-                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 90));
-                Assert.NotNull(status);
-                var output = status.Output;
-                Assert.NotNull(output);
-                DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
-
-                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-                await host.StopAsync();
-            }
-        }
-
-        /// <summary>
-        /// End-to-end test which checks if the CallHttpAsync Orchestrator returns an OK (200) status code
-        /// when the MockTokenSource object takes in a ManagedIdentityOptions object and
-        /// a Bearer Token is added to the DurableHttpRequest object.
-        /// </summary>
-        [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
-        public async Task DurableHttpAsync_Synchronous_TokenWithOptions(string storageProvider)
-        {
-            HttpMessageHandler httpMessageHandler = MockSynchronousHttpMessageHandlerForTestingTokenSource();
-
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
-                nameof(this.DurableHttpAsync_Synchronous_TokenWithOptions),
-                enableExtendedSessions: false,
-                storageProviderType: storageProvider,
-                durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler)))
-            {
-                await host.StartAsync();
-
-                ManagedIdentityOptions credentialOptions = new ManagedIdentityOptions();
-                credentialOptions.AuthorityHost = new Uri("https://dummy.login.microsoftonline.com/");
-                credentialOptions.TenantId = "tenant_id";
-
-                Dictionary<string, string> headers = new Dictionary<string, string>();
-                headers.Add("Accept", "application/json");
-                MockTokenSource mockTokenSource = new MockTokenSource("dummy test token", credentialOptions);
-
-                TestDurableHttpRequest testRequest = new TestDurableHttpRequest(
-                    httpMethod: HttpMethod.Get,
-                    headers: headers,
-                    tokenSource: mockTokenSource);
-
-                var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CallHttpAsyncOrchestrator), testRequest, this.output);
-                var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 90));
-                Assert.NotNull(status);
-                var output = status.Output;
-                Assert.NotNull(output);
-                DurableHttpResponse response = output.ToObject<DurableHttpResponse>();
-
-                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-                await host.StopAsync();
-            }
-        }
-
-        /// <summary>
-        /// End-to-end test which checks if the CallHttpAsync Orchestrator returns an OK (200) status code
-        /// when the MockTokenSource object takes in a ManagedIdentityOptions object,
-        /// a Bearer Token is added to the DurableHttpRequest object, and follows the
-        /// asynchronous pattern.
-        /// </summary>
-        [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
-        public async Task DurableHttpAsync_Asynchronous_TokenWithOptions(string storageProvider)
-        {
-            HttpMessageHandler httpMessageHandler = MockAsynchronousHttpMessageHandlerForTestingTokenSource(crossOrigin: false);
-
-            using (ITestHost host = TestHelpers.GetJobHost(
-                this.loggerProvider,
-                nameof(this.DurableHttpAsync_Asynchronous_TokenWithOptions),
-                enableExtendedSessions: false,
-                storageProviderType: storageProvider,
-                durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler)))
-            {
-                await host.StartAsync();
-
-                ManagedIdentityOptions credentialOptions = new ManagedIdentityOptions();
-                credentialOptions.AuthorityHost = new Uri("https://dummy.login.microsoftonline.com/");
-                credentialOptions.TenantId = "tenant_id";
-
-                Dictionary<string, string> headers = new Dictionary<string, string>();
-                headers.Add("Accept", "application/json");
-                MockTokenSource mockTokenSource = new MockTokenSource("dummy test token", credentialOptions);
-
-                TestDurableHttpRequest testRequest = new TestDurableHttpRequest(
-                    httpMethod: HttpMethod.Get,
-                    headers: headers,
-                    tokenSource: mockTokenSource);
+                    headers: headers);
 
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CallHttpAsyncOrchestrator), testRequest, this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 90));
@@ -1556,12 +1460,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Dictionary<string, string> headers = new Dictionary<string, string>();
                 headers.Add("Accept", "application/json");
                 headers.Add("x-functions-key", "function-level-key");
-                MockTokenSource mockTokenSource = new MockTokenSource("dummy test token");
 
                 TestDurableHttpRequest testRequest = new TestDurableHttpRequest(
                     httpMethod: HttpMethod.Get,
-                    headers: headers,
-                    tokenSource: mockTokenSource);
+                    headers: headers);
 
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CallHttpAsyncOrchestrator), testRequest, this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 90));
@@ -1620,7 +1522,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         /// <summary>
         /// End-to-end test which checks that when a 202 Location redirect goes to a different
-        /// origin, the bearer token (TokenSource) is NOT forwarded to the poll requests. The mock
+        /// origin, the bearer token is NOT forwarded to the poll requests. The mock
         /// handler returns OK only when the poll request does NOT carry a bearer token, proving
         /// that cross-origin credential stripping works correctly.
         /// </summary>
@@ -1645,12 +1547,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                 Dictionary<string, string> headers = new Dictionary<string, string>();
                 headers.Add("Accept", "application/json");
-                MockTokenSource mockTokenSource = new MockTokenSource("dummy test token");
+                headers.Add("Authorization", "Bearer dummy test token");
 
                 TestDurableHttpRequest testRequest = new TestDurableHttpRequest(
                     httpMethod: HttpMethod.Get,
-                    headers: headers,
-                    tokenSource: mockTokenSource);
+                    headers: headers);
 
                 var client = await host.StartOrchestratorAsync(nameof(TestOrchestrations.CallHttpAsyncOrchestrator), testRequest, this.output);
                 var status = await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(Debugger.IsAttached ? 3000 : 90));
