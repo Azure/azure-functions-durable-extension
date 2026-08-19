@@ -51,27 +51,20 @@ jobs:
 
       - template: cfs-authentication.yml
 
+      # TODO: Use the gallery SDK again when PSGallery is available through CFS.
       - pwsh: |
           $ErrorActionPreference = 'Stop'
-          if ([string]::IsNullOrWhiteSpace($env:VSS_NUGET_ACCESSTOKEN)) {
-            throw 'NuGetAuthenticate did not provide a CFS access token.'
-          }
-
-          $version = '2.3.0'
-          $package = "azurefunctions.powershell.durable.sdk.$version.nupkg"
-          $url = "https://pkgs.dev.azure.com/azfunc/public/_packaging/upstream-public/nuget/v3/flat2/azurefunctions.powershell.durable.sdk/$version/$package"
-          $archive = Join-Path $env:AGENT_TEMPDIRECTORY "$package.zip"
-          $modulePath = "./test/e2e/Apps/BasicPowerShell/Modules/AzureFunctions.PowerShell.Durable.SDK/$version"
-          $credentials = [Convert]::ToBase64String(
-            [Text.Encoding]::ASCII.GetBytes("AzureDevOps:$env:VSS_NUGET_ACCESSTOKEN"))
-
-          Invoke-WebRequest `
-            -Uri $url `
-            -Headers @{ Authorization = "Basic $credentials" } `
-            -OutFile $archive
-          Expand-Archive -LiteralPath $archive -DestinationPath $modulePath -Force
-          Remove-Item ./test/e2e/Apps/BasicPowerShell/requirements.psd1 -Force
-        displayName: Install PowerShell E2E module from CFS
+          $app = './test/e2e/Apps/BasicPowerShell'
+          Remove-Item "$app/requirements.psd1" -Force
+          (Get-Content "$app/profile.ps1") |
+            Where-Object { $_ -notmatch 'AzureFunctions\.PowerShell\.Durable\.SDK' } |
+            Set-Content "$app/profile.ps1"
+          $settingsPath = "$app/local.settings.json"
+          $settings = Get-Content $settingsPath -Raw | ConvertFrom-Json
+          $settings.Values.ExternalDurablePowerShellSDK = 'false'
+          $settings | ConvertTo-Json -Depth 10 | Set-Content $settingsPath
+          Write-Host '##vso[task.setvariable variable=ExternalDurablePowerShellSDK]false'
+        displayName: Use built-in PowerShell Durable SDK
 
       - task: UseDotNet@2
         displayName: Install .NET SDK from global.json
