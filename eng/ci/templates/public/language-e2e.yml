@@ -58,7 +58,7 @@ jobs:
             (ConvertTo-SecureString $env:SYSTEM_ACCESSTOKEN -AsPlainText -Force))
           $module = Find-Module `
             -Name AzureFunctions.PowerShell.Durable.SDK `
-            -Repository upstream-public `
+            -Repository cfs-powershell-gallery `
             -AllVersions `
             -Credential $credential |
             Where-Object { ([version] $_.Version).Major -eq 2 } |
@@ -72,7 +72,7 @@ jobs:
           Save-Module `
             -Name $module.Name `
             -RequiredVersion $module.Version `
-            -Repository upstream-public `
+            -Repository cfs-powershell-gallery `
             -Path "$app/Modules" `
             -Credential $credential `
             -Force

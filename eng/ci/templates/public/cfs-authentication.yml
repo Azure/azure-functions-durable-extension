@@ -21,7 +21,7 @@ steps:
   - pwsh: |
       $ErrorActionPreference = 'Stop'
       $repository = @{
-        Name = 'upstream-public'
+        Name = 'cfs-powershell-gallery'
         SourceLocation = 'https://pkgs.dev.azure.com/azfunc/public/_packaging/upstream-public/nuget/v2'
         InstallationPolicy = 'Trusted'
         Credential = [PSCredential]::new(
