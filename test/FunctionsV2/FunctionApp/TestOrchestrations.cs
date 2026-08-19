@@ -20,6 +20,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public static bool SayHelloWithActivityForRewindShouldFail { get; set; } = true;
 
+        [Disable]
+        public static string DisabledOrchestrator([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            return nameof(DisabledOrchestrator);
+        }
+
         public static string SayHelloInline([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             string input = ctx.GetInput<string>();
