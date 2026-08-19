@@ -120,7 +120,7 @@ jobs:
           New-Item -ItemType Directory -Path .azurite -Force | Out-Null
           Set-Location .azurite
           '{"name":"azurite-local","private":true}' | Set-Content package.json
-          npm install azurite
+          npm install azurite@$(AZURITE_VERSION)
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
 
           $azurite = Resolve-Path 'node_modules/.bin/azurite.cmd'
@@ -191,7 +191,7 @@ jobs:
           New-Item -ItemType Directory -Path .azurite -Force | Out-Null
           Set-Location .azurite
           '{"name":"azurite-local","private":true}' | Set-Content package.json
-          npm install azurite
+          npm install azurite@$(AZURITE_VERSION)
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
 
           $azurite = Resolve-Path 'node_modules/.bin/azurite.cmd'

@@ -34,6 +34,8 @@ resources:
       ref: refs/tags/release
 
 variables:
+  - name: AZURITE_VERSION
+    value: 3.35.0
   - name: CORE_TOOLS_VERSION
     value: 4.8.0
   - name: NPM_CONFIG_USERCONFIG
@@ -75,7 +77,7 @@ extends:
         dependsOn: []
         pool:
           name: 1es-pool-azfunc-public
-          image: 1es-ubuntu-24.04-min
+          image: 1es-ubuntu-22.04
           os: linux
         jobs:
           - template: /eng/ci/templates/public/dependency-validation.yml@self
@@ -99,7 +101,7 @@ extends:
         dependsOn: []
         pool:
           name: 1es-pool-azfunc-public
-          image: 1es-ubuntu-24.04-min
+          image: 1es-ubuntu-22.04
           os: linux
         jobs:
           - template: /eng/ci/templates/public/language-e2e.yml@self

@@ -86,7 +86,7 @@ jobs:
           Push-Location .azurite
           try {
             '{"name":"azurite-local","private":true}' | Set-Content package.json
-            npm install azurite
+            npm install azurite@$(AZURITE_VERSION)
             if ($LASTEXITCODE) { exit $LASTEXITCODE }
           } finally {
             Pop-Location

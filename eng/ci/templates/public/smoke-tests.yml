@@ -159,9 +159,18 @@ jobs:
           dotnet restore ./WebJobs.Extensions.DurableTask.sln
           dotnet build -c Release ./src/WebJobs.Extensions.DurableTask/WebJobs.Extensions.DurableTask.csproj
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          dotnet pack -c Release --no-build ./src/WebJobs.Extensions.DurableTask/WebJobs.Extensions.DurableTask.csproj
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           New-Item -ItemType Directory -Path "$HOME/packages" -Force | Out-Null
-          dotnet nuget push ./src/WebJobs.Extensions.DurableTask/bin/Release/Microsoft.Azure.WebJobs.Extensions.DurableTask.*.nupkg `
-            --source "$HOME/packages"
+          $packages = @(
+            Get-ChildItem ./src/WebJobs.Extensions.DurableTask/bin/Release `
+              -Filter 'Microsoft.Azure.WebJobs.Extensions.DurableTask.*.nupkg' |
+              Where-Object Name -NotLike '*.symbols.nupkg')
+          if ($packages.Count -ne 1) {
+            throw "Expected one Durable Task extension package, found $($packages.Count)."
+          }
+          dotnet nuget push $packages[0].FullName --source "$HOME/packages"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           $configPath = Join-Path $env:AGENT_TEMPDIRECTORY 'NuGet.config'
           ./eng/cfs/New-LocalNuGetConfig.ps1 `
             -DestinationPath $configPath `
@@ -185,7 +194,7 @@ jobs:
           Push-Location .azurite
           try {
             '{"name":"azurite-local","private":true}' | Set-Content package.json
-            npm install azurite
+            npm install azurite@$(AZURITE_VERSION)
           } finally {
             Pop-Location
           }

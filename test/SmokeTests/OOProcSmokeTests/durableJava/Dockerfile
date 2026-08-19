@@ -1,5 +1,3 @@
-# syntax=docker/dockerfile:1.7
-
 ARG DOTNET_SDK_TAG=10.0
 ARG TARGET_FRAMEWORK=net8.0
 FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_SDK_TAG} AS build-env

@@ -26,7 +26,7 @@ jobs:
           mkdir -p .azurite
           pushd .azurite
           echo '{"name":"azurite-local","private":true}' > package.json
-          npm install azurite
+          npm install azurite@$(AZURITE_VERSION)
           popd
           ./.azurite/node_modules/.bin/azurite --silent --skipApiVersionCheck \
             --blobPort 10000 --queuePort 10001 --tablePort 10002 &
@@ -69,7 +69,7 @@ jobs:
           versionSpec: 22.x
       - bash: |
           set -euo pipefail
-          npm install -g azurite
+          npm install -g azurite@$(AZURITE_VERSION)
           azurite --silent --skipApiVersionCheck \
             --blobPort 10000 --queuePort 10001 --tablePort 10002 &
           for i in $(seq 1 30); do
@@ -134,7 +134,7 @@ jobs:
           versionSpec: 22.x
       - bash: |
           set -euo pipefail
-          npm install -g azurite
+          npm install -g azurite@$(AZURITE_VERSION)
           azurite --silent --skipApiVersionCheck \
             --blobPort 10000 --queuePort 10001 --tablePort 10002 &
           for i in $(seq 1 30); do
@@ -204,7 +204,7 @@ jobs:
           versionSpec: 22.x
       - bash: |
           set -euo pipefail
-          npm install -g azurite
+          npm install -g azurite@$(AZURITE_VERSION)
           azurite --silent --skipApiVersionCheck \
             --blobPort 10000 --queuePort 10001 --tablePort 10002 &
           for i in $(seq 1 30); do
