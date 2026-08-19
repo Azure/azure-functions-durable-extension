@@ -25,6 +25,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public string InstanceId { get; set; }
 
         /// <summary>
+        /// Parent instance ID.
+        /// </summary>
+        [DataMember(Name = "parentInstanceId", EmitDefaultValue = false)]
+        public string ParentInstanceId { get; set; }
+
+        /// <summary>
         /// Runtime status.
         /// </summary>
         [DataMember(Name = "runtimeStatus")]
