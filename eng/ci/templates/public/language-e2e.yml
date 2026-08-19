@@ -178,6 +178,13 @@ jobs:
             $env:TEST_APP_NAME = $case.App
             $backendFilter = '$(backendFilter)'
             $filter = "$($backendFilter)!=Skip&$($case.Filter)!=Skip&$($case.Filter)-$($backendFilter)!=Skip"
+            if ($case.Name -eq 'powershell') {
+              # The built-in SDK does not support these external-SDK behaviors.
+              $filter += '&FullyQualifiedName!~ErrorHandlingTests.OrchestratorWithCaughtActivityException_ShouldSucceed'
+              $filter += '&FullyQualifiedName!~IsReplayingTests.IsReplayingFanOutFanIn_ReportsReplayStateAroundParallelTasks'
+              $filter += '&FullyQualifiedName!~SuspendResumeTests'
+              $filter += '&FullyQualifiedName!~DedupeStatusesTests.CanStartOrchestration_WithSameId_ForAllStatuses_ForEmptyDedupeStatuses'
+            }
             dotnet test $testProject `
               -f $(testTargetFramework) `
               --no-build `
