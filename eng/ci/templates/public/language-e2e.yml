@@ -76,7 +76,10 @@ jobs:
             -Path "$app/Modules" `
             -Credential $credential `
             -Force
-          Remove-Item "$app/requirements.psd1" -Force
+          $hostConfigPath = "$app/host.json"
+          $hostConfig = Get-Content $hostConfigPath -Raw | ConvertFrom-Json
+          $hostConfig.managedDependency.enabled = $false
+          $hostConfig | ConvertTo-Json -Depth 10 | Set-Content $hostConfigPath
         displayName: Restore PowerShell Durable SDK from CFS
         env:
           SYSTEM_ACCESSTOKEN: $(System.AccessToken)

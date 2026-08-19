@@ -16,6 +16,9 @@ $retryCount = 0;
 $statusUrl = $null;
 $success = $false;
 $haveManuallyRestartedHost = $false;
+$funcLogId = [guid]::NewGuid().ToString("N")
+$funcStandardOutput = Join-Path ([IO.Path]::GetTempPath()) "func-$funcLogId.stdout.log"
+$funcStandardError = Join-Path ([IO.Path]::GetTempPath()) "func-$funcLogId.stderr.log"
 
 # Get the directory where this script is located (the DotNetIsolated folder)
 $scriptDir = $PSScriptRoot
@@ -38,9 +41,12 @@ Do {
         Write-Host "Starting the Functions host..." -ForegroundColor Yellow
         Write-Host "Working directory: $scriptDir" -ForegroundColor Cyan
 
-        # Start the Functions host as a background process using Start-Process
-        # This runs func in the correct directory with proper environment
-        Start-Process -FilePath "func" -ArgumentList "host", "start", "--port", "7071" -WorkingDirectory $scriptDir -NoNewWindow
+        Start-Process `
+            -FilePath "func" `
+            -ArgumentList "host", "start", "--port", "7071" `
+            -WorkingDirectory $scriptDir `
+            -RedirectStandardOutput $funcStandardOutput `
+            -RedirectStandardError $funcStandardError
 
         Write-Host "Waiting for the Functions host to start up..." -ForegroundColor Yellow
         Start-Sleep -Seconds 60
@@ -115,6 +121,8 @@ Do {
         # - The host is running but not healthy (OOMs may cause this), so it needs to be forcibly restarted
         Write-Host "An error occurred:" -ForegroundColor Red
         Write-Host $_ -ForegroundColor Red
+        Get-Content $funcStandardOutput -Tail 100 -ErrorAction SilentlyContinue
+        Get-Content $funcStandardError -Tail 100 -ErrorAction SilentlyContinue
 
         # When testing for platform errors, we want to make sure the Functions host is healthy and ready to take requests.
         # The Host can get into bad states (for example, in an OOM-inducing test) where it does not self-heal.
