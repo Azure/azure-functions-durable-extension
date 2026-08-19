@@ -121,6 +121,8 @@ jobs:
             --logger 'trx;LogFileName=scale-netherite.trx' \
             --results-directory '$(Agent.TempDirectory)/TestResults'
         displayName: Run Netherite scale tests
+        env:
+          EventHubsConnection: $(EventHubsConnection)
       - template: publish-test-results.yml
 
   - job: MSSQLScale

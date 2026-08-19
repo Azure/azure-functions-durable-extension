@@ -97,7 +97,12 @@ jobs:
           } else {
             $azurite = Resolve-Path '.azurite/node_modules/.bin/azurite'
           }
-          Start-Process $azurite -ArgumentList '--silent','--skipApiVersionCheck','--inMemoryPersistence','--blobPort','10000','--queuePort','10001','--tablePort','10002'
+          $azuriteOut = Join-Path $env:AGENT_TEMPDIRECTORY 'azurite.stdout.log'
+          $azuriteErr = Join-Path $env:AGENT_TEMPDIRECTORY 'azurite.stderr.log'
+          Start-Process $azurite `
+            -ArgumentList '--silent','--skipApiVersionCheck','--inMemoryPersistence','--blobPort','10000','--queuePort','10001','--tablePort','10002' `
+            -RedirectStandardOutput $azuriteOut `
+            -RedirectStandardError $azuriteErr
           for ($i = 1; $i -le 30; $i++) {
             try {
               $tcp = [System.Net.Sockets.TcpClient]::new('127.0.0.1', 10000)

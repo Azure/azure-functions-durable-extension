@@ -48,6 +48,7 @@
         <version>${azure.functions.maven.plugin.version}</version>
         <configuration>
           <appName>${functionAppName}</appName>
+          <skipInstallExtensions>true</skipInstallExtensions>
           <resourceGroup>java-functions-group</resourceGroup>
           <region>westus</region>
           <runtime>
