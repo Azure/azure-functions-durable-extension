@@ -36,6 +36,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public string InstanceId { get; set; }
 
         /// <summary>
+        /// Gets the ID of the parent orchestration instance, if any.
+        /// </summary>
+        /// <remarks>
+        /// The value is <c>null</c> for top-level orchestrations and when the configured storage provider
+        /// does not return parent instance metadata.
+        /// </remarks>
+        /// <value>
+        /// The parent orchestration instance ID, or <c>null</c>.
+        /// </value>
+        public string ParentInstanceId { get; set; }
+
+        /// <summary>
         /// Gets the time at which the orchestration instance was created.
         /// </summary>
         /// <remarks>

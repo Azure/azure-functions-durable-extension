@@ -4,7 +4,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using DurableTask.Core;
 using DurableTask.Core.Entities.OperationFormat;
+using DurableTask.Core.History;
+using DurableTask.Core.Query;
 using Google.Protobuf.WellKnownTypes;
 using Xunit;
 using CoreOrchestrationStatus = global::DurableTask.Core.OrchestrationStatus;
@@ -413,6 +416,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void CreateQueryInstancesResponse_IncludesParentInstanceId()
+        {
+            const string ParentInstanceId = "parent-instance";
+            OrchestrationState state = CreateOrchestrationState(ParentInstanceId);
+            var result = new OrchestrationQueryResult(new[] { state }, continuationToken: null);
+
+            P.QueryInstancesResponse response =
+                ProtobufUtils.CreateQueryInstancesResponse(result, new P.QueryInstancesRequest());
+
+            Assert.Equal(ParentInstanceId, Assert.Single(response.OrchestrationState).ParentInstanceId);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void ToHistoryEventProto_HistoryStateIncludesParentInstanceId()
+        {
+            const string ParentInstanceId = "parent-instance";
+            var historyStateEvent = new HistoryStateEvent(0, CreateOrchestrationState(ParentInstanceId))
+            {
+                Timestamp = DateTime.UtcNow,
+            };
+
+            P.HistoryEvent response = ProtobufUtils.ToHistoryEventProto(historyStateEvent);
+
+            Assert.Equal(ParentInstanceId, response.HistoryState.OrchestrationState.ParentInstanceId);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void CreatePurgeInstancesResponse_IsCompleteTrue_MapsCorrectly()
         {
             // Arrange
@@ -561,6 +593,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             // Assert
             Assert.Null(filter.RuntimeStatus);
+        }
+
+        private static OrchestrationState CreateOrchestrationState(string parentInstanceId)
+        {
+            DateTime now = DateTime.UtcNow;
+            return new OrchestrationState
+            {
+                Name = "ChildOrchestration",
+                OrchestrationInstance = new OrchestrationInstance
+                {
+                    InstanceId = "child-instance",
+                    ExecutionId = "child-execution",
+                },
+                ParentInstance = new ParentInstance
+                {
+                    OrchestrationInstance = new OrchestrationInstance
+                    {
+                        InstanceId = parentInstanceId,
+                        ExecutionId = "parent-execution",
+                    },
+                },
+                CreatedTime = now,
+                LastUpdatedTime = now,
+                OrchestrationStatus = CoreOrchestrationStatus.Running,
+            };
         }
     }
 }
