@@ -51,20 +51,35 @@ jobs:
 
       - template: cfs-authentication.yml
 
-      # TODO: Use the gallery SDK again when PSGallery is available through CFS.
       - pwsh: |
           $ErrorActionPreference = 'Stop'
+          $credential = [PSCredential]::new(
+            'AzurePipelines',
+            (ConvertTo-SecureString $env:SYSTEM_ACCESSTOKEN -AsPlainText -Force))
+          $module = Find-Module `
+            -Name AzureFunctions.PowerShell.Durable.SDK `
+            -Repository upstream-public `
+            -AllVersions `
+            -Credential $credential |
+            Where-Object { ([version] $_.Version).Major -eq 2 } |
+            Sort-Object Version -Descending |
+            Select-Object -First 1
+          if (!$module) {
+            throw 'AzureFunctions.PowerShell.Durable.SDK 2.x was not found in CFS.'
+          }
+
           $app = './test/e2e/Apps/BasicPowerShell'
+          Save-Module `
+            -Name $module.Name `
+            -RequiredVersion $module.Version `
+            -Repository upstream-public `
+            -Path "$app/Modules" `
+            -Credential $credential `
+            -Force
           Remove-Item "$app/requirements.psd1" -Force
-          (Get-Content "$app/profile.ps1") |
-            Where-Object { $_ -notmatch 'AzureFunctions\.PowerShell\.Durable\.SDK' } |
-            Set-Content "$app/profile.ps1"
-          $settingsPath = "$app/local.settings.json"
-          $settings = Get-Content $settingsPath -Raw | ConvertFrom-Json
-          $settings.Values.ExternalDurablePowerShellSDK = 'false'
-          $settings | ConvertTo-Json -Depth 10 | Set-Content $settingsPath
-          Write-Host '##vso[task.setvariable variable=ExternalDurablePowerShellSDK]false'
-        displayName: Use built-in PowerShell Durable SDK
+        displayName: Restore PowerShell Durable SDK from CFS
+        env:
+          SYSTEM_ACCESSTOKEN: $(System.AccessToken)
 
       - task: UseDotNet@2
         displayName: Install .NET SDK from global.json
@@ -178,13 +193,6 @@ jobs:
             $env:TEST_APP_NAME = $case.App
             $backendFilter = '$(backendFilter)'
             $filter = "$($backendFilter)!=Skip&$($case.Filter)!=Skip&$($case.Filter)-$($backendFilter)!=Skip"
-            if ($case.Name -eq 'powershell') {
-              # The built-in SDK does not support these external-SDK behaviors.
-              $filter += '&FullyQualifiedName!~ErrorHandlingTests.OrchestratorWithCaughtActivityException_ShouldSucceed'
-              $filter += '&FullyQualifiedName!~IsReplayingTests.IsReplayingFanOutFanIn_ReportsReplayStateAroundParallelTasks'
-              $filter += '&FullyQualifiedName!~SuspendResumeTests'
-              $filter += '&FullyQualifiedName!~DedupeStatusesTests.CanStartOrchestration_WithSameId_ForAllStatuses_ForEmptyDedupeStatuses'
-            }
             dotnet test $testProject `
               -f $(testTargetFramework) `
               --no-build `
