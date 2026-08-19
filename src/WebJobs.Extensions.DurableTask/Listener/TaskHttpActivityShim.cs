@@ -38,7 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<string> RunAsync(TaskContext context, string rawInput)
         {
-            DurableHttpRequest durableHttpRequest = ReconstructDurableHttpRequest(rawInput);
+            DurableHttpRequest durableHttpRequest = this.ReconstructDurableHttpRequest(rawInput);
             HttpRequestMessage requestMessage = await this.ConvertToHttpRequestMessage(durableHttpRequest);
 
             HttpResponseMessage response;
