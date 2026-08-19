@@ -82,12 +82,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task StartNewAsync_DifferentConnection_DoesNotValidateLocalOrchestrator()
+        public async Task StartNewAsync_DifferentConnection_MissingOrchestrator_ThrowsException()
         {
-            (DurableClient durableClient, Mock<IOrchestrationServiceClient> serviceClient) =
-                CreateCrossConnectionClient();
+            (DurableClient durableClient, Mock<IOrchestrationServiceClient> serviceClient, _) =
+                CreateClient();
 
-            await ((IDurableOrchestrationClient)durableClient).StartNewAsync("RemoteOrchestrator");
+            ArgumentException exception = await Assert.ThrowsAsync<ArgumentException>(
+                () => ((IDurableOrchestrationClient)durableClient).StartNewAsync("MissingOrchestrator"));
+
+            Assert.Contains("doesn't exist, is disabled, or is not an orchestrator function", exception.Message);
+            serviceClient.Verify(
+                x => x.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()),
+                Times.Never());
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task StartNewAsync_CaseVariantTaskHub_MissingOrchestrator_SchedulesInstance()
+        {
+            (DurableClient durableClient, Mock<IOrchestrationServiceClient> serviceClient, _) =
+                CreateClient(taskHub: "durabletaskhub", connectionName: TestConstants.ConnectionName);
+
+            await ((IDurableOrchestrationClient)durableClient).StartNewAsync("MissingOrchestrator");
 
             serviceClient.Verify(
                 x => x.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()),
@@ -143,6 +159,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 rejectStart ? Times.Never() : Times.Once());
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task StartNewAsync_DifferentConnection_DisabledOrchestrator_SchedulesInstance()
+        {
+            const string FunctionName = "DisabledOrchestrator";
+            (DurableClient durableClient, Mock<IOrchestrationServiceClient> serviceClient, DurableTaskExtension extension) =
+                CreateClient();
+            extension.RegisterOrchestrator(new FunctionName(FunctionName), orchestratorInfo: null);
+
+            await ((IDurableOrchestrationClient)durableClient).StartNewAsync(FunctionName);
+
+            serviceClient.Verify(
+                x => x.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()),
+                Times.Once());
+        }
+
         [Theory]
         [InlineData(null)]
         [InlineData("durabletaskhub")]
@@ -188,6 +220,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             orchestrationServiceClientMock.Verify(
                 x => x.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()),
                 Times.Never());
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task RestartAsync_DifferentConnection_DisabledOrchestrator_SchedulesInstance()
+        {
+            const string InstanceId = "completed-instance";
+            const string FunctionName = "DisabledOrchestrator";
+            (DurableClient durableClient, Mock<IOrchestrationServiceClient> serviceClient, DurableTaskExtension extension) =
+                CreateClient();
+            serviceClient
+                .Setup(x => x.GetOrchestrationStateAsync(InstanceId, false))
+                .ReturnsAsync(
+                    new List<OrchestrationState>
+                    {
+                        new OrchestrationState
+                        {
+                            Name = FunctionName,
+                            Input = "null",
+                            OrchestrationInstance = new OrchestrationInstance { InstanceId = InstanceId },
+                            OrchestrationStatus = OrchestrationStatus.Completed,
+                        },
+                    });
+            extension.RegisterOrchestrator(new FunctionName(FunctionName), orchestratorInfo: null);
+
+            await ((IDurableOrchestrationClient)durableClient).RestartAsync(
+                InstanceId,
+                restartWithNewInstanceId: false);
+
+            serviceClient.Verify(
+                x => x.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()),
+                Times.Once());
         }
 
         [Fact]
@@ -254,13 +318,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task SignalEntityAsync_DifferentConnection_DoesNotValidateLocalEntity()
+        public async Task SignalEntityAsync_DifferentConnection_MissingEntity_ThrowsException()
         {
-            (DurableClient durableClient, Mock<IOrchestrationServiceClient> serviceClient) =
-                CreateCrossConnectionClient();
+            (DurableClient durableClient, Mock<IOrchestrationServiceClient> serviceClient, _) =
+                CreateClient();
+
+            ArgumentException exception = await Assert.ThrowsAsync<ArgumentException>(
+                () => ((IDurableEntityClient)durableClient).SignalEntityAsync(
+                    new EntityId("MissingEntity", "entity-key"),
+                    "operation",
+                    new { Value = 1 }));
+
+            Assert.Contains("doesn't exist, is disabled, or is not an entity function", exception.Message);
+            serviceClient.Verify(
+                x => x.SendTaskOrchestrationMessageAsync(It.IsAny<TaskMessage>()),
+                Times.Never());
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task SignalEntityAsync_CaseVariantTaskHub_MissingEntity_SendsMessage()
+        {
+            (DurableClient durableClient, Mock<IOrchestrationServiceClient> serviceClient, _) =
+                CreateClient(taskHub: "durabletaskhub", connectionName: TestConstants.ConnectionName);
 
             await ((IDurableEntityClient)durableClient).SignalEntityAsync(
-                new EntityId("RemoteEntity", "entity-key"),
+                new EntityId("MissingEntity", "entity-key"),
                 "operation",
                 new { Value = 1 });
 
@@ -533,9 +616,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return durableOrchestrationClient;
         }
 
-        private static (DurableClient Client, Mock<IOrchestrationServiceClient> ServiceClient) CreateCrossConnectionClient()
+        private static (
+            DurableClient Client,
+            Mock<IOrchestrationServiceClient> ServiceClient,
+            DurableTaskExtension Extension) CreateClient(
+            string taskHub = "DurableTaskHub",
+            string connectionName = "TargetStorage")
         {
-            const string TargetConnectionName = "TargetStorage";
             var serviceClient = new Mock<IOrchestrationServiceClient>();
             serviceClient
                 .Setup(x => x.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()))
@@ -547,15 +634,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 "clientProvider",
                 new Mock<IOrchestrationService>().Object,
                 serviceClient.Object,
-                TargetConnectionName);
+                connectionName);
             var durableExtension = GetDurableTaskConfig();
-            Assert.NotEqual(
-                durableExtension.DefaultDurabilityProvider.ConnectionName,
-                storageProvider.ConnectionName);
             var attribute = new DurableClientAttribute
             {
-                TaskHub = durableExtension.Options.HubName,
-                ConnectionName = TargetConnectionName,
+                TaskHub = taskHub,
+                ConnectionName = connectionName,
                 ExternalClient = false,
             };
             var client = new DurableClient(
@@ -563,7 +647,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 durableExtension,
                 durableExtension.HttpApiHandler,
                 attribute);
-            return (client, serviceClient);
+            return (client, serviceClient, durableExtension);
         }
 
         [Fact]

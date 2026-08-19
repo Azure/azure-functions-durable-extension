@@ -2132,11 +2132,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData("taskHub=RemoteHub", TestConstants.ConnectionName)]
         [InlineData("connection=TestConnection", TestConstants.CustomConnectionName)]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task StartNewInstance_ExternalTarget_DoesNotValidateLocalFunction(
+        public async Task StartNewInstance_ExternalTarget_DoesNotRejectLocallyDisabledFunction(
             string query,
             string providerConnectionName)
         {
-            const string FunctionName = "RemoteOrchestrator";
+            const string FunctionName = "DisabledOrchestrator";
             var requestUri = new Uri(
                 $"http://localhost/runtime/webhooks/durabletask/orchestrators/{FunctionName}?{query}");
             var orchestrationServiceMock = new Mock<IOrchestrationService>(MockBehavior.Strict);
@@ -2157,6 +2157,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 HubName = TestConstants.TaskHub,
             };
             var extension = TestDurableTaskExtension.CreateWithProvider(options, durabilityProvider);
+            extension.RegisterOrchestrator(new FunctionName(FunctionName), orchestratorInfo: null);
             var handler = new HttpApiHandler(extension, NullLogger.Instance);
 
             HttpResponseMessage response = await handler.HandleRequestAsync(

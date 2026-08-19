@@ -323,7 +323,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData(true)]
         [InlineData(false)]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task TestGrpcListener_ExternalTarget_DoesNotValidateLocalFunction(bool useRemoteTaskHub)
+        public async Task TestGrpcListener_ExternalTarget_DoesNotRejectLocallyDisabledFunction(bool useRemoteTaskHub)
         {
             const string FunctionName = "RemoteOrchestrator";
             const string RemoteConnectionName = "RemoteConnection";

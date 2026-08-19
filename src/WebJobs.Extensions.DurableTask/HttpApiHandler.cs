@@ -958,10 +958,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 if (client is DurableClient durableClient)
                 {
-                    if (durableClient.ReferencesCurrentApp())
-                    {
-                        this.config.ThrowIfOrchestratorFunctionIsDisabled(functionName);
-                    }
+                    durableClient.ThrowIfOrchestratorFunctionIsDisabled(functionName);
 
                     var instance = new OrchestrationInstance
                     {

@@ -178,11 +178,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc />
         async Task<string> IDurableOrchestrationClient.StartNewAsync<T>(string orchestratorFunctionName, string instanceId, T input)
         {
-            if (this.ReferencesCurrentApp())
+            if (this.ClientReferencesCurrentApp(this))
             {
                 this.config?.ThrowIfFunctionDoesNotExist(orchestratorFunctionName, FunctionType.Orchestrator);
-                this.config?.ThrowIfOrchestratorFunctionIsDisabled(orchestratorFunctionName);
             }
+
+            this.ThrowIfOrchestratorFunctionIsDisabled(orchestratorFunctionName);
 
             if (string.IsNullOrEmpty(instanceId))
             {
@@ -364,18 +365,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.ConnectionNameMatchesCurrentApp(client);
         }
 
-        internal bool ReferencesCurrentApp()
+        internal void ThrowIfOrchestratorFunctionIsDisabled(string name)
         {
-            return this.ClientReferencesCurrentApp(this);
+            if (this.ClientTargetsCurrentAppForDisabledCheck())
+            {
+                this.config.ThrowIfOrchestratorFunctionIsDisabled(name);
+            }
         }
 
         private bool TaskHubMatchesCurrentApp(DurableClient client)
         {
             var taskHubName = this.durableTaskOptions.HubName;
-            StringComparison comparison = UsesCaseInsensitiveTaskHubNames(this.config?.DefaultDurabilityProvider)
+            return client.TaskHubName.Equals(taskHubName);
+        }
+
+        private bool ClientTargetsCurrentAppForDisabledCheck()
+        {
+            return this.config != null &&
+                !this.attribute.ExternalClient &&
+                this.TaskHubMatchesCurrentAppForDisabledCheck() &&
+                this.config.DefaultDurabilityProvider.ConnectionNameMatches(this.DurabilityProvider);
+        }
+
+        private bool TaskHubMatchesCurrentAppForDisabledCheck()
+        {
+            StringComparison comparison = UsesCaseInsensitiveTaskHubNames(this.config.DefaultDurabilityProvider)
                 ? StringComparison.OrdinalIgnoreCase
                 : StringComparison.Ordinal;
-            return string.Equals(client.TaskHubName, taskHubName, comparison);
+            return string.Equals(this.TaskHubName, this.durableTaskOptions.HubName, comparison);
         }
 
         private static bool UsesCaseInsensitiveTaskHubNames(DurabilityProvider provider)
@@ -387,8 +404,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private bool ConnectionNameMatchesCurrentApp(DurableClient client)
         {
-            return this.config != null &&
-                this.config.DefaultDurabilityProvider.ConnectionNameMatches(client.DurabilityProvider);
+            return this.DurabilityProvider.ConnectionNameMatches(client.DurabilityProvider);
         }
 
         /// <inheritdoc />
@@ -1282,10 +1298,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // GetOrchestrationInstanceStateAsync will throw ArgumentException if the provided instanceid is not found.
             OrchestrationState state = await this.GetOrchestrationInstanceStateAsync(instanceId);
 
-            if (this.ReferencesCurrentApp())
-            {
-                this.config?.ThrowIfOrchestratorFunctionIsDisabled(state.Name);
-            }
+            this.ThrowIfOrchestratorFunctionIsDisabled(state.Name);
 
             JToken input = ParseToJToken(state.Input);
 
