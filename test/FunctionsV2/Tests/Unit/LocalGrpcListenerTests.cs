@@ -267,13 +267,170 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     await providerCalled.Task.WaitAsync(TimeSpan.FromSeconds(5));
                     cancellation.Cancel();
                     await call.ResponseAsync;
-                });
+                },
+                extension => extension.RegisterOrchestrator(
+                    new FunctionName("TestOrchestration"),
+                    new RegisteredFunctionInfo(executor: null, isOutOfProc: true)));
 
             Assert.Equal(StatusCode.Cancelled, rpcException.StatusCode);
             Assert.DoesNotContain(
                 this.loggerProvider.GetAllLogMessages(),
                 message => message.Level == LogLevel.Warning &&
                     message.FormattedMessage.Contains("StartInstance"));
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task TestGrpcListener_RejectsDisabledOrchestrator()
+        {
+            const string FunctionName = "DisabledOrchestrator";
+            Mock<DurabilityProvider> durabilityProvider = CreateDurabilityProviderMock(
+                new Mock<IOrchestrationService>().Object,
+                new Mock<IOrchestrationServiceClient>().Object);
+            durabilityProvider
+                .Setup(provider => provider.CreateTaskOrchestrationAsync(
+                    It.IsAny<TaskMessage>(),
+                    It.IsAny<OrchestrationStatus[]>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            RpcException rpcException = await this.InvokeFailingRpcAsync(
+                "DisabledOrchestratorStart",
+                durabilityProvider.Object,
+                async client => await client.StartInstanceAsync(
+                    new P.CreateInstanceRequest { Name = FunctionName }).ResponseAsync,
+                extension => extension.RegisterOrchestrator(
+                    new FunctionName(FunctionName),
+                    orchestratorInfo: null));
+
+            Assert.Equal(StatusCode.InvalidArgument, rpcException.StatusCode);
+            Assert.Contains("doesn't exist, is disabled, or is not an orchestrator function", rpcException.Status.Detail);
+            durabilityProvider.Verify(
+                provider => provider.CreateTaskOrchestrationAsync(
+                    It.IsAny<TaskMessage>(),
+                    It.IsAny<OrchestrationStatus[]>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Never);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task TestGrpcListener_CaseVariantTaskHub_DoesNotRejectLocallyDisabledFunction()
+        {
+            const string FunctionName = "RemoteOrchestrator";
+            Mock<DurabilityProvider> durabilityProvider = CreateDurabilityProviderMock(
+                new Mock<IOrchestrationService>().Object,
+                new Mock<IOrchestrationServiceClient>().Object);
+            durabilityProvider
+                .Setup(provider => provider.CreateTaskOrchestrationAsync(
+                    It.IsAny<TaskMessage>(),
+                    It.IsAny<OrchestrationStatus[]>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+            using DurableTaskExtension extension = this.CreateExtension(
+                "CurrentHub",
+                durabilityProvider.Object,
+                durabilityProvider.Object);
+            extension.RegisterOrchestrator(new FunctionName(FunctionName), orchestratorInfo: null);
+            ILocalGrpcListener listener = LocalGrpcListener.Create(
+                extension,
+                LocalGrpcListenerMode.AspNetCore);
+
+            try
+            {
+                await listener.StartAsync(default);
+                using GrpcChannel channel = GrpcChannel.ForAddress(listener.ListenAddress);
+                var client = new P.TaskHubSidecarService.TaskHubSidecarServiceClient(channel);
+                var headers = new Metadata { { TaskHubMetadataKey, "currenthub" } };
+
+                await client.StartInstanceAsync(
+                    new P.CreateInstanceRequest { Name = FunctionName },
+                    headers).ResponseAsync;
+            }
+            finally
+            {
+                await listener.StopAsync(default);
+            }
+
+            durabilityProvider.Verify(
+                provider => provider.CreateTaskOrchestrationAsync(
+                    It.IsAny<TaskMessage>(),
+                    It.IsAny<OrchestrationStatus[]>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task TestGrpcListener_UnknownOrchestrator_SchedulesInstance()
+        {
+            Mock<DurabilityProvider> durabilityProvider = CreateDurabilityProviderMock(
+                new Mock<IOrchestrationService>().Object,
+                new Mock<IOrchestrationServiceClient>().Object);
+            durabilityProvider
+                .Setup(provider => provider.CreateTaskOrchestrationAsync(
+                    It.IsAny<TaskMessage>(),
+                    It.IsAny<OrchestrationStatus[]>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            await this.InvokeRpcAsync(
+                durabilityProvider.Object,
+                async client => await client.StartInstanceAsync(
+                    new P.CreateInstanceRequest { Name = "UnknownOrchestrator" }).ResponseAsync);
+
+            durabilityProvider.Verify(
+                provider => provider.CreateTaskOrchestrationAsync(
+                    It.IsAny<TaskMessage>(),
+                    It.IsAny<OrchestrationStatus[]>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task TestGrpcListener_RestartRejectsDisabledOrchestrator()
+        {
+            const string InstanceId = "completed-instance";
+            const string FunctionName = "DisabledOrchestrator";
+            var orchestrationServiceClient = new Mock<IOrchestrationServiceClient>();
+            orchestrationServiceClient
+                .Setup(client => client.GetOrchestrationStateAsync(InstanceId, false))
+                .ReturnsAsync(
+                    new List<OrchestrationState>
+                    {
+                        new OrchestrationState
+                        {
+                            Name = FunctionName,
+                            Input = "null",
+                            OrchestrationInstance = new OrchestrationInstance { InstanceId = InstanceId },
+                            OrchestrationStatus = OrchestrationStatus.Completed,
+                        },
+                    });
+            Mock<DurabilityProvider> durabilityProvider = CreateDurabilityProviderMock(
+                new Mock<IOrchestrationService>().Object,
+                orchestrationServiceClient.Object);
+
+            RpcException rpcException = await this.InvokeFailingRpcAsync(
+                "DisabledOrchestratorRestart",
+                durabilityProvider.Object,
+                async client => await client.RestartInstanceAsync(
+                    new P.RestartInstanceRequest
+                    {
+                        InstanceId = InstanceId,
+                        RestartWithNewInstanceId = false,
+                    }).ResponseAsync,
+                extension => extension.RegisterOrchestrator(
+                    new FunctionName(FunctionName),
+                    orchestratorInfo: null));
+
+            Assert.Equal(StatusCode.InvalidArgument, rpcException.StatusCode);
+            Assert.Contains("doesn't exist, is disabled, or is not an orchestrator function", rpcException.Status.Detail);
+            orchestrationServiceClient.Verify(
+                client => client.CreateTaskOrchestrationAsync(
+                    It.IsAny<TaskMessage>(),
+                    It.IsAny<OrchestrationStatus[]>()),
+                Times.Never);
         }
 
         [Theory]
@@ -978,9 +1135,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private async Task<RpcException> InvokeFailingRpcAsync(
             string hubName,
             DurabilityProvider durabilityProvider,
-            Func<P.TaskHubSidecarService.TaskHubSidecarServiceClient, Task> invoke)
+            Func<P.TaskHubSidecarService.TaskHubSidecarServiceClient, Task> invoke,
+            Action<DurableTaskExtension> configureExtension = null)
         {
             using DurableTaskExtension extension = this.CreateExtension(hubName, durabilityProvider);
+            configureExtension?.Invoke(extension);
             ILocalGrpcListener listener = LocalGrpcListener.Create(extension, LocalGrpcListenerMode.AspNetCore);
 
             try
@@ -989,6 +1148,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 using GrpcChannel channel = GrpcChannel.ForAddress(listener.ListenAddress);
                 var client = new P.TaskHubSidecarService.TaskHubSidecarServiceClient(channel);
                 return await Assert.ThrowsAsync<RpcException>(() => invoke(client));
+            }
+            finally
+            {
+                await listener.StopAsync(default);
+            }
+        }
+
+        private async Task InvokeRpcAsync(
+            DurabilityProvider durabilityProvider,
+            Func<P.TaskHubSidecarService.TaskHubSidecarServiceClient, Task> invoke)
+        {
+            using DurableTaskExtension extension = this.CreateExtension("TestHub", durabilityProvider);
+            ILocalGrpcListener listener = LocalGrpcListener.Create(extension, LocalGrpcListenerMode.AspNetCore);
+
+            try
+            {
+                await listener.StartAsync(default);
+                using GrpcChannel channel = GrpcChannel.ForAddress(listener.ListenAddress);
+                var client = new P.TaskHubSidecarService.TaskHubSidecarServiceClient(channel);
+                await invoke(client);
             }
             finally
             {
@@ -1038,13 +1217,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 platformInformationService: TestHelpers.GetMockPlatformInformationService(language: runtimeType));
         }
 
-        private DurableTaskExtension CreateExtension(string hubName, DurabilityProvider durabilityProvider)
+        private DurableTaskExtension CreateExtension(
+            string hubName,
+            DurabilityProvider durabilityProvider,
+            DurabilityProvider defaultDurabilityProvider = null)
         {
             var options = new DurableTaskOptions { HubName = hubName };
             var wrappedOptions = new OptionsWrapper<DurableTaskOptions>(options);
             var serviceFactory = new Mock<IDurabilityProviderFactory>();
             serviceFactory.SetupGet(factory => factory.Name).Returns(AzureStorageDurabilityProviderFactory.ProviderName);
-            serviceFactory.Setup(factory => factory.GetDurabilityProvider()).Returns(durabilityProvider);
+            serviceFactory
+                .Setup(factory => factory.GetDurabilityProvider())
+                .Returns(defaultDurabilityProvider ?? durabilityProvider);
             serviceFactory
                 .Setup(factory => factory.GetDurabilityProvider(It.IsAny<DurableClientAttribute>()))
                 .Returns(durabilityProvider);
@@ -1187,13 +1371,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         private static Mock<DurabilityProvider> CreateDurabilityProviderMock(
             IOrchestrationService orchestrationService,
-            IOrchestrationServiceClient orchestrationServiceClient)
+            IOrchestrationServiceClient orchestrationServiceClient,
+            string connectionName = "TestConnection")
         {
             var durabilityProvider = new Mock<DurabilityProvider>(
                 "Test",
                 orchestrationService,
                 orchestrationServiceClient,
-                "TestConnection")
+                connectionName)
             {
                 CallBase = true,
             };
