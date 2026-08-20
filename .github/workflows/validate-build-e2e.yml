@@ -17,6 +17,7 @@ on:
 env:
   config: Release
   AzureWebJobsStorage: UseDevelopmentStorage=true
+  SecondaryStorage: 'DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://127.0.0.1:11000/devstoreaccount1;QueueEndpoint=http://127.0.0.1:11001/devstoreaccount1;TableEndpoint=http://127.0.0.1:11002/devstoreaccount1;'
   NPM_CONFIG_REGISTRY: https://registry.npmjs.org/
 
 jobs:
@@ -77,18 +78,21 @@ jobs:
     - name: Start Azurite
       shell: pwsh
       run: |
-        Start-Process (Resolve-Path '.azurite\node_modules\.bin\azurite.cmd') -ArgumentList '--silent','--skipApiVersionCheck','--blobPort','10000','--queuePort','10001','--tablePort','10002'
+        Start-Process (Resolve-Path '.azurite\node_modules\.bin\azurite.cmd') -ArgumentList '--silent','--skipApiVersionCheck','--location','.azurite-primary','--blobPort','10000','--queuePort','10001','--tablePort','10002'
+        Start-Process (Resolve-Path '.azurite\node_modules\.bin\azurite.cmd') -ArgumentList '--silent','--skipApiVersionCheck','--location','.azurite-secondary','--blobPort','11000','--queuePort','11001','--tablePort','11002'
         $timeout = 30
-        for ($i = 1; $i -le $timeout; $i++) {
-          try {
-            $tcp = [System.Net.Sockets.TcpClient]::new('127.0.0.1', 10000)
-            $tcp.Dispose()
-            Write-Host "Azurite is ready"
-            break
-          } catch {
-            if ($i -eq $timeout) { throw "Azurite did not start within $timeout seconds" }
-            Write-Host "Waiting for Azurite ($i/$timeout)"
-            Start-Sleep -Seconds 1
+        foreach ($port in 10000, 10001, 10002, 11000, 11001, 11002) {
+          for ($i = 1; $i -le $timeout; $i++) {
+            try {
+              $tcp = [System.Net.Sockets.TcpClient]::new('127.0.0.1', $port)
+              $tcp.Dispose()
+              Write-Host "Azurite on port $port is ready"
+              break
+            } catch {
+              if ($i -eq $timeout) { throw "Azurite on port $port did not start within $timeout seconds" }
+              Write-Host "Waiting for Azurite on port $port ($i/$timeout)"
+              Start-Sleep -Seconds 1
+            }
           }
         }
 
