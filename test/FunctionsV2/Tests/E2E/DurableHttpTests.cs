@@ -18,6 +18,7 @@ using Moq;
 using Moq.Protected;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -29,6 +30,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private readonly ITestOutputHelper output;
 
         private readonly TestLoggerProvider loggerProvider;
+
+        private static readonly IMessageSerializerSettingsFactory MockTokenSourceSerializerSettings =
+            new MockTokenSourceSerializerSettingsFactory();
 
         private static int mockSynchronousHttpMessageHandlerCount;
 
@@ -1411,7 +1415,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 nameof(this.DurableHttpAsync_Synchronous_AddsBearerToken),
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,
-                durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler)))
+                durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler),
+                serializerSettings: MockTokenSourceSerializerSettings))
             {
                 await host.StartAsync();
 
@@ -1454,7 +1459,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 nameof(this.DurableHttpAsync_Synchronous_TokenWithOptions),
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,
-                durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler)))
+                durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler),
+                serializerSettings: MockTokenSourceSerializerSettings))
             {
                 await host.StartAsync();
 
@@ -1502,7 +1508,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 nameof(this.DurableHttpAsync_Asynchronous_TokenWithOptions),
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,
-                durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler)))
+                durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler),
+                serializerSettings: MockTokenSourceSerializerSettings))
             {
                 await host.StartAsync();
 
@@ -1549,7 +1556,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,
                 httpAsyncSleepTime: 1000,
-                durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler)))
+                durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler),
+                serializerSettings: MockTokenSourceSerializerSettings))
             {
                 await host.StartAsync();
 
@@ -1639,7 +1647,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 testName,
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider,
-                durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler)))
+                durableHttpMessageHandler: new DurableHttpMessageHandlerFactory(httpMessageHandler),
+                serializerSettings: MockTokenSourceSerializerSettings))
             {
                 await host.StartAsync();
 
@@ -2207,6 +2216,47 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 Assert.False(poll.Headers.ContainsKey("Authorization"));
                 Assert.False(poll.Headers.ContainsKey("Cookie"));
+            }
+        }
+
+        private class MockTokenSourceSerializerSettingsFactory : IMessageSerializerSettingsFactory
+        {
+            public JsonSerializerSettings CreateJsonSerializerSettings()
+            {
+                return new JsonSerializerSettings
+                {
+                    TypeNameHandling = TypeNameHandling.None,
+                    DateParseHandling = DateParseHandling.None,
+                    SerializationBinder = new MockTokenSourceBinder(),
+                };
+            }
+        }
+
+        private class MockTokenSourceBinder : ISerializationBinder
+        {
+            public Type BindToType(string assemblyName, string typeName)
+            {
+                Type allowedType = typeof(MockTokenSource);
+                bool allowedAssembly =
+                    string.Equals(assemblyName, allowedType.Assembly.FullName, StringComparison.Ordinal) ||
+                    string.Equals(assemblyName, allowedType.Assembly.GetName().Name, StringComparison.Ordinal);
+                if (allowedAssembly && typeName == allowedType.FullName)
+                {
+                    return allowedType;
+                }
+
+                throw new JsonSerializationException($"Type '{typeName}, {assemblyName}' is not allowed.");
+            }
+
+            public void BindToName(Type serializedType, out string assemblyName, out string typeName)
+            {
+                if (serializedType != typeof(MockTokenSource))
+                {
+                    throw new JsonSerializationException($"Type '{serializedType.FullName}' is not allowed.");
+                }
+
+                assemblyName = serializedType.Assembly.FullName;
+                typeName = serializedType.FullName;
             }
         }
 

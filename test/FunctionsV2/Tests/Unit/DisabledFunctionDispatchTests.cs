@@ -93,6 +93,41 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void ThrowIfOrchestratorFunctionIsDisabled_ActiveOutOfProcOrchestrator_DoesNotThrow()
+        {
+            var extension = CreateExtension();
+            var mockExecutor = new Mock<ITriggeredFunctionExecutor>();
+            extension.RegisterOrchestrator(
+                new FunctionName("ActiveOrchestrator"),
+                new RegisteredFunctionInfo(mockExecutor.Object, isOutOfProc: true));
+
+            extension.ThrowIfOrchestratorFunctionIsDisabled("ActiveOrchestrator");
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void ThrowIfOrchestratorFunctionIsDisabled_MissingOrchestrator_DoesNotThrow()
+        {
+            var extension = CreateExtension();
+
+            extension.ThrowIfOrchestratorFunctionIsDisabled("MissingOrchestrator");
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void ThrowIfFunctionDoesNotExist_DisabledOrchestrator_DoesNotBreakReplay()
+        {
+            // Deterministic orchestration calls use this helper while replaying history. A disabled
+            // orchestrator remains a known function, so availability checks belong only at new-start
+            // entry points and must not make existing sub-orchestration history fail to replay.
+            var extension = CreateExtension();
+            extension.RegisterOrchestrator(new FunctionName("DisabledOrchestrator"), orchestratorInfo: null);
+
+            extension.ThrowIfFunctionDoesNotExist("DisabledOrchestrator", FunctionType.Orchestrator);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void DisabledEntity_IsTreatedAsUnavailableByClassicDispatch()
         {
             // The classic (in-proc / HTTP-protocol) entity dispatch path in EntityMiddleware treats an
