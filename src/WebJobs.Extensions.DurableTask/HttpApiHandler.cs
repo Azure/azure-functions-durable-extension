@@ -958,6 +958,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 if (client is DurableClient durableClient)
                 {
+                    durableClient.ThrowIfOrchestratorFunctionIsDisabled(functionName);
+
                     var instance = new OrchestrationInstance
                     {
                         InstanceId = id,
@@ -1100,6 +1102,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     return client.CreateCheckStatusResponse(request, newInstanceId);
                 }
+            }
+            catch (OrchestratorFunctionUnavailableException e)
+            {
+                return request.CreateErrorResponse(HttpStatusCode.BadRequest, e.Message, e);
             }
             catch (ArgumentException e)
             {

@@ -181,6 +181,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.config?.ThrowIfFunctionDoesNotExist(orchestratorFunctionName, FunctionType.Orchestrator);
             }
 
+            this.ThrowIfOrchestratorFunctionIsDisabled(orchestratorFunctionName);
+
             if (string.IsNullOrEmpty(instanceId))
             {
                 instanceId = Guid.NewGuid().ToString("N");
@@ -359,6 +361,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return !client.attribute.ExternalClient &&
                 this.TaskHubMatchesCurrentApp(client) &&
                 this.ConnectionNameMatchesCurrentApp(client);
+        }
+
+        internal void ThrowIfOrchestratorFunctionIsDisabled(string name)
+        {
+            if (this.ClientReferencesCurrentApp(this))
+            {
+                this.config?.ThrowIfOrchestratorFunctionIsDisabled(name);
+            }
         }
 
         private bool TaskHubMatchesCurrentApp(DurableClient client)
@@ -1262,6 +1272,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             // GetOrchestrationInstanceStateAsync will throw ArgumentException if the provided instanceid is not found.
             OrchestrationState state = await this.GetOrchestrationInstanceStateAsync(instanceId);
+
+            this.ThrowIfOrchestratorFunctionIsDisabled(state.Name);
 
             JToken input = ParseToJToken(state.Input);
 
