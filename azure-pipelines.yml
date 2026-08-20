@@ -15,13 +15,17 @@ jobs:
       buildConfiguration: 'Release'
 
     steps:
-    - task: NuGetToolInstaller@1
-
     - task: UseDotNet@2
       displayName: 'Use the .NET 6 SDK'
       inputs:
         packageType: 'sdk'
         version: '6.0.x'
+
+    - task: UseDotNet@2
+      displayName: 'Use the .NET 10 SDK'
+      inputs:
+        packageType: 'sdk'
+        version: '10.0.x'
 
     - task: DotNetCoreCLI@2
       inputs:
@@ -64,13 +68,17 @@ jobs:
       buildConfiguration: 'Release'
 
     steps:
-    - task: NuGetToolInstaller@1
-
     - task: UseDotNet@2
       displayName: 'Use the .NET 6 SDK'
       inputs:
         packageType: 'sdk'
         version: '6.0.x'
+
+    - task: UseDotNet@2
+      displayName: 'Use the .NET 10 SDK'
+      inputs:
+        packageType: 'sdk'
+        version: '10.0.x'
 
     - task: DotNetCoreCLI@2
       inputs:
@@ -111,13 +119,17 @@ jobs:
       buildConfiguration: 'Release'
 
     steps:
-    - task: NuGetToolInstaller@1
-
     - task: UseDotNet@2
       displayName: 'Use the .NET 6 SDK'
       inputs:
         packageType: 'sdk'
         version: '6.0.x'
+
+    - task: UseDotNet@2
+      displayName: 'Use the .NET 10 SDK'
+      inputs:
+        packageType: 'sdk'
+        version: '10.0.x'
 
     - task: DotNetCoreCLI@2
       inputs:

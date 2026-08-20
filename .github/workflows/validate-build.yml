@@ -1,5 +1,8 @@
 name: Validate Build (except E2E tests)
 
+permissions:
+  contents: read
+
 on:
   push:
     branches:
@@ -12,9 +15,7 @@ on:
     paths-ignore: [ '**.md' ]
 
 env:
-  solution: WebJobs.Extensions.DurableTask.sln
   config: Release
-  AzureWebJobsStorage: UseDevelopmentStorage=true
 
 jobs:
   build:
@@ -27,41 +28,31 @@ jobs:
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
-
-    - name: Set up .NET Core 3.1
-      uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: '3.1.x'
+        dotnet-version: |
+          8.0.x
+        global-json-file: global.json
 
-    - name: Set up .NET Core 2.1
-      uses: actions/setup-dotnet@v3
+    - name: Cache NuGet packages
+      uses: actions/cache@v3
       with:
-        dotnet-version: '2.1.x'
-
-    - name: Set up .NET 6.0
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: '6.0.x'
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/Directory.Packages.props') }}
+        restore-keys: ${{ runner.os }}-nuget-
 
     - name: Restore dependencies
-      run: dotnet restore $solution
+      run: |
+        dotnet restore ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj
+        dotnet restore ./test/Worker.Extensions.DurableTask.Tests/Worker.Extensions.DurableTask.Tests.csproj
 
     - name: Build
-      run: dotnet build $solution
+      run: |
+        dotnet build ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj --no-restore
+        dotnet build ./test/Worker.Extensions.DurableTask.Tests/Worker.Extensions.DurableTask.Tests.csproj --no-restore
 
-    # Install Azurite
-    - name: Set up Node.js (needed for Azurite)
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18.x' # Azurite requires at least Node 18
-
-    - name: Install Azurite
-      run: npm install -g azurite
-
-    # Run tests
     - name: Run FunctionsV2 tests (except E2E tests)
-      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 & dotnet test ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj  --filter "FullyQualifiedName!~Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.DurableTaskEndToEndTests"
+      run: dotnet test ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj --no-build --filter "TestType!=E2E"
 
     - name: Run Worker Extension tests
-      run: azurite --silent --blobPort 10000 --queuePort 10001 --tablePort 10002 & dotnet test ./test/Worker.Extensions.DurableTask.Tests/Worker.Extensions.DurableTask.Tests.csproj
+      run: dotnet test ./test/Worker.Extensions.DurableTask.Tests/Worker.Extensions.DurableTask.Tests.csproj --no-build
 

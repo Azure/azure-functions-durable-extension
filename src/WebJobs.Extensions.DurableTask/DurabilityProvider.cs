@@ -1,12 +1,14 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.Core.Entities;
+using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Query;
 using Microsoft.Azure.WebJobs.Host.Scale;
@@ -38,6 +40,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly IOrchestrationServiceClient innerServiceClient;
         private readonly IEntityOrchestrationService entityOrchestrationService;
         private readonly string connectionName;
+        private readonly int orchestrationCreationRequestTimeoutInSeconds = 180;
 
         /// <summary>
         /// Creates the default <see cref="DurabilityProvider"/>.
@@ -406,10 +409,63 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.GetOrchestrationServiceClient().CreateTaskOrchestrationAsync(creationMessage);
         }
 
-        /// <inheritdoc />
-        public Task CreateTaskOrchestrationAsync(TaskMessage creationMessage, OrchestrationStatus[] dedupeStatuses)
+        /// <summary>
+        /// Creates a new task orchestration instance using the specified creation message and dedupe statuses.
+        /// </summary>
+        /// <param name="creationMessage">The creation message for the orchestration.</param>
+        /// <param name="dedupeStatuses">An array of orchestration statuses used for "dedupping":
+        /// If an orchestration with the same instance ID already exists, and its status is in this array, then a
+        /// <see cref="OrchestrationAlreadyExistsException"/> will be thrown.
+        /// If the array contains all of the running statuses (<see cref="OrchestrationStatus.Pending"/>, <see cref="OrchestrationStatus.Running"/>,
+        /// and <see cref="OrchestrationStatus.Suspended"/>), then only terminal statuses can be reused.
+        /// If at least one of these statuses is not included in the array, then if an instance with that status is found, it will first be terminated
+        /// before a new orchestration is created. If the existing instance does not reach a terminal state within 3 minutes, the operation will be cancelled.
+        /// </param>
+        /// <returns>A task that completes when the creation message for the task orchestration instance is enqueued.</returns>
+        /// <exception cref="OrchestrationAlreadyExistsException">Thrown if an orchestration with the same instance ID already exists and its status
+        /// is in <paramref name="dedupeStatuses"/>.</exception>
+        /// <exception cref="OperationCanceledException">Thrown if an existing running instance does not reach a terminal state within 3 minutes.</exception>
+        /// <exception cref="ArgumentException">
+        /// Thrown if <paramref name="dedupeStatuses"/> contains <see cref="OrchestrationStatus.Terminated"/> but also allows at least one running status
+        /// to be reusable. In this case, an existing orchestration with that running status would be terminated, but the creation of the new orchestration
+        /// would immediately fail due to the existing orchestration now having status <see cref="OrchestrationStatus.Terminated"/>.
+        /// </exception>
+        public async Task CreateTaskOrchestrationAsync(TaskMessage creationMessage, OrchestrationStatus[] dedupeStatuses)
         {
-            return this.GetOrchestrationServiceClient().CreateTaskOrchestrationAsync(creationMessage, dedupeStatuses);
+            using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(this.orchestrationCreationRequestTimeoutInSeconds));
+            await this.CreateTaskOrchestrationAsync(creationMessage, dedupeStatuses, timeoutCts.Token);
+        }
+
+        /// <summary>
+        /// Creates a new task orchestration instance using the specified creation message and dedupe statuses.
+        /// </summary>
+        /// <param name="creationMessage">The creation message for the orchestration.</param>
+        /// <param name="dedupeStatuses">An array of orchestration statuses used for "dedupping":
+        /// If an orchestration with the same instance ID already exists, and its status is in this array, then a
+        /// <see cref="OrchestrationAlreadyExistsException"/> will be thrown.
+        /// If the array contains all of the running statuses (<see cref="OrchestrationStatus.Pending"/>, <see cref="OrchestrationStatus.Running"/>,
+        /// and <see cref="OrchestrationStatus.Suspended"/>), then only terminal statuses can be reused.
+        /// If at least one of these statuses is not included in the array, then if an instance with that status is found, it will first be terminated
+        /// before a new orchestration is created. This method will wait for the instance to reach a terminal status for a maximum of one hour or
+        /// until the <paramref name="cancellationToken"/> is invoked, whichever occurs first.</param>
+        /// <param name="cancellationToken">The cancellation token used to cancel waiting for an existing instance to terminate in the case that a
+        /// non-terminal instance is found whose runtime status is not included in <paramref name="dedupeStatuses"/>.</param>
+        /// <returns>A task that completes when the creation message for the task orchestration instance is enqueued.</returns>
+        /// <exception cref="OrchestrationAlreadyExistsException">Thrown if an orchestration with the same instance ID already exists and its status
+        /// is in <paramref name="dedupeStatuses"/>.</exception>
+        /// <exception cref="OperationCanceledException">Thrown if the operation is cancelled via <paramref name="cancellationToken"/>.</exception>
+        /// <exception cref="ArgumentException">
+        /// Thrown if <paramref name="dedupeStatuses"/> contains <see cref="OrchestrationStatus.Terminated"/> but also allows at least one running status
+        /// to be reusable. In this case, an existing orchestration with that running status would be terminated, but the creation of the new orchestration
+        /// would immediately fail due to the existing orchestration now having status <see cref="OrchestrationStatus.Terminated"/>.
+        /// </exception>
+        public async virtual Task CreateTaskOrchestrationAsync(TaskMessage creationMessage, OrchestrationStatus[] dedupeStatuses, CancellationToken cancellationToken)
+        {
+            await this.TerminateTaskOrchestrationWithReusableRunningStatusAndWaitAsync(
+                creationMessage.OrchestrationInstance.InstanceId,
+                dedupeStatuses,
+                cancellationToken);
+            await this.GetOrchestrationServiceClient().CreateTaskOrchestrationAsync(creationMessage, dedupeStatuses);
         }
 
         /// <inheritdoc />
@@ -609,6 +665,95 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public virtual Task<IAsyncEnumerable<HistoryEvent>> StreamOrchestrationHistoryAsync(string instanceId, CancellationToken cancellationToken)
         {
             throw this.GetNotImplementedException(nameof(this.StreamOrchestrationHistoryAsync));
+        }
+
+        /// <summary>
+        /// Attempts to modify the durability service's UseSeparateQueueForEntityWorkItems property.
+        /// </summary>
+        /// <param name="newValue">The value to set.</param>
+        public virtual void SetUseSeparateQueueForEntityWorkItems(bool newValue)
+        {
+            throw this.GetNotImplementedException(nameof(this.SetUseSeparateQueueForEntityWorkItems));
+        }
+
+        /// <summary>
+        /// If an orchestration exists with a status that is not in <paramref name="dedupeStatuses"/> and has a running status (one of
+        /// <see cref="OrchestrationStatus.Pending"/>, <see cref="OrchestrationStatus.Running"/>, or <see cref="OrchestrationStatus.Suspended"/>),
+        /// then this method terminates the specified orchestration instance and waits until:
+        /// - The orchestration's status changes to <see cref="OrchestrationStatus.Terminated"/>,
+        /// - or the orchestration is deleted,
+        /// - or the operation is cancelled via the <paramref name="cancellationToken"/>.
+        /// </summary>
+        /// <param name="instanceId">The instance ID of the orchestration.</param>
+        /// <param name="dedupeStatuses">The dedupe statuses of the orchestration.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>A task that completes when any of the above conditions are reached.</returns>
+        /// <exception cref="OperationCanceledException">Thrown if the operation is cancelled via the <paramref name="cancellationToken"/>.</exception>
+        /// <exception cref="OrchestrationAlreadyExistsException">Thrown if an orchestration already exists with status in <paramref name="dedupeStatuses"/>.</exception>
+        /// <exception cref="ArgumentException">Thrown if <paramref name="dedupeStatuses"/> contains <see cref="OrchestrationStatus.Terminated"/> but allows
+        /// at least one running status to be reusable.</exception>
+        private async Task TerminateTaskOrchestrationWithReusableRunningStatusAndWaitAsync(
+            string instanceId,
+            OrchestrationStatus[] dedupeStatuses,
+            CancellationToken cancellationToken)
+        {
+            var runningStatuses = new List<OrchestrationStatus>()
+            {
+                OrchestrationStatus.Running,
+                OrchestrationStatus.Pending,
+                OrchestrationStatus.Suspended,
+            };
+
+            if (dedupeStatuses != null && runningStatuses.Any(
+                status => !dedupeStatuses.Contains(status)) && dedupeStatuses.Contains(OrchestrationStatus.Terminated))
+            {
+                throw new ArgumentException(
+                    "Invalid dedupe statuses: cannot include 'Terminated' while also allowing reuse of running instances, " +
+                    "because the running instance would be terminated and then immediately conflict with the dedupe check.");
+            }
+
+            bool IsRunning(OrchestrationStatus status) =>
+                runningStatuses.Contains(status);
+
+            // At least one running status is reusable, so determine if an orchestration already exists with this status and terminate it if so
+            if (dedupeStatuses == null || runningStatuses.Any(status => !dedupeStatuses.Contains(status)))
+            {
+                OrchestrationState orchestrationState = await this.GetOrchestrationStateAsync(instanceId, executionId: null);
+
+                if (orchestrationState != null)
+                {
+                    if (dedupeStatuses?.Contains(orchestrationState.OrchestrationStatus) == true)
+                    {
+                        throw new OrchestrationAlreadyExistsException($"An orchestration with instance ID '{instanceId}' and status " +
+                            $"'{orchestrationState.OrchestrationStatus}' already exists");
+                    }
+
+                    if (IsRunning(orchestrationState.OrchestrationStatus))
+                    {
+                        // Check for cancellation before attempting to terminate the orchestration
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        string dedupeStatusesDescription = dedupeStatuses == null
+                            ? "null (all statuses reusable)"
+                            : dedupeStatuses.Length == 0
+                                ? "[] (all statuses reusable)"
+                                : $"[{string.Join(", ", dedupeStatuses)}]";
+
+                        string terminationReason = $"A new instance creation request has been issued for instance {instanceId} which " +
+                            $"currently has status {orchestrationState.OrchestrationStatus}. Since the dedupe statuses of the creation request, " +
+                            $"{dedupeStatusesDescription}, do not contain the orchestration's status, the orchestration has been terminated " +
+                            $"and a new instance with the same instance ID will be created.";
+
+                        await this.ForceTerminateTaskOrchestrationAsync(instanceId, terminationReason);
+
+                        await this.WaitForOrchestrationAsync(
+                            instanceId,
+                            orchestrationState.OrchestrationInstance.ExecutionId,
+                            TimeSpan.FromHours(1),
+                            cancellationToken);
+                    }
+                }
+            }
         }
     }
 }

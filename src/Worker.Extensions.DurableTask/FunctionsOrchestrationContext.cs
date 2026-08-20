@@ -26,6 +26,8 @@ internal sealed partial class FunctionsOrchestrationContext : TaskOrchestrationC
     private InputConverter? inputConverter;
     private EntityFeature? entities;
 
+    internal FunctionContext FunctionContext => this.functionContext;
+
     public FunctionsOrchestrationContext(TaskOrchestrationContext innerContext, FunctionContext functionContext)
     {
         this.innerContext = innerContext;
@@ -123,6 +125,12 @@ internal sealed partial class FunctionsOrchestrationContext : TaskOrchestrationC
     {
         this.EnsureLegalAccess();
         this.innerContext.ContinueAsNew(newInput, preserveUnprocessedEvents);
+    }
+
+    public override void ContinueAsNew(ContinueAsNewOptions options)
+    {
+        this.EnsureLegalAccess();
+        this.innerContext.ContinueAsNew(options);
     }
 
     public override Task CreateTimer(DateTime fireAt, CancellationToken cancellationToken)

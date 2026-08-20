@@ -1,13 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
   </PropertyGroup>
 
   <!-- We use central package management. For version details, refer to `samples/Directory.packages.props`. -->
   <!-- To specify a version in the package reference below, simply add `Version = ""`. -->
   <ItemGroup>
     <PackageReference Include="EntityFramework" />
+    <PackageReference Include="System.Drawing.Common" VersionOverride="6.0.0" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" >
@@ -16,7 +17,6 @@
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
-    <PackageReference Include="Swashbuckle.AspNetCore" />
     <PackageReference Include="Microsoft.AspNet.WebApi.Client" />
   </ItemGroup>
 </Project>

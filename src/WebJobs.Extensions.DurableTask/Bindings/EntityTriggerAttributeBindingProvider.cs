@@ -51,6 +51,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // The entity class name defaults to the method name.
             var entityName = new FunctionName(name);
+            if (trigger.DurableRequiresGrpc)
+            {
+                // The function's metadata includes the DurableRequiresGrpc attribute, indicating that a language typically
+                // configured for HTTP wants to use gRPC instead. Currently only Python uses this flag for the durabletask-based
+                // Python SDK.
+                // Calling this method will cause the extension to use gRPC instead of HTTP when starting the task hub.
+                this.config.ConfigureForGrpcProtocol();
+            }
+
             this.config.RegisterEntity(entityName, null);
             var binding = new EntityTriggerBinding(this.config, parameter, entityName, this.connectionName);
             return Task.FromResult<ITriggerBinding?>(binding);
@@ -130,7 +139,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     // Generate a byte array which is the serialized protobuf payload
                     // https://developers.google.com/protocol-buffers/docs/csharptutorial#parsing_and_serialization
-                    var entityBatchRequest = remoteContext.Request.ToEntityBatchRequest();
+                    var entityBatchRequest = remoteContext.Request.ToEntityBatchRequest(
+                        remoteContext.Configurations,
+                        remoteContext.RollbackEntityOperationsOnExceptions);
 
                     // We convert the binary payload into a base64 string because that seems to be the most commonly supported
                     // format for Azure Functions language workers. Attempts to send unencoded byte[] payloads were unsuccessful.

@@ -25,6 +25,7 @@ message ActivityRequest {
     OrchestrationInstance orchestrationInstance = 4;
     int32 taskId = 5;
     TraceContext parentTraceContext = 6;
+    map<string, string> tags = 7;
 }
 
 message ActivityResponse {
@@ -115,6 +116,7 @@ message SubOrchestrationInstanceCreatedEvent {
     google.protobuf.StringValue version = 3;
     google.protobuf.StringValue input = 4;
     TraceContext parentTraceContext = 5;
+    map<string, string> tags = 6;
 }
 
 message SubOrchestrationInstanceCompletedEvent {
@@ -225,6 +227,11 @@ message ExecutionRewoundEvent {
     google.protobuf.StringValue parentExecutionId = 2; // used only for rewinding suborchestrations, null otherwise
     google.protobuf.StringValue instanceId = 3; // used only for rewinding suborchestrations, null otherwise
     TraceContext parentTraceContext = 4; // used only for rewinding suborchestrations, null otherwise
+    google.protobuf.StringValue name = 5; // used by DTS backend only
+    google.protobuf.StringValue version = 6; // used by DTS backend only
+    google.protobuf.StringValue input = 7;  // used by DTS backend only
+    ParentInstanceInfo parentInstance = 8; // used by DTS backend only
+    map<string, string> tags = 9; // used by DTS backend only
 }
 
 message HistoryEvent {
@@ -314,6 +321,10 @@ message SendEntityMessageAction {
     }
 }
 
+message RewindOrchestrationAction {
+    repeated HistoryEvent newHistory = 1;
+}
+
 message OrchestratorAction {
     int32 id = 1;
     oneof orchestratorActionType {
@@ -324,6 +335,7 @@ message OrchestratorAction {
         CompleteOrchestrationAction completeOrchestration = 6;
         TerminateOrchestrationAction terminateOrchestration = 7;
         SendEntityMessageAction sendEntityMessage = 8;
+        RewindOrchestrationAction rewindOrchestration = 9;
     }
 }
 
@@ -483,6 +495,19 @@ message QueryInstancesResponse {
     google.protobuf.StringValue continuationToken = 2;
 }
 
+message ListInstanceIdsRequest {
+    repeated OrchestrationStatus runtimeStatus = 1;
+    google.protobuf.Timestamp completedTimeFrom = 2;
+    google.protobuf.Timestamp completedTimeTo = 3;
+    int32 pageSize = 4;
+    google.protobuf.StringValue lastInstanceKey = 5;
+}
+
+message ListInstanceIdsResponse {
+    repeated string instanceIds = 1;
+    google.protobuf.StringValue lastInstanceKey = 2;
+}
+
 message PurgeInstancesRequest {
     oneof request {
         string instanceId = 1;
@@ -490,12 +515,15 @@ message PurgeInstancesRequest {
         InstanceBatch instanceBatch = 4;
     }
     bool recursive = 3;
+    // used in the case when an instanceId is specified to determine if the purge request is for an orchestration (as opposed to an entity)
+    bool isOrchestration = 5;
 }
 
 message PurgeInstanceFilter {
     google.protobuf.Timestamp createdTimeFrom = 1;
     google.protobuf.Timestamp createdTimeTo = 2;
     repeated OrchestrationStatus runtimeStatus = 3;
+    google.protobuf.Duration timeout = 4;
 }
 
 message PurgeInstancesResponse {
@@ -599,6 +627,7 @@ message EntityBatchRequest {
     string instanceId = 1;
     google.protobuf.StringValue entityState = 2;
     repeated OperationRequest operations = 3;
+    map<string, google.protobuf.Value> properties = 4;
 }
 
 message EntityBatchResult {
@@ -608,6 +637,8 @@ message EntityBatchResult {
     TaskFailureDetails failureDetails = 4;
     string completionToken = 5;
     repeated OperationInfo operationInfos = 6; // used only with DTS
+    // Whether or not an entity state is required to complete the original EntityBatchRequest and none was provided.
+    bool requiresState = 7;
 }
 
 message EntityRequest {
@@ -747,6 +778,9 @@ service TaskHubSidecarService {
     // rpc DeleteInstance(DeleteInstanceRequest) returns (DeleteInstanceResponse);
 
     rpc QueryInstances(QueryInstancesRequest) returns (QueryInstancesResponse);
+
+    rpc ListInstanceIds(ListInstanceIdsRequest) returns (ListInstanceIdsResponse);
+    
     rpc PurgeInstances(PurgeInstancesRequest) returns (PurgeInstancesResponse);
 
     rpc GetWorkItems(GetWorkItemsRequest) returns (stream WorkItem);
@@ -795,6 +829,7 @@ message GetWorkItemsRequest {
     int32 maxConcurrentEntityWorkItems = 3;
 
     repeated WorkerCapability capabilities = 10;
+    WorkItemFilters workItemFilters = 11;
 }
 
 enum WorkerCapability {
@@ -815,6 +850,26 @@ enum WorkerCapability {
     // Work items may contain URI references instead of inline data, and the worker must fetch them.
     // This avoids message size limits and reduces network overhead.
     WORKER_CAPABILITY_LARGE_PAYLOADS = 3;
+}
+
+message WorkItemFilters {
+    repeated OrchestrationFilter orchestrations = 1;
+    repeated ActivityFilter activities = 2;
+    repeated EntityFilter entities = 3;
+}
+
+message OrchestrationFilter {
+    string name = 1;
+    repeated string versions = 2;
+}
+
+message ActivityFilter {
+    string name = 1;
+    repeated string versions = 2;
+}
+
+message EntityFilter {
+    string name = 1;
 }
 
 message WorkItem {

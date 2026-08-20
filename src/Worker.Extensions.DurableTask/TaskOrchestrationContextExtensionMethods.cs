@@ -8,6 +8,7 @@ using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 using Microsoft.Azure.Functions.Worker.Extensions.DurableTask.Http;
 using Microsoft.Extensions.Logging;
@@ -37,7 +38,9 @@ public static class TaskOrchestrationContextExtensionMethods
         }
         ILogger logger = context.CreateReplaySafeLogger("Microsoft.Azure.Functions.Worker.Extensions.DurableTask.CallHttp");
 
+#pragma warning disable DURABLE2003 // BuiltIn::HttpActivity is a reserved framework activity, not user-defined
         DurableHttpResponse response = await context.CallActivityAsync<DurableHttpResponse>(Constants.HttpTaskActivityReservedName, request);
+#pragma warning restore DURABLE2003
         
         while (response.StatusCode == HttpStatusCode.Accepted && request.AsynchronousPatternEnabled )
         {
@@ -81,7 +84,9 @@ public static class TaskOrchestrationContextExtensionMethods
 
             logger.LogInformation($"Polling HTTP status at location: {locationUrl}");
 
+#pragma warning disable DURABLE2003 // BuiltIn::HttpActivity is a reserved framework activity, not user-defined
             response = await context.CallActivityAsync<DurableHttpResponse>(Constants.HttpTaskActivityReservedName, newHttpRequest);
+#pragma warning restore DURABLE2003
         }
 
         return response;
@@ -168,15 +173,102 @@ public static class TaskOrchestrationContextExtensionMethods
         return context.CallHttpAsync(request);
     }
 
-    private static DurableHttpRequest CreateLocationPollRequest(DurableHttpRequest durableHttpRequest, string locationUri)
+    /// <summary>
+    /// Gets the <see cref="FunctionContext"/> associated with the current orchestration context.
+    /// </summary>
+    /// <remarks>
+    /// This method is intended for use in Azure Functions environments where additional function-level
+    /// context is needed. If the <paramref name="context"/> is not backed by an Azure Functions
+    /// orchestration, the method returns <c>null</c>.
+    /// </remarks>
+    /// <param name="context">The <see cref="TaskOrchestrationContext"/> from which to obtain the <see cref="FunctionContext"/>.</param>
+    /// <returns>The <see cref="FunctionContext"/> if available; otherwise, <c>null</c>.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="context"/> is <c>null</c>.</exception>
+    public static FunctionContext? GetFunctionContext(this TaskOrchestrationContext context)
     {
+        if (context is null)
+        {
+            throw new ArgumentNullException(nameof(context));
+        }
+
+        if (context is FunctionsOrchestrationContext functionsContext)
+        {
+            return functionsContext.FunctionContext;
+        }
+
+        return null;
+    }
+
+    internal static DurableHttpRequest CreateLocationPollRequest(DurableHttpRequest durableHttpRequest, string locationUri)
+    {
+        // Resolve relative Location URIs against the original request URI. A relative
+        // redirect is inherently same-origin. Using the two-argument Uri constructor
+        // also avoids a UriFormatException that new Uri(string) would throw for
+        // non-absolute URIs.
+        Uri parsedLocationUri = durableHttpRequest.Uri is not null && durableHttpRequest.Uri.IsAbsoluteUri
+            ? new Uri(durableHttpRequest.Uri, locationUri)
+            : new Uri(locationUri);
+
+        // When following a 202 Location redirect to a different origin, do not forward
+        // credentials (Authorization/Cookie headers). This matches the same-origin policy
+        // applied by the Fetch Standard (HTTP-redirect fetch, step 13) and is more
+        // permissive than .NET's HttpClient, which clears Authorization on every redirect
+        // (see SocketsHttpHandler's RedirectHandler in dotnet/runtime). Same-origin
+        // forwarding is intentional here because the async HTTP polling pattern
+        // legitimately needs the caller's headers to follow the Location header back
+        // to the same service. The check prevents an attacker-controlled first-hop
+        // server from harvesting credentials by redirecting the poll to a host they
+        // control.
+        bool sameOrigin = IsSameOrigin(durableHttpRequest.Uri!, parsedLocationUri);
+
+        // Make a defensive copy of the headers dictionary so the mutations below do not
+        // leak back to the original request (the poll loop reuses `request` across
+        // iterations as the basis for each new poll).
+        IDictionary<string, StringValues>? headersCopy = durableHttpRequest.Headers is null
+            ? null
+            : new Dictionary<string, StringValues>(durableHttpRequest.Headers, StringComparer.OrdinalIgnoreCase);
+
+        if (headersCopy is not null)
+        {
+            // Do not copy over the x-functions-key header, as in many cases, the
+            // functions key used for the initial request will be a Function-level key
+            // and the status endpoint requires a master key.
+            headersCopy.Remove("x-functions-key");
+
+            if (!sameOrigin)
+            {
+                // Strip Authorization and Cookie headers when redirecting cross-origin so
+                // credentials a caller set directly on the request are not leaked.
+                headersCopy.Remove("Authorization");
+                headersCopy.Remove("Cookie");
+            }
+        }
+
         DurableHttpRequest newDurableHttpRequest = new DurableHttpRequest(
             method: HttpMethod.Get,
-            uri: new Uri(locationUri),
-            headers: durableHttpRequest.Headers,
+            uri: parsedLocationUri,
+            headers: headersCopy,
             asynchronousPatternEnabled: durableHttpRequest.AsynchronousPatternEnabled);
 
         return newDurableHttpRequest;
+    }
+
+    private static bool IsSameOrigin(Uri original, Uri redirect)
+    {
+        if (original is null || redirect is null)
+        {
+            return false;
+        }
+
+        if (!original.IsAbsoluteUri || !redirect.IsAbsoluteUri)
+        {
+            // Treat any non-absolute URI as cross-origin to err on the side of stripping credentials.
+            return false;
+        }
+
+        return string.Equals(original.Scheme, redirect.Scheme, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(original.Host, redirect.Host, StringComparison.OrdinalIgnoreCase)
+            && original.Port == redirect.Port;
     }
 
 }

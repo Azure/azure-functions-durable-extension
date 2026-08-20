@@ -34,7 +34,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 string? localRpcAddress = this.config.GetLocalRpcAddress();
                 if (localRpcAddress == null)
                 {
-                    throw new InvalidOperationException("The local RPC address has not been configured!");
+                    // Throw a platform-level exception so the Functions host and the durable
+                    // middleware both recognize this as a transient infrastructure issue rather
+                    // than an application error. This causes orchestrations/activities to be
+                    // safely aborted and retried by the backend, and prevents queue-triggered
+                    // functions from rapidly poisoning messages.
+                    throw new GrpcChannelTemporarilyUnavailableException(
+                        "The local gRPC endpoint for the Durable Task extension is not available. " +
+                        "The gRPC sidecar may still be starting or may have stopped unexpectedly. " +
+                        "This is typically a transient condition that resolves when the sidecar restarts.");
                 }
 
                 return JsonConvert.SerializeObject(new OrchestrationClientInputData
@@ -44,6 +52,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     RpcBaseUrl = localRpcAddress,
                     RequiredQueryStringParameters = this.config.HttpApiHandler.GetUniversalQueryStrings(),
                     HttpBaseUrl = this.config.HttpApiHandler.GetBaseUrl(),
+                    UseForwardedHost = this.config.Options.HttpSettings?.UseForwardedHost ?? false,
                     MaxGrpcMessageSizeInBytes = this.config.Options.MaxGrpcMessageSizeInBytes,
                     GrpcHttpClientTimeout = JsonConvert.SerializeObject(this.config.Options.GrpcHttpClientTimeout),
                 });
@@ -141,6 +150,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             /// </summary>
             [JsonProperty("httpBaseUrl")]
             public string? HttpBaseUrl { get; set; }
+
+            /// <summary>
+            /// Gets or sets a value indicating whether workers should use forwarded headers for URL construction.
+            /// </summary>
+            [JsonProperty("useForwardedHost", NullValueHandling = NullValueHandling.Ignore)]
+            public bool? UseForwardedHost { get; set; }
 
             /// <summary>
             /// Optional setting that specifies the maximum gRPC receive message size (in bytes) for the DurableTaskClient.

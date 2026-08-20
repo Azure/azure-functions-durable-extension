@@ -17,6 +17,16 @@ $statusUrl = $null;
 $success = $false;
 $haveManuallyRestartedHost = $false;
 
+# Get the directory where this script is located (the DotNetIsolated folder)
+$scriptDir = $PSScriptRoot
+if ([string]::IsNullOrEmpty($scriptDir)) {
+    $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+}
+if ([string]::IsNullOrEmpty($scriptDir)) {
+    $scriptDir = "./test/SmokeTests/OOProcSmokeTests/DotNetIsolated"
+}
+Write-Host "Script directory: $scriptDir" -ForegroundColor Cyan
+
 Do {
     $testIsRunning = $true;
 
@@ -26,9 +36,12 @@ Do {
     $isFunctionsHostRunning = (Get-Process -Name func -ErrorAction SilentlyContinue)
     if ($isFunctionsHostRunning -eq $null) {
         Write-Host "Starting the Functions host..." -ForegroundColor Yellow
+        Write-Host "Working directory: $scriptDir" -ForegroundColor Cyan
 
-        # The '&' operator is used to run the command in the background
-        cd ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated && func host start --port 7071 &       
+        # Start the Functions host as a background process using Start-Process
+        # This runs func in the correct directory with proper environment
+        Start-Process -FilePath "func" -ArgumentList "host", "start", "--port", "7071" -WorkingDirectory $scriptDir -NoNewWindow
+
         Write-Host "Waiting for the Functions host to start up..." -ForegroundColor Yellow
         Start-Sleep -Seconds 60
     }
@@ -110,7 +123,8 @@ Do {
             
             # We stop the host process and wait for a bit before checking if it is running again.
             Write-Host "Restarting the Functions host..." -ForegroundColor Yellow
-            Stop-Process -Name "func" -Force
+            Stop-Process -Name "func" -Force -ErrorAction SilentlyContinue
+
             Start-Sleep -Seconds 5
             
             # Log whether the process kill succeeded

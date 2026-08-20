@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Linq;
 using DurableTask.AzureStorage;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
 using Microsoft.Extensions.Logging;
@@ -13,6 +14,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     internal class AzureStorageDurabilityProviderFactory : IDurabilityProviderFactory
     {
         private const string LoggerName = "Host.Triggers.DurableTask.AzureStorage";
+        private const string UseLegacyPartitionManagementSettingName = "useLegacyPartitionManagement";
+        private const string UseTablePartitionManagementSettingName = "useTablePartitionManagement";
         internal const string ProviderName = "AzureStorage";
 
         private readonly DurableTaskOptions options;
@@ -20,11 +23,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly AzureStorageOptions azureStorageOptions;
         private readonly INameResolver nameResolver;
         private readonly ILoggerFactory loggerFactory;
-        private readonly bool useSeparateQueueForEntityWorkItems;
         private readonly bool inConsumption; // If true, optimize defaults for consumption
         private AzureStorageDurabilityProvider defaultStorageProvider;
 
         // Must wait to get settings until we have validated taskhub name.
+        private bool useSeparateQueueForEntityWorkItems;
         private bool hasValidatedOptions;
         private AzureStorageOrchestrationServiceSettings defaultSettings;
 
@@ -77,21 +80,47 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             WorkerRuntimeType runtimeType = platformInfo.GetWorkerRuntimeType();
             if (runtimeType == WorkerRuntimeType.DotNetIsolated ||
                 runtimeType == WorkerRuntimeType.Java ||
+                runtimeType == WorkerRuntimeType.Native ||
+                runtimeType == WorkerRuntimeType.Golang ||
                 runtimeType == WorkerRuntimeType.Custom)
             {
                 this.useSeparateQueueForEntityWorkItems = true;
             }
 
-            // The following defaults are only applied if the customer did not explicitely set them on `host.json`
+            // The following defaults are only applied if the customer did not explicitly set them on `host.json`
             this.options.MaxConcurrentOrchestratorFunctions = this.options.MaxConcurrentOrchestratorFunctions ?? maxConcurrentOrchestratorsDefault;
             this.options.MaxConcurrentActivityFunctions = this.options.MaxConcurrentActivityFunctions ?? maxConcurrentActivitiesDefault;
             this.options.MaxConcurrentEntityFunctions = this.options.MaxConcurrentEntityFunctions ?? maxConcurrentEntitiesDefault;
             this.options.MaxEntityOperationBatchSize = this.options.MaxEntityOperationBatchSize ?? maxEntityOperationBatchSizeDefault;
 
+            bool useLegacyPartitionManagementWasConfigured = this.options.StorageProvider.Keys.Any(key =>
+                string.Equals(
+                    key,
+                    UseLegacyPartitionManagementSettingName,
+                    StringComparison.OrdinalIgnoreCase));
+            bool useTablePartitionManagementWasConfigured = this.options.StorageProvider.Keys.Any(key =>
+                string.Equals(
+                    key,
+                    UseTablePartitionManagementSettingName,
+                    StringComparison.OrdinalIgnoreCase));
+
             // Override the configuration defaults with user-provided values in host.json, if any.
             JsonConvert.PopulateObject(JsonConvert.SerializeObject(this.options.StorageProvider), this.azureStorageOptions);
 
-            var logger = loggerFactory.CreateLogger(nameof(this.azureStorageOptions));
+            var logger = loggerFactory.CreateLogger(LoggerName);
+            if (useLegacyPartitionManagementWasConfigured &&
+                !useTablePartitionManagementWasConfigured &&
+                this.azureStorageOptions.UseLegacyPartitionManagement &&
+                this.azureStorageOptions.UseTablePartitionManagement)
+            {
+                logger.LogWarning(
+                    $"`{UseLegacyPartitionManagementSettingName}` is enabled and " +
+                    $"`{UseTablePartitionManagementSettingName}` is not configured. " +
+                    $"Disabling `{UseTablePartitionManagementSettingName}` to preserve legacy partition management. " +
+                    $"For improved reliability, consider removing `{UseLegacyPartitionManagementSettingName}` from your `host.json` settings to use the default table partition manager.");
+                this.azureStorageOptions.UseTablePartitionManagement = false;
+            }
+
             this.azureStorageOptions.Validate(logger);
 
             this.DefaultConnectionName = this.azureStorageOptions.ConnectionName ?? ConnectionStringNames.Storage;
@@ -246,6 +275,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return settings;
+        }
+
+        public void SetUseSeparateQueueForEntityWorkItems(bool newValue)
+        {
+            this.useSeparateQueueForEntityWorkItems = newValue;
         }
     }
  }

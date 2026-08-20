@@ -7,9 +7,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DurableFunctions.TypedInter
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DurableFunctions.TypedInterfaces.SourceGenerator.Test", "..\..\test\CodeGen.SourceGenerator.Test\DurableFunctions.TypedInterfaces.SourceGenerator.Test.csproj", "{DE9C0606-F728-4ED0-978B-3B6DC77F0D9A}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DurableFunctions.TypedInterfaces.Example", "example\DurableFunctions.TypedInterfaces.Example.csproj", "{42260ABC-79BC-49B3-B109-2D3B81DD78D6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DurableFunctions.TypedInterfaces.Example", "Example\DurableFunctions.TypedInterfaces.Example.csproj", "{42260ABC-79BC-49B3-B109-2D3B81DD78D6}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DurableFunctions.TypedInterfaces", "sourcegenerator\DurableFunctions.TypedInterfaces.csproj", "{180EAC86-A311-4A6D-BD65-1F3FC892B645}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DurableFunctions.TypedInterfaces", "SourceGenerator\DurableFunctions.TypedInterfaces.csproj", "{180EAC86-A311-4A6D-BD65-1F3FC892B645}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

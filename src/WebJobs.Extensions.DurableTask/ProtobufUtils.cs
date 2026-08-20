@@ -6,7 +6,6 @@ using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -28,6 +27,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal static class ProtobufUtils
     {
+        internal const string RollbackEntityOperationsOnExceptionsPropertyName = "RollbackEntityOperationsOnExceptions";
+
         public static P.HistoryEvent ToHistoryEventProto(HistoryEvent e)
         {
             var payload = new P.HistoryEvent()
@@ -218,6 +219,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             InstanceId = historyStateEvent.State.OrchestrationInstance.InstanceId,
                             Name = historyStateEvent.State.Name,
                             Version = historyStateEvent.State.Version,
+                            ParentInstanceId = historyStateEvent.State.ParentInstance?.OrchestrationInstance?.InstanceId,
                             Input = historyStateEvent.State.Input,
                             Output = historyStateEvent.State.Output,
                             ScheduledStartTimestamp = historyStateEvent.State.ScheduledStartTime == null ? null : Timestamp.FromDateTime(historyStateEvent.State.ScheduledStartTime.Value),
@@ -326,6 +328,82 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     }
 
                     return action;
+                case P.OrchestratorAction.OrchestratorActionTypeOneofCase.SendEntityMessage:
+                    RequestMessage? entityMessage = null;
+                    string? eventName = null;
+                    string? targetInstance = null;
+                    DateTime? scheduledTime = null;
+                    switch (a.SendEntityMessage.EntityMessageTypeCase)
+                    {
+                        case P.SendEntityMessageAction.EntityMessageTypeOneofCase.EntityLockRequested:
+                            entityMessage = new RequestMessage()
+                            {
+                                Operation = null,
+                                Id = Guid.Parse(a.SendEntityMessage.EntityLockRequested.CriticalSectionId),
+                                LockSet = a.SendEntityMessage.EntityLockRequested.LockSet.Select(s => EntityId.FromString(s)).ToArray(),
+                                Position = a.SendEntityMessage.EntityLockRequested.Position,
+                                ParentInstanceId = a.SendEntityMessage.EntityLockRequested.ParentInstanceId,
+                            };
+                            targetInstance = a.SendEntityMessage.EntityLockRequested.LockSet.ElementAt(a.SendEntityMessage.EntityLockRequested.Position);
+                            eventName = EntityMessageEventNames.RequestMessageEventName;
+                            break;
+                        case P.SendEntityMessageAction.EntityMessageTypeOneofCase.EntityUnlockSent:
+                            entityMessage = new RequestMessage()
+                            {
+                                Id = Guid.Parse(a.SendEntityMessage.EntityUnlockSent.CriticalSectionId),
+                                ParentInstanceId = a.SendEntityMessage.EntityUnlockSent.ParentInstanceId,
+                            };
+                            targetInstance = a.SendEntityMessage.EntityUnlockSent.TargetInstanceId;
+                            eventName = EntityMessageEventNames.ReleaseMessageEventName;
+                            break;
+                        case P.SendEntityMessageAction.EntityMessageTypeOneofCase.EntityOperationCalled:
+                            entityMessage = new RequestMessage()
+                            {
+                                Operation = a.SendEntityMessage.EntityOperationCalled.Operation,
+                                IsSignal = false,
+                                Input = a.SendEntityMessage.EntityOperationCalled.Input,
+                                Id = Guid.Parse(a.SendEntityMessage.EntityOperationCalled.RequestId),
+                                ScheduledTime = a.SendEntityMessage.EntityOperationCalled.ScheduledTime?.ToDateTime(),
+                                ParentInstanceId = a.SendEntityMessage.EntityOperationCalled.ParentInstanceId,
+                                ParentExecutionId = a.SendEntityMessage.EntityOperationCalled.ParentExecutionId,
+                            };
+                            targetInstance = a.SendEntityMessage.EntityOperationCalled.TargetInstanceId;
+                            scheduledTime = a.SendEntityMessage.EntityOperationCalled.ScheduledTime?.ToDateTime();
+                            eventName = scheduledTime.HasValue
+                                ? EntityMessageEventNames.ScheduledRequestMessageEventName(scheduledTime.Value)
+                                : EntityMessageEventNames.RequestMessageEventName;
+
+                            break;
+                        case P.SendEntityMessageAction.EntityMessageTypeOneofCase.EntityOperationSignaled:
+                            entityMessage = new RequestMessage()
+                            {
+                                Operation = a.SendEntityMessage.EntityOperationSignaled.Operation,
+                                IsSignal = true,
+                                Input = a.SendEntityMessage.EntityOperationSignaled.Input,
+                                Id = Guid.Parse(a.SendEntityMessage.EntityOperationSignaled.RequestId),
+                                ScheduledTime = a.SendEntityMessage.EntityOperationSignaled.ScheduledTime?.ToDateTime(),
+                            };
+                            targetInstance = a.SendEntityMessage.EntityOperationSignaled.TargetInstanceId;
+                            scheduledTime = a.SendEntityMessage.EntityOperationSignaled.ScheduledTime?.ToDateTime();
+                            eventName = scheduledTime.HasValue
+                                ? EntityMessageEventNames.ScheduledRequestMessageEventName(scheduledTime.Value)
+                                : EntityMessageEventNames.RequestMessageEventName;
+
+                            break;
+                        default:
+                            throw new NotSupportedException($"Deserialization of SendEntityMessage action type '{a.SendEntityMessage.EntityMessageTypeCase}' is not supported.");
+                    }
+
+                    return new SendEventOrchestratorAction
+                    {
+                        Id = a.Id,
+                        Instance = new OrchestrationInstance
+                        {
+                            InstanceId = targetInstance,
+                        },
+                        EventName = eventName,
+                        EventData = JsonConvert.SerializeObject(entityMessage, new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.None }),
+                    };
                 default:
                     throw new NotSupportedException($"Received unsupported action type '{a.OrchestratorActionTypeCase}'.");
             }
@@ -450,6 +528,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     InstanceId = state.OrchestrationInstance.InstanceId,
                     Name = state.Name,
                     Version = state.Version,
+                    ParentInstanceId = state.ParentInstance?.OrchestrationInstance?.InstanceId,
                     Input = state.Input,
                     Output = state.Output,
                     ScheduledStartTimestamp = state.ScheduledStartTime == null ? null : Timestamp.FromDateTime(state.ScheduledStartTime.Value),
@@ -478,27 +557,64 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             // This ternary condition is necessary because the protobuf spec __insists__ that CreatedTimeFrom may never be null,
             // but nonetheless if you pass null in function code, the value will be null here
-            return new PurgeInstanceFilter(
+            var filter = new PurgeInstanceFilter(
                 request.PurgeInstanceFilter.CreatedTimeFrom == null ? DateTime.MinValue : request.PurgeInstanceFilter.CreatedTimeFrom.ToDateTime(),
                 request.PurgeInstanceFilter.CreatedTimeTo?.ToDateTime(),
                 statusFilter);
+
+            if (request.PurgeInstanceFilter.Timeout != null)
+            {
+                filter.Timeout = ToNonNegativeTimeSpan(request.PurgeInstanceFilter.Timeout);
+            }
+
+            return filter;
+        }
+
+        private static TimeSpan ToNonNegativeTimeSpan(Duration timeout)
+        {
+            const long MaxDurationSeconds = 315576000000L;
+            const int MaxDurationNanos = 999999999;
+
+            if (timeout.Seconds < 0 || timeout.Nanos < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(timeout), "Timeout must be non-negative.");
+            }
+
+            if (timeout.Seconds > MaxDurationSeconds || timeout.Nanos > MaxDurationNanos)
+            {
+                throw new ArgumentOutOfRangeException(nameof(timeout), "Timeout is outside the valid protobuf Duration range.");
+            }
+
+            return timeout.ToTimeSpan();
         }
 
         internal static P.PurgeInstancesResponse CreatePurgeInstancesResponse(PurgeResult result)
         {
-            return new P.PurgeInstancesResponse
+            var response = new P.PurgeInstancesResponse
             {
                 DeletedInstanceCount = result.DeletedInstanceCount,
             };
+
+            if (result.IsComplete.HasValue)
+            {
+                response.IsComplete = result.IsComplete.Value;
+            }
+
+            return response;
         }
 
         /// <summary>
         /// Converts a <see cref="EntityBatchRequest" /> to <see cref="P.EntityBatchRequest" />.
         /// </summary>
         /// <param name="entityBatchRequest">The operation request to convert.</param>
+        /// <param name="configurations">The remote instance configuration options for this batch request.</param>
+        /// <param name="rollbackEntityOperationsOnExceptions">Whether failed entity operations should be rolled back.</param>
         /// <returns>The converted operation request.</returns>
         [return: NotNullIfNotNull("entityBatchRequest")]
-        internal static P.EntityBatchRequest? ToEntityBatchRequest(this EntityBatchRequest? entityBatchRequest)
+        internal static P.EntityBatchRequest? ToEntityBatchRequest(
+            this EntityBatchRequest? entityBatchRequest,
+            RemoteInstanceConfiguration? configurations,
+            bool? rollbackEntityOperationsOnExceptions = null)
         {
             if (entityBatchRequest == null)
             {
@@ -508,8 +624,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             var batchRequest = new P.EntityBatchRequest()
             {
                 InstanceId = entityBatchRequest.InstanceId,
-                EntityState = entityBatchRequest.EntityState,
+                EntityState = configurations?.IncludeState == false ? null : entityBatchRequest.EntityState,
             };
+
+            batchRequest.Properties.Add(ProtobufUtils.ConvertPocoToProtoMap(configurations));
+            if (rollbackEntityOperationsOnExceptions.HasValue)
+            {
+                batchRequest.Properties[RollbackEntityOperationsOnExceptionsPropertyName] =
+                    Value.ForBool(rollbackEntityOperationsOnExceptions.Value);
+            }
 
             foreach (var operation in entityBatchRequest.Operations ?? Enumerable.Empty<OperationRequest>())
             {
@@ -683,7 +806,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             System.Type type = configurations.GetType();
-            PropertyInfo[] properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            PropertyInfo[] properties = type.GetProperties(BindingFlags.Instance | BindingFlags.NonPublic);
 
             foreach (PropertyInfo property in properties)
             {

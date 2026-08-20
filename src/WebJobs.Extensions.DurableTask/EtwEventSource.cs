@@ -19,7 +19,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
 #pragma warning disable SA1313 // Parameter names should begin with lower-case letter
 
-        [Event(201, Level = EventLevel.Informational, Version = 2)]
+        [Event(201, Level = EventLevel.Informational, Version = 3)]
         public void FunctionScheduled(
             string TaskHub,
             string AppName,
@@ -29,9 +29,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string Reason,
             string FunctionType,
             string ExtensionVersion,
-            bool IsReplay)
+            bool IsReplay,
+            string? TargetInstanceId = null)
         {
-            this.WriteEvent(201, TaskHub, AppName, SlotName, FunctionName, InstanceId, Reason, FunctionType, ExtensionVersion, IsReplay);
+            this.WriteEvent(201, TaskHub, AppName, SlotName, FunctionName, InstanceId, Reason, FunctionType, ExtensionVersion, IsReplay, TargetInstanceId ?? string.Empty);
         }
 
         [Event(202, Level = EventLevel.Informational, Version = 5)]
@@ -551,6 +552,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string ExtensionVersion)
         {
             this.WriteEvent(234, TaskHub, AppName, SlotName, FunctionName, InstanceId, TraceFlags, Details, FunctionType, ExtensionVersion);
+        }
+
+        [Event(235, Level = EventLevel.Informational, Version = 1)]
+        public void ClientOperationReceived(
+            string TaskHub,
+            string AppName,
+            string SlotName,
+            string OperationType,
+            string InstanceId,
+            string FunctionInvocationId,
+            string ExtensionVersion)
+        {
+            this.WriteEvent(235, TaskHub, AppName, SlotName, OperationType, InstanceId, FunctionInvocationId, ExtensionVersion);
         }
 
 #pragma warning restore SA1313 // Parameter names should begin with lower-case letter

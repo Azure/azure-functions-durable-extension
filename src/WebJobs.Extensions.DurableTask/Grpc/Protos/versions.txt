@@ -1,2 +1,2 @@
-# The following files were downloaded from branch main at 2025-12-12 01:50:12 UTC
-https://raw.githubusercontent.com/microsoft/durabletask-protobuf/b03c06dea21952dcf2a86551fd761b6b78c64d15/protos/orchestrator_service.proto
+# The following files were downloaded from branch bcf5af6a22caa70601bfc909918ba5937484279f at 2026-04-29 19:41:11 UTC
+https://raw.githubusercontent.com/microsoft/durabletask-protobuf/bcf5af6a22caa70601bfc909918ba5937484279f/protos/orchestrator_service.proto
