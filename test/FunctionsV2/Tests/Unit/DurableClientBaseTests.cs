@@ -51,6 +51,305 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await Assert.ThrowsAnyAsync<ArgumentException>(async () => await durableClient.StartNewAsync("anyOrchestratorFunction", instanceId, new { message = "any obj" }));
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task StartNewAsync_MissingOrchestrator_ThrowsException()
+        {
+            var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
+            orchestrationServiceClientMock
+                .Setup(x => x.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()))
+                .Returns(Task.CompletedTask);
+            var storageProvider = new DurabilityProvider(
+                "test",
+                new Mock<IOrchestrationService>().Object,
+                orchestrationServiceClientMock.Object,
+                TestConstants.ConnectionName);
+            var durableExtension = GetDurableTaskConfig();
+            var durableClient = (IDurableOrchestrationClient)new DurableClient(
+                storageProvider,
+                durableExtension,
+                durableExtension.HttpApiHandler,
+                new DurableClientAttribute());
+
+            ArgumentException exception = await Assert.ThrowsAnyAsync<ArgumentException>(
+                () => durableClient.StartNewAsync("MissingOrchestrator"));
+
+            Assert.Contains("doesn't exist, is disabled, or is not an orchestrator function", exception.Message);
+            orchestrationServiceClientMock.Verify(
+                x => x.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()),
+                Times.Never());
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task StartNewAsync_DifferentConnection_MissingOrchestrator_ThrowsException()
+        {
+            (DurableClient durableClient, Mock<IOrchestrationServiceClient> serviceClient, _) =
+                CreateClient();
+
+            ArgumentException exception = await Assert.ThrowsAsync<ArgumentException>(
+                () => ((IDurableOrchestrationClient)durableClient).StartNewAsync("MissingOrchestrator"));
+
+            Assert.Contains("doesn't exist, is disabled, or is not an orchestrator function", exception.Message);
+            serviceClient.Verify(
+                x => x.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()),
+                Times.Never());
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task StartNewAsync_CaseVariantTaskHub_MissingOrchestrator_SchedulesInstance()
+        {
+            (DurableClient durableClient, Mock<IOrchestrationServiceClient> serviceClient, _) =
+                CreateClient(taskHub: "durabletaskhub", connectionName: TestConstants.ConnectionName);
+
+            await ((IDurableOrchestrationClient)durableClient).StartNewAsync("MissingOrchestrator");
+
+            serviceClient.Verify(
+                x => x.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()),
+                Times.Once());
+        }
+
+        [Theory]
+        [InlineData(null, true)]
+        [InlineData("DurableTaskHub", true)]
+        [InlineData("durabletaskhub", false)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task StartNewAsync_DisabledOrchestrator_UsesLegacyTaskHubMatching(
+            string taskHub,
+            bool rejectStart)
+        {
+            var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
+            orchestrationServiceClientMock
+                .Setup(x => x.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()))
+                .Returns(Task.CompletedTask);
+            var storageProvider = new DurabilityProvider(
+                "clientProvider",
+                new Mock<IOrchestrationService>().Object,
+                orchestrationServiceClientMock.Object,
+                TestConstants.ConnectionName);
+            var durableExtension = GetDurableTaskConfig();
+            durableExtension.RegisterOrchestrator(new FunctionName("DisabledOrchestrator"), orchestratorInfo: null);
+            var durableClient = (IDurableOrchestrationClient)new DurableClient(
+                storageProvider,
+                durableExtension,
+                durableExtension.HttpApiHandler,
+                new DurableClientAttribute { TaskHub = taskHub });
+
+            if (rejectStart)
+            {
+                ArgumentException exception = await Assert.ThrowsAnyAsync<ArgumentException>(
+                    () => durableClient.StartNewAsync("DisabledOrchestrator"));
+                Assert.Contains("doesn't exist, is disabled, or is not an orchestrator function", exception.Message);
+            }
+            else
+            {
+                await durableClient.StartNewAsync("DisabledOrchestrator");
+            }
+
+            orchestrationServiceClientMock.Verify(
+                x => x.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()),
+                rejectStart ? Times.Never() : Times.Once());
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task StartNewAsync_DifferentConnection_DisabledOrchestrator_ThrowsException()
+        {
+            const string FunctionName = "DisabledOrchestrator";
+            (DurableClient durableClient, Mock<IOrchestrationServiceClient> serviceClient, DurableTaskExtension extension) =
+                CreateClient();
+            extension.RegisterOrchestrator(new FunctionName(FunctionName), orchestratorInfo: null);
+
+            await Assert.ThrowsAsync<OrchestratorFunctionUnavailableException>(
+                () => ((IDurableOrchestrationClient)durableClient).StartNewAsync(FunctionName));
+
+            serviceClient.Verify(
+                x => x.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()),
+                Times.Never());
+        }
+
+        [Theory]
+        [InlineData(null, true)]
+        [InlineData("DurableTaskHub", true)]
+        [InlineData("durabletaskhub", false)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task RestartAsync_DisabledOrchestrator_UsesLegacyTaskHubMatching(
+            string taskHub,
+            bool rejectRestart)
+        {
+            const string InstanceId = "completed-instance";
+            const string FunctionName = "DisabledOrchestrator";
+            var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
+            orchestrationServiceClientMock
+                .Setup(x => x.GetOrchestrationStateAsync(InstanceId, false))
+                .ReturnsAsync(
+                    new List<OrchestrationState>
+                    {
+                        new OrchestrationState
+                        {
+                            Name = FunctionName,
+                            Input = "null",
+                            OrchestrationInstance = new OrchestrationInstance { InstanceId = InstanceId },
+                            OrchestrationStatus = OrchestrationStatus.Completed,
+                        },
+                    });
+            orchestrationServiceClientMock
+                .Setup(x => x.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()))
+                .Returns(Task.CompletedTask);
+            var storageProvider = new DurabilityProvider(
+                "test",
+                new Mock<IOrchestrationService>().Object,
+                orchestrationServiceClientMock.Object,
+                TestConstants.ConnectionName);
+            var durableExtension = GetDurableTaskConfig();
+            durableExtension.RegisterOrchestrator(new FunctionName(FunctionName), orchestratorInfo: null);
+            var durableClient = (IDurableOrchestrationClient)new DurableClient(
+                storageProvider,
+                durableExtension,
+                durableExtension.HttpApiHandler,
+                new DurableClientAttribute { TaskHub = taskHub });
+
+            if (rejectRestart)
+            {
+                ArgumentException exception = await Assert.ThrowsAnyAsync<ArgumentException>(
+                    () => durableClient.RestartAsync(InstanceId, restartWithNewInstanceId: false));
+                Assert.Contains("doesn't exist, is disabled, or is not an orchestrator function", exception.Message);
+            }
+            else
+            {
+                await durableClient.RestartAsync(InstanceId, restartWithNewInstanceId: false);
+            }
+
+            orchestrationServiceClientMock.Verify(
+                x => x.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()),
+                rejectRestart ? Times.Never() : Times.Once());
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task RestartAsync_DifferentConnection_DisabledOrchestrator_ThrowsException()
+        {
+            const string InstanceId = "completed-instance";
+            const string FunctionName = "DisabledOrchestrator";
+            (DurableClient durableClient, Mock<IOrchestrationServiceClient> serviceClient, DurableTaskExtension extension) =
+                CreateClient();
+            serviceClient
+                .Setup(x => x.GetOrchestrationStateAsync(InstanceId, false))
+                .ReturnsAsync(
+                    new List<OrchestrationState>
+                    {
+                        new OrchestrationState
+                        {
+                            Name = FunctionName,
+                            Input = "null",
+                            OrchestrationInstance = new OrchestrationInstance { InstanceId = InstanceId },
+                            OrchestrationStatus = OrchestrationStatus.Completed,
+                        },
+                    });
+            extension.RegisterOrchestrator(new FunctionName(FunctionName), orchestratorInfo: null);
+
+            await Assert.ThrowsAsync<OrchestratorFunctionUnavailableException>(
+                () => ((IDurableOrchestrationClient)durableClient).RestartAsync(
+                    InstanceId,
+                    restartWithNewInstanceId: false));
+
+            serviceClient.Verify(
+                x => x.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()),
+                Times.Never());
+        }
+
+        [Theory]
+        [InlineData("MissingOrchestrator", false)]
+        [InlineData("DisabledOrchestrator", true)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task StartNewAsync_ExternalClient_BypassesLocalValidation(
+            string functionName,
+            bool registerDisabled)
+        {
+            (DurableClient durableClient, Mock<IOrchestrationServiceClient> serviceClient, DurableTaskExtension extension) =
+                CreateClient(externalClient: true);
+            if (registerDisabled)
+            {
+                extension.RegisterOrchestrator(new FunctionName(functionName), orchestratorInfo: null);
+            }
+
+            await ((IDurableOrchestrationClient)durableClient).StartNewAsync(functionName);
+
+            serviceClient.Verify(
+                x => x.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()),
+                Times.Once());
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task RestartAsync_ExternalClient_BypassesDisabledValidation()
+        {
+            const string InstanceId = "completed-instance";
+            const string FunctionName = "DisabledOrchestrator";
+            (DurableClient durableClient, Mock<IOrchestrationServiceClient> serviceClient, DurableTaskExtension extension) =
+                CreateClient(externalClient: true);
+            serviceClient
+                .Setup(x => x.GetOrchestrationStateAsync(InstanceId, false))
+                .ReturnsAsync(
+                    new List<OrchestrationState>
+                    {
+                        new OrchestrationState
+                        {
+                            Name = FunctionName,
+                            Input = "null",
+                            OrchestrationInstance = new OrchestrationInstance { InstanceId = InstanceId },
+                            OrchestrationStatus = OrchestrationStatus.Completed,
+                        },
+                    });
+            extension.RegisterOrchestrator(new FunctionName(FunctionName), orchestratorInfo: null);
+
+            await ((IDurableOrchestrationClient)durableClient).RestartAsync(
+                InstanceId,
+                restartWithNewInstanceId: false);
+
+            serviceClient.Verify(
+                x => x.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()),
+                Times.Once());
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task StartNewAsync_DeregisteredOrchestrator_SchedulesInstance()
+        {
+            const string FunctionName = "DrainingOrchestrator";
+            const string InstanceId = "new-instance";
+            var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
+            orchestrationServiceClientMock
+                .Setup(x => x.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()))
+                .Returns(Task.CompletedTask);
+            var storageProvider = new DurabilityProvider(
+                "test",
+                new Mock<IOrchestrationService>().Object,
+                orchestrationServiceClientMock.Object,
+                TestConstants.ConnectionName);
+            var durableExtension = GetDurableTaskConfig();
+            var functionName = new FunctionName(FunctionName);
+            durableExtension.RegisterOrchestrator(
+                functionName,
+                new RegisteredFunctionInfo(executor: null, isOutOfProc: true));
+            durableExtension.DeregisterOrchestrator(functionName);
+            var durableClient = (IDurableOrchestrationClient)new DurableClient(
+                storageProvider,
+                durableExtension,
+                durableExtension.HttpApiHandler,
+                new DurableClientAttribute { });
+
+            string actualInstanceId = await durableClient.StartNewAsync(
+                FunctionName,
+                InstanceId);
+
+            Assert.Equal(InstanceId, actualInstanceId);
+            orchestrationServiceClientMock.Verify(
+                x => x.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()),
+                Times.Once());
+        }
+
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData("@invalid")]
@@ -64,12 +363,52 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
             orchestrationServiceClientMock.Setup(x => x.GetOrchestrationStateAsync(It.IsAny<string>(), It.IsAny<bool>())).ReturnsAsync(GetInvalidInstanceState());
-            var storageProvider = new DurabilityProvider("test", new Mock<IOrchestrationService>().Object, orchestrationServiceClientMock.Object, "test");
+            var storageProvider = new DurabilityProvider(
+                "test",
+                new Mock<IOrchestrationService>().Object,
+                orchestrationServiceClientMock.Object,
+                TestConstants.ConnectionName);
             var durableExtension = GetDurableTaskConfig();
             var durableClient = (IDurableEntityClient)new DurableClient(storageProvider, durableExtension, durableExtension.HttpApiHandler, new DurableClientAttribute { });
 
             var entityId = new EntityId("test", entityKey);
             await Assert.ThrowsAnyAsync<ArgumentException>(async () => await durableClient.SignalEntityAsync(entityId, "test"));
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task SignalEntityAsync_DifferentConnection_MissingEntity_ThrowsException()
+        {
+            (DurableClient durableClient, Mock<IOrchestrationServiceClient> serviceClient, _) =
+                CreateClient();
+
+            ArgumentException exception = await Assert.ThrowsAsync<ArgumentException>(
+                () => ((IDurableEntityClient)durableClient).SignalEntityAsync(
+                    new EntityId("MissingEntity", "entity-key"),
+                    "operation",
+                    new { Value = 1 }));
+
+            Assert.Contains("doesn't exist, is disabled, or is not an entity function", exception.Message);
+            serviceClient.Verify(
+                x => x.SendTaskOrchestrationMessageAsync(It.IsAny<TaskMessage>()),
+                Times.Never());
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task SignalEntityAsync_CaseVariantTaskHub_MissingEntity_SendsMessage()
+        {
+            (DurableClient durableClient, Mock<IOrchestrationServiceClient> serviceClient, _) =
+                CreateClient(taskHub: "durabletaskhub", connectionName: TestConstants.ConnectionName);
+
+            await ((IDurableEntityClient)durableClient).SignalEntityAsync(
+                new EntityId("MissingEntity", "entity-key"),
+                "operation",
+                new { Value = 1 });
+
+            serviceClient.Verify(
+                x => x.SendTaskOrchestrationMessageAsync(It.IsAny<TaskMessage>()),
+                Times.Once());
         }
 
         [Theory]
@@ -334,6 +673,41 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             var durableOrchestrationClient = (IDurableOrchestrationClient)new DurableClient(storageProvider, null, attribute, messagePayloadDataConverter, traceHelper, durableTaskOptions);
             return durableOrchestrationClient;
+        }
+
+        private static (
+            DurableClient Client,
+            Mock<IOrchestrationServiceClient> ServiceClient,
+            DurableTaskExtension Extension) CreateClient(
+            string taskHub = "DurableTaskHub",
+            string connectionName = "TargetStorage",
+            bool externalClient = false)
+        {
+            var serviceClient = new Mock<IOrchestrationServiceClient>();
+            serviceClient
+                .Setup(x => x.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()))
+                .Returns(Task.CompletedTask);
+            serviceClient
+                .Setup(x => x.SendTaskOrchestrationMessageAsync(It.IsAny<TaskMessage>()))
+                .Returns(Task.CompletedTask);
+            var storageProvider = new DurabilityProvider(
+                "clientProvider",
+                new Mock<IOrchestrationService>().Object,
+                serviceClient.Object,
+                connectionName);
+            var durableExtension = GetDurableTaskConfig();
+            var attribute = new DurableClientAttribute
+            {
+                TaskHub = taskHub,
+                ConnectionName = connectionName,
+                ExternalClient = externalClient,
+            };
+            var client = new DurableClient(
+                storageProvider,
+                durableExtension,
+                durableExtension.HttpApiHandler,
+                attribute);
+            return (client, serviceClient, durableExtension);
         }
 
         [Fact]

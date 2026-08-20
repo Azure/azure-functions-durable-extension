@@ -19,7 +19,7 @@ RUN --mount=type=secret,id=nuget_config,required=false \
 
 # Step 2: Deploy and run pip install to get the Durable Functions SDK
 FROM mcr.microsoft.com/azure-functions/python:4-python3.11
-ARG PIP_INDEX_URL=https://pkgs.dev.azure.com/azfunc/public/_packaging/upstream-public/pypi/simple/
+ARG PIP_INDEX_URL=https://pypi.org/simple/
 COPY --from=build-env /root/test/SmokeTests/OOProcSmokeTests/durablePy /home/site/wwwroot
 ENV AzureWebJobsScriptRoot=/home/site/wwwroot \
     AzureFunctionsJobHost__Logging__Console__IsEnabled=true
