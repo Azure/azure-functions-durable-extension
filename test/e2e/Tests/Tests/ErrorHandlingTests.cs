@@ -79,7 +79,12 @@ public class ErrorHandlingTests
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
 
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
-        Assert.StartsWith(this.fixture.functionLanguageLocalizer?.GetLocalizedStringValue("CaughtActivityException.ErrorMessage"), orchestrationDetails.Output);
+        bool isNodeMSSQL = this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.Node
+            && this.fixture.GetDurabilityProvider() == FunctionAppFixture.ConfiguredDurabilityProviderType.MSSQL;
+        string errorMessageKey = isNodeMSSQL
+            ? "CaughtActivityException.MSSQLErrorMessage"
+            : "CaughtActivityException.ErrorMessage";
+        Assert.StartsWith(this.fixture.functionLanguageLocalizer.GetLocalizedStringValue(errorMessageKey), orchestrationDetails.Output);
         Assert.Contains("This activity failed", orchestrationDetails.Output);
     }
 
