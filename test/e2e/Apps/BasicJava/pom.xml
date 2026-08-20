@@ -13,8 +13,10 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>17</java.version>
         <azure.functions.maven.plugin.version>1.37.0</azure.functions.maven.plugin.version>
-        <azure.functions.java.library.version>3.1.0</azure.functions.java.library.version>
-        <durabletask.azure.functions>1.6.0</durabletask.azure.functions>
+        <azure.functions.java.library.version>3.3.0</azure.functions.java.library.version>
+        <durabletask.azure.functions>1.9.0</durabletask.azure.functions>
+        <jackson.version>2.18.8</jackson.version>
+        <opentelemetry.version>1.62.0</opentelemetry.version>
         <functionAppName>BasicJava</functionAppName>
     </properties>
 
@@ -45,11 +47,11 @@
             <version>${durabletask.azure.functions}</version>
         </dependency>
 
-        <!-- Override transitive jackson-core to fix GHSA-72hv-8253-57qq (CVE in jackson-core < 2.18.6) -->
+        <!-- Keep the direct JSON dependency aligned with the managed Jackson version. -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
-            <version>2.18.8</version>
+            <version>${jackson.version}</version>
         </dependency>
 
         <dependency>
@@ -130,9 +132,25 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
+                <groupId>com.fasterxml.jackson</groupId>
+                <artifactId>jackson-bom</artifactId>
+                <version>${jackson.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>io.opentelemetry</groupId>
+                <artifactId>opentelemetry-bom</artifactId>
+                <version>${opentelemetry.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <dependency>
                 <groupId>io.grpc</groupId>
                 <artifactId>grpc-bom</artifactId>
-                <version>1.75.0</version>
+                <version>1.78.0</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -140,7 +158,7 @@
             <dependency>
                 <groupId>com.google.protobuf</groupId>
                 <artifactId>protobuf-java</artifactId>
-                <version>3.25.5</version>
+                <version>3.25.8</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

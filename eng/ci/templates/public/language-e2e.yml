@@ -115,8 +115,9 @@ jobs:
 
       - pwsh: |
           $ErrorActionPreference = 'Stop'
-          New-Item -ItemType Directory -Path .azurite -Force | Out-Null
-          Push-Location .azurite
+          $azuriteDirectory = Join-Path $env:AGENT_TEMPDIRECTORY 'azurite'
+          New-Item -ItemType Directory -Path $azuriteDirectory -Force | Out-Null
+          Push-Location $azuriteDirectory
           try {
             '{"name":"azurite-local","private":true}' | Set-Content package.json
             npm install azurite@$(AZURITE_VERSION)
@@ -126,9 +127,9 @@ jobs:
           }
 
           if ($IsWindows) {
-            $azurite = Resolve-Path '.azurite/node_modules/.bin/azurite.cmd'
+            $azurite = Resolve-Path (Join-Path $azuriteDirectory 'node_modules/.bin/azurite.cmd')
           } else {
-            $azurite = Resolve-Path '.azurite/node_modules/.bin/azurite'
+            $azurite = Resolve-Path (Join-Path $azuriteDirectory 'node_modules/.bin/azurite')
           }
           $azuriteOut = Join-Path $env:AGENT_TEMPDIRECTORY 'azurite.stdout.log'
           $azuriteErr = Join-Path $env:AGENT_TEMPDIRECTORY 'azurite.stderr.log'

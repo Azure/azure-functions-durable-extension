@@ -28,12 +28,13 @@ jobs:
           project='./test/ScaleTests/Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests.csproj'
           dotnet restore "$project"
           dotnet build "$project" -c Release --no-restore
-          mkdir -p .azurite
-          pushd .azurite
+          azurite_dir="$AGENT_TEMPDIRECTORY/azurite"
+          mkdir -p "$azurite_dir"
+          pushd "$azurite_dir"
           echo '{"name":"azurite-local","private":true}' > package.json
           npm install azurite@$(AZURITE_VERSION)
           popd
-          ./.azurite/node_modules/.bin/azurite --silent --skipApiVersionCheck \
+          "$azurite_dir/node_modules/.bin/azurite" --silent --skipApiVersionCheck \
             --blobPort 10000 --queuePort 10001 --tablePort 10002 &
           azurite_pid=$!
           trap 'kill $azurite_pid || true' EXIT

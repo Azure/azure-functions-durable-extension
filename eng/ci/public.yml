@@ -35,7 +35,7 @@ resources:
 
 variables:
   - name: AZURITE_VERSION
-    value: 3.35.0
+    value: 3.36.0
   - name: CORE_TOOLS_VERSION
     value: 4.8.0
   - name: NPM_CONFIG_USERCONFIG

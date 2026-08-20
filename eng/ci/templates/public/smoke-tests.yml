@@ -182,15 +182,16 @@ jobs:
       - bash: npm install -g azure-functions-core-tools@4 --unsafe-perm true
         displayName: Install Azure Functions Core Tools
       - pwsh: |
-          New-Item -ItemType Directory -Path .azurite -Force | Out-Null
-          Push-Location .azurite
+          $azuriteDirectory = Join-Path $env:AGENT_TEMPDIRECTORY 'azurite'
+          New-Item -ItemType Directory -Path $azuriteDirectory -Force | Out-Null
+          Push-Location $azuriteDirectory
           try {
             '{"name":"azurite-local","private":true}' | Set-Content package.json
             npm install azurite@$(AZURITE_VERSION)
           } finally {
             Pop-Location
           }
-          $azurite = Resolve-Path '.azurite/node_modules/.bin/azurite'
+          $azurite = Resolve-Path (Join-Path $azuriteDirectory 'node_modules/.bin/azurite')
           $azuriteOut = Join-Path $env:AGENT_TEMPDIRECTORY 'azurite.stdout.log'
           $azuriteErr = Join-Path $env:AGENT_TEMPDIRECTORY 'azurite.stderr.log'
           Start-Process $azurite `

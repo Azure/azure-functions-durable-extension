@@ -16,7 +16,7 @@ steps:
   - task: MavenAuthenticate@0
     displayName: Authenticate Maven with CFS
     inputs:
-      artifactsFeeds: upstream-public
+      artifactsFeeds: public/upstream-public
 
   - pwsh: |
       $ErrorActionPreference = 'Stop'
@@ -54,7 +54,7 @@ steps:
 
       $mirror = $settings.CreateElement('mirror', $namespace)
       foreach ($entry in @{
-        id = 'upstream-public'
+        id = 'public/upstream-public'
         name = 'Azure Functions CFS'
         url = $feedUrl
         mirrorOf = '*'
@@ -71,7 +71,6 @@ steps:
       @"
       settingsEvaluated { settings ->
           settings.pluginManagement.repositories.clear()
-          settings.pluginManagement.repositories.gradlePluginPortal()
           settings.pluginManagement.repositories.maven {
               url = uri('$feedUrl')
               credentials {
