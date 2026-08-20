@@ -617,6 +617,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <summary>
+        /// Returns true if two task hub names identify the same task hub for this durability provider.
+        /// </summary>
+        /// <param name="taskHubName">The first task hub name.</param>
+        /// <param name="otherTaskHubName">The second task hub name.</param>
+        /// <returns>A boolean indicating whether the task hub names match.</returns>
+        internal virtual bool TaskHubNameMatches(string taskHubName, string otherTaskHubName)
+        {
+            return string.Equals(taskHubName, otherTaskHubName, StringComparison.Ordinal);
+        }
+
+        /// <summary>
         /// Tries to obtain a scale monitor for autoscaling.
         /// </summary>
         /// <param name="functionId">Function id.</param>

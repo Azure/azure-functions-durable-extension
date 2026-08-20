@@ -82,10 +82,69 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task StartNewAsync_DifferentConnection_MissingOrchestrator_ThrowsException()
+        public async Task StartNewAsync_DifferentConnection_MissingOrchestrator_SchedulesInstance()
         {
             (DurableClient durableClient, Mock<IOrchestrationServiceClient> serviceClient, _) =
                 CreateClient();
+
+            await ((IDurableOrchestrationClient)durableClient).StartNewAsync("MissingOrchestrator");
+
+            serviceClient.Verify(
+                x => x.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()),
+                Times.Once());
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task StartNewAsync_UsesHostProviderConnectionMatching()
+        {
+            var serviceClient = new Mock<IOrchestrationServiceClient>();
+            serviceClient
+                .Setup(x => x.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()))
+                .Returns(Task.CompletedTask);
+            var targetProvider = new DurabilityProvider(
+                "targetProvider",
+                new Mock<IOrchestrationService>().Object,
+                serviceClient.Object,
+                TestConstants.ConnectionName);
+            var defaultProvider = new Mock<Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider>(
+                "defaultProvider",
+                new Mock<IOrchestrationService>().Object,
+                new Mock<IOrchestrationServiceClient>().Object,
+                TestConstants.ConnectionName)
+            {
+                CallBase = true,
+            };
+            defaultProvider
+                .Setup(provider => provider.ConnectionNameMatches(targetProvider))
+                .Returns(false);
+            DurableTaskExtension extension = GetDurableTaskConfig(defaultProvider.Object);
+            var client = (IDurableOrchestrationClient)new DurableClient(
+                targetProvider,
+                extension,
+                extension.HttpApiHandler,
+                new DurableClientAttribute
+                {
+                    TaskHub = "DurableTaskHub",
+                    ConnectionName = TestConstants.ConnectionName,
+                });
+
+            await client.StartNewAsync("MissingOrchestrator");
+
+            defaultProvider.Verify(
+                provider => provider.ConnectionNameMatches(targetProvider),
+                Times.Exactly(2));
+            serviceClient.Verify(
+                x => x.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()),
+                Times.Once());
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task StartNewAsync_AzureStorageCaseVariantTaskHub_MissingOrchestrator_ThrowsException()
+        {
+            (DurableClient durableClient, Mock<IOrchestrationServiceClient> serviceClient, _) =
+                CreateClient(taskHub: "durabletaskhub", connectionName: TestConstants.ConnectionName);
 
             ArgumentException exception = await Assert.ThrowsAsync<ArgumentException>(
                 () => ((IDurableOrchestrationClient)durableClient).StartNewAsync("MissingOrchestrator"));
@@ -98,10 +157,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task StartNewAsync_CaseVariantTaskHub_MissingOrchestrator_SchedulesInstance()
+        public async Task StartNewAsync_ExactCaseProviderCaseVariantTaskHub_MissingOrchestrator_SchedulesInstance()
         {
             (DurableClient durableClient, Mock<IOrchestrationServiceClient> serviceClient, _) =
-                CreateClient(taskHub: "durabletaskhub", connectionName: TestConstants.ConnectionName);
+                CreateClient(
+                    taskHub: "durabletaskhub",
+                    connectionName: TestConstants.ConnectionName,
+                    useExactCaseDefaultProvider: true);
 
             await ((IDurableOrchestrationClient)durableClient).StartNewAsync("MissingOrchestrator");
 
@@ -113,9 +175,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [InlineData(null, true)]
         [InlineData("DurableTaskHub", true)]
-        [InlineData("durabletaskhub", false)]
+        [InlineData("durabletaskhub", true)]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task StartNewAsync_DisabledOrchestrator_UsesLegacyTaskHubMatching(
+        public async Task StartNewAsync_DisabledOrchestrator_UsesAzureStorageTaskHubMatching(
             string taskHub,
             bool rejectStart)
         {
@@ -154,27 +216,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task StartNewAsync_DifferentConnection_DisabledOrchestrator_ThrowsException()
+        public async Task StartNewAsync_DifferentConnection_DisabledOrchestrator_SchedulesInstance()
         {
             const string FunctionName = "DisabledOrchestrator";
             (DurableClient durableClient, Mock<IOrchestrationServiceClient> serviceClient, DurableTaskExtension extension) =
                 CreateClient();
             extension.RegisterOrchestrator(new FunctionName(FunctionName), orchestratorInfo: null);
 
-            await Assert.ThrowsAsync<OrchestratorFunctionUnavailableException>(
-                () => ((IDurableOrchestrationClient)durableClient).StartNewAsync(FunctionName));
+            await ((IDurableOrchestrationClient)durableClient).StartNewAsync(FunctionName);
 
             serviceClient.Verify(
                 x => x.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()),
-                Times.Never());
+                Times.Once());
         }
 
         [Theory]
         [InlineData(null, true)]
         [InlineData("DurableTaskHub", true)]
-        [InlineData("durabletaskhub", false)]
+        [InlineData("durabletaskhub", true)]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task RestartAsync_DisabledOrchestrator_UsesLegacyTaskHubMatching(
+        public async Task RestartAsync_DisabledOrchestrator_UsesAzureStorageTaskHubMatching(
             string taskHub,
             bool rejectRestart)
         {
@@ -228,7 +289,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task RestartAsync_DifferentConnection_DisabledOrchestrator_ThrowsException()
+        public async Task RestartAsync_DifferentConnection_DisabledOrchestrator_SchedulesInstance()
         {
             const string InstanceId = "completed-instance";
             const string FunctionName = "DisabledOrchestrator";
@@ -249,14 +310,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     });
             extension.RegisterOrchestrator(new FunctionName(FunctionName), orchestratorInfo: null);
 
-            await Assert.ThrowsAsync<OrchestratorFunctionUnavailableException>(
-                () => ((IDurableOrchestrationClient)durableClient).RestartAsync(
-                    InstanceId,
-                    restartWithNewInstanceId: false));
+            await ((IDurableOrchestrationClient)durableClient).RestartAsync(
+                InstanceId,
+                restartWithNewInstanceId: false);
 
             serviceClient.Verify(
                 x => x.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()),
-                Times.Never());
+                Times.Once());
         }
 
         [Theory]
@@ -377,10 +437,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task SignalEntityAsync_DifferentConnection_MissingEntity_ThrowsException()
+        public async Task SignalEntityAsync_DifferentConnection_MissingEntity_SendsMessage()
         {
             (DurableClient durableClient, Mock<IOrchestrationServiceClient> serviceClient, _) =
                 CreateClient();
+
+            await ((IDurableEntityClient)durableClient).SignalEntityAsync(
+                new EntityId("MissingEntity", "entity-key"),
+                "operation",
+                new { Value = 1 });
+
+            serviceClient.Verify(
+                x => x.SendTaskOrchestrationMessageAsync(It.IsAny<TaskMessage>()),
+                Times.Once());
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task SignalEntityAsync_AzureStorageCaseVariantTaskHub_MissingEntity_ThrowsException()
+        {
+            (DurableClient durableClient, Mock<IOrchestrationServiceClient> serviceClient, _) =
+                CreateClient(taskHub: "durabletaskhub", connectionName: TestConstants.ConnectionName);
 
             ArgumentException exception = await Assert.ThrowsAsync<ArgumentException>(
                 () => ((IDurableEntityClient)durableClient).SignalEntityAsync(
@@ -392,23 +469,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             serviceClient.Verify(
                 x => x.SendTaskOrchestrationMessageAsync(It.IsAny<TaskMessage>()),
                 Times.Never());
-        }
-
-        [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task SignalEntityAsync_CaseVariantTaskHub_MissingEntity_SendsMessage()
-        {
-            (DurableClient durableClient, Mock<IOrchestrationServiceClient> serviceClient, _) =
-                CreateClient(taskHub: "durabletaskhub", connectionName: TestConstants.ConnectionName);
-
-            await ((IDurableEntityClient)durableClient).SignalEntityAsync(
-                new EntityId("MissingEntity", "entity-key"),
-                "operation",
-                new { Value = 1 });
-
-            serviceClient.Verify(
-                x => x.SendTaskOrchestrationMessageAsync(It.IsAny<TaskMessage>()),
-                Times.Once());
         }
 
         [Theory]
@@ -681,7 +741,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             DurableTaskExtension Extension) CreateClient(
             string taskHub = "DurableTaskHub",
             string connectionName = "TargetStorage",
-            bool externalClient = false)
+            bool externalClient = false,
+            bool useExactCaseDefaultProvider = false)
         {
             var serviceClient = new Mock<IOrchestrationServiceClient>();
             serviceClient
@@ -695,7 +756,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 new Mock<IOrchestrationService>().Object,
                 serviceClient.Object,
                 connectionName);
-            var durableExtension = GetDurableTaskConfig();
+            DurableTaskExtension durableExtension = useExactCaseDefaultProvider
+                ? GetDurableTaskConfig(
+                    new DurabilityProvider(
+                        "azureManaged",
+                        new Mock<IOrchestrationService>().Object,
+                        new Mock<IOrchestrationServiceClient>().Object,
+                        TestConstants.ConnectionName))
+                : GetDurableTaskConfig();
             var attribute = new DurableClientAttribute
             {
                 TaskHub = taskHub,
@@ -808,7 +876,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
         }
 
-        private static DurableTaskExtension GetDurableTaskConfig()
+        private static DurableTaskExtension GetDurableTaskConfig(
+            Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider defaultProvider = null)
         {
             var options = new DurableTaskOptions();
             options.HubName = "DurableTaskHub";
@@ -817,12 +886,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var nameResolver = TestHelpers.GetTestNameResolver();
             var clientProviderFactory = new TestStorageServiceClientProviderFactory();
             var platformInformationService = TestHelpers.GetMockPlatformInformationService();
-            var serviceFactory = new AzureStorageDurabilityProviderFactory(
-                wrappedOptions,
-                clientProviderFactory,
-                nameResolver,
-                NullLoggerFactory.Instance,
-                platformInformationService);
+            IDurabilityProviderFactory serviceFactory;
+            if (defaultProvider == null)
+            {
+                serviceFactory = new AzureStorageDurabilityProviderFactory(
+                    wrappedOptions,
+                    clientProviderFactory,
+                    nameResolver,
+                    NullLoggerFactory.Instance,
+                    platformInformationService);
+            }
+            else
+            {
+                var serviceFactoryMock = new Mock<IDurabilityProviderFactory>();
+                serviceFactoryMock.SetupGet(factory => factory.Name).Returns(AzureStorageDurabilityProviderFactory.ProviderName);
+                serviceFactoryMock.Setup(factory => factory.GetDurabilityProvider()).Returns(defaultProvider);
+                serviceFactoryMock
+                    .Setup(factory => factory.GetDurabilityProvider(It.IsAny<DurableClientAttribute>()))
+                    .Returns(defaultProvider);
+                serviceFactory = serviceFactoryMock.Object;
+            }
+
             return new DurableTaskExtension(
                 wrappedOptions,
                 new LoggerFactory(),

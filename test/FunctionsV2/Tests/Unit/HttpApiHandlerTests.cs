@@ -2124,11 +2124,53 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task StartNewInstance_CaseVariantTaskHub_DoesNotRejectLocallyDisabledFunction()
+        public async Task StartNewInstance_DifferentConnection_DoesNotRejectLocallyDisabledFunction()
+        {
+            const string FunctionName = "DisabledOrchestrator";
+            const string TargetConnectionName = "TargetStorage";
+            var requestUri = new Uri(
+                $"http://localhost/runtime/webhooks/durabletask/orchestrators/{FunctionName}" +
+                $"?taskHub={TestConstants.TaskHub}&connection={TargetConnectionName}");
+            var orchestrationServiceMock = new Mock<IOrchestrationService>(MockBehavior.Strict);
+            var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
+            orchestrationServiceClientMock
+                .Setup(p => p.CreateTaskOrchestrationAsync(
+                    It.IsAny<TaskMessage>(),
+                    It.IsAny<OrchestrationStatus[]>()))
+                .Returns(Task.CompletedTask);
+            var durabilityProvider = new DurabilityProvider(
+                "storageProviderName",
+                orchestrationServiceMock.Object,
+                orchestrationServiceClientMock.Object,
+                TargetConnectionName);
+            var options = new DurableTaskOptions
+            {
+                WebhookUriProviderOverride = () => new Uri("http://localhost/runtime/webhooks/durabletask"),
+                HubName = TestConstants.TaskHub,
+            };
+            var extension = TestDurableTaskExtension.CreateWithProvider(options, durabilityProvider);
+            extension.RegisterOrchestrator(new FunctionName(FunctionName), orchestratorInfo: null);
+            var handler = new HttpApiHandler(extension, NullLogger.Instance);
+
+            HttpResponseMessage response = await handler.HandleRequestAsync(
+                new HttpRequestMessage(HttpMethod.Post, requestUri),
+                CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+            orchestrationServiceClientMock.Verify(
+                p => p.CreateTaskOrchestrationAsync(
+                    It.IsAny<TaskMessage>(),
+                    It.IsAny<OrchestrationStatus[]>()),
+                Times.Once);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task StartNewInstance_AzureStorageCaseVariantTaskHub_RejectsLocallyDisabledFunction()
         {
             const string FunctionName = "DisabledOrchestrator";
             var requestUri = new Uri(
-                $"http://localhost/runtime/webhooks/durabletask/orchestrators/{FunctionName}?taskHub=testhubname");
+                $"http://localhost/runtime/webhooks/durabletask/orchestrators/{FunctionName}?taskHub=samplehubvs");
             var orchestrationServiceMock = new Mock<IOrchestrationService>(MockBehavior.Strict);
             var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
             orchestrationServiceClientMock
@@ -2154,12 +2196,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 new HttpRequestMessage(HttpMethod.Post, requestUri),
                 CancellationToken.None);
 
-            Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             orchestrationServiceClientMock.Verify(
                 p => p.CreateTaskOrchestrationAsync(
                     It.IsAny<TaskMessage>(),
                     It.IsAny<OrchestrationStatus[]>()),
-                Times.Once);
+                Times.Never);
         }
 
         private static DurableTaskExtension GetTestExtension()
