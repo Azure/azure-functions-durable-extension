@@ -1525,6 +1525,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
+        internal void ThrowIfOrchestratorFunctionIsDisabled(string name)
+        {
+            // A null registration means the function was indexed but disabled, so its listener was
+            // never created. A missing registration and IsDeregistered are deliberately allowed:
+            // the target may exist in another app, or its listener may be restarting on this host.
+            if (this.knownOrchestrators.TryGetValue(new FunctionName(name), out RegisteredFunctionInfo info) &&
+                info == null)
+            {
+                throw new OrchestratorFunctionUnavailableException(this.GetInvalidOrchestratorFunctionMessage(name));
+            }
+        }
+
         private static bool IsDurableHttpTask(string functionName)
         {
             return string.Equals(functionName, HttpOptions.HttpTaskActivityReservedName);
