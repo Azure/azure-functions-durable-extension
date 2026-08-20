@@ -163,16 +163,16 @@ jobs:
           }
           dotnet nuget push $packages[0].FullName --source "$HOME/packages"
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          $configPath = Join-Path $env:AGENT_TEMPDIRECTORY 'NuGet.config'
+          $configPath = Join-Path (Resolve-Path './test/SmokeTests/OOProcSmokeTests/DotNetIsolated') 'NuGet.config'
           ./eng/cfs/New-LocalNuGetConfig.ps1 `
             -DestinationPath $configPath `
             -LocalSourcePath "$HOME/packages" `
             -PackagePatterns 'Microsoft.Azure.WebJobs.Extensions.DurableTask'
         displayName: Build and pack WebJobs extension
       - pwsh: |
-          $configPath = Join-Path $env:AGENT_TEMPDIRECTORY 'NuGet.config'
           Push-Location ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated
           try {
+            $configPath = Join-Path (Get-Location) 'NuGet.config'
             dotnet restore --configfile $configPath --verbosity normal -p:TargetFramework=$(testTargetFramework)
             dotnet build -c Release -f $(testTargetFramework) --no-restore
           } finally {
