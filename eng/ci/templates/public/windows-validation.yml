@@ -158,6 +158,7 @@ jobs:
           testTargetFramework: net10.0
     variables:
       AzureWebJobsStorage: UseDevelopmentStorage=true
+      SecondaryStorage: 'DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://127.0.0.1:11000/devstoreaccount1;QueueEndpoint=http://127.0.0.1:11001/devstoreaccount1;TableEndpoint=http://127.0.0.1:11002/devstoreaccount1;'
     steps:
       - checkout: self
         clean: true
@@ -195,16 +196,19 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
 
           $azurite = Resolve-Path 'node_modules/.bin/azurite.cmd'
-          Start-Process $azurite -ArgumentList '--silent','--skipApiVersionCheck','--blobPort','10000','--queuePort','10001','--tablePort','10002'
-          for ($i = 1; $i -le 30; $i++) {
-            try {
-              $tcp = [System.Net.Sockets.TcpClient]::new('127.0.0.1', 10000)
-              $tcp.Dispose()
-              Write-Host 'Azurite is ready'
-              break
-            } catch {
-              if ($i -eq 30) { throw 'Azurite did not start within 30 seconds' }
-              Start-Sleep -Seconds 1
+          Start-Process $azurite -ArgumentList '--silent','--skipApiVersionCheck','--location','.azurite-primary','--blobPort','10000','--queuePort','10001','--tablePort','10002'
+          Start-Process $azurite -ArgumentList '--silent','--skipApiVersionCheck','--location','.azurite-secondary','--blobPort','11000','--queuePort','11001','--tablePort','11002'
+          foreach ($port in 10000, 10001, 10002, 11000, 11001, 11002) {
+            for ($i = 1; $i -le 30; $i++) {
+              try {
+                $tcp = [System.Net.Sockets.TcpClient]::new('127.0.0.1', $port)
+                $tcp.Dispose()
+                Write-Host "Azurite on port $port is ready"
+                break
+              } catch {
+                if ($i -eq 30) { throw "Azurite on port $port did not start within 30 seconds" }
+                Start-Sleep -Seconds 1
+              }
             }
           }
         displayName: Start Azurite
