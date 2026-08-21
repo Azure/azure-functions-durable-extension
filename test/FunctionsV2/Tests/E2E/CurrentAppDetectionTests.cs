@@ -212,14 +212,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             throw new TimeoutException($"Instance '{instanceId}' was accepted but did not persist.");
         }
 
-        private static Task DeleteTaskHubAsync(string taskHubName, string connectionString)
+        private static async Task DeleteTaskHubAsync(string taskHubName, string connectionString)
         {
             var settings = new AzureStorageOrchestrationServiceSettings
             {
                 TaskHubName = taskHubName,
                 StorageAccountClientProvider = new StorageAccountClientProvider(connectionString),
             };
-            return new AzureStorageOrchestrationService(settings).DeleteAsync();
+            using var service = new AzureStorageOrchestrationService(settings);
+            await service.DeleteAsync();
         }
 
         private static string GetSecondaryStorageConnectionString()
