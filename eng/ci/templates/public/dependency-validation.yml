@@ -20,10 +20,10 @@ jobs:
           packageType: sdk
           version: 8.0.x
 
-      - task: NodeTool@0
+      - task: UseNode@1
         displayName: Install Node.js 22
         inputs:
-          versionSpec: 22.x
+          version: 22.x
 
       - bash: npm install -g azure-functions-core-tools@4 --unsafe-perm true
         displayName: Install Azure Functions Core Tools
@@ -154,10 +154,10 @@ jobs:
           packageType: sdk
           version: 8.0.x
 
-      - task: NodeTool@0
+      - task: UseNode@1
         displayName: Install Node.js 22
         inputs:
-          versionSpec: 22.x
+          version: 22.x
 
       - bash: npm install -g azure-functions-core-tools@4 --unsafe-perm true
         displayName: Install Azure Functions Core Tools

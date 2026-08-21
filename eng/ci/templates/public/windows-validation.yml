@@ -15,22 +15,23 @@ jobs:
           packageType: sdk
           useGlobalJson: true
 
-      - task: UseDotNet@2
-        displayName: Install .NET 2.1 SDK
-        inputs:
-          packageType: sdk
-          version: 2.1.x
-
-      - task: UseDotNet@2
-        displayName: Install .NET 3.1 SDK
-        inputs:
-          packageType: sdk
-          version: 3.1.x
-
       - pwsh: |
           dotnet restore ./WebJobs.Extensions.DurableTask.sln
           dotnet build ./WebJobs.Extensions.DurableTask.sln --no-restore
         displayName: Build solution
+
+      - task: JavaToolInstaller@0
+        displayName: Install JDK 17
+        inputs:
+          versionSpec: 17
+          jdkArchitectureOption: x64
+          jdkSourceOption: PreInstalled
+
+      - pwsh: >
+          mvn --batch-mode
+          --file ./test/SmokeTests/OOProcSmokeTests/durableJava/pom.xml
+          clean package
+        displayName: Build Java smoke application for CodeQL
 
   - job: UnitTests
     displayName: Validate build and unit tests
@@ -106,10 +107,10 @@ jobs:
           packageType: sdk
           version: 8.0.x
 
-      - task: NodeTool@0
+      - task: UseNode@1
         displayName: Install Node.js 22
         inputs:
-          versionSpec: 22.x
+          version: 22.x
 
       - pwsh: |
           dotnet restore ./test/WebJobs.Extensions.DurableTask.Analyzers.Test/WebJobs.Extensions.DurableTask.Analyzers.Test.csproj
@@ -117,8 +118,9 @@ jobs:
         displayName: Build analyzer tests
 
       - pwsh: |
-          New-Item -ItemType Directory -Path .azurite -Force | Out-Null
-          Set-Location .azurite
+          $azuriteDirectory = Join-Path $env:AGENT_TEMPDIRECTORY 'azurite'
+          New-Item -ItemType Directory -Path $azuriteDirectory -Force | Out-Null
+          Set-Location $azuriteDirectory
           '{"name":"azurite-local","private":true}' | Set-Content package.json
           npm install azurite@$(AZURITE_VERSION)
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
@@ -148,7 +150,7 @@ jobs:
       - template: publish-test-results.yml
 
   - job: FunctionsV2E2E
-    displayName: Functions V2 E2E ($(testTargetFramework))
+    displayName: Functions V2 E2E
     timeoutInMinutes: 90
     strategy:
       matrix:
@@ -177,10 +179,10 @@ jobs:
           packageType: sdk
           version: 8.0.x
 
-      - task: NodeTool@0
+      - task: UseNode@1
         displayName: Install Node.js 22
         inputs:
-          versionSpec: 22.x
+          version: 22.x
 
       - pwsh: |
           dotnet restore ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj
@@ -188,8 +190,9 @@ jobs:
         displayName: Build E2E tests
 
       - pwsh: |
-          New-Item -ItemType Directory -Path .azurite -Force | Out-Null
-          Set-Location .azurite
+          $azuriteDirectory = Join-Path $env:AGENT_TEMPDIRECTORY 'azurite'
+          New-Item -ItemType Directory -Path $azuriteDirectory -Force | Out-Null
+          Set-Location $azuriteDirectory
           '{"name":"azurite-local","private":true}' | Set-Content package.json
           npm install azurite@$(AZURITE_VERSION)
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
