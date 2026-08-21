@@ -77,7 +77,7 @@ extends:
         dependsOn: []
         pool:
           name: 1es-pool-azfunc-public
-          image: 1es-ubuntu-22.04
+          image: 1es-ubuntu-24.04-min
           os: linux
         jobs:
           - template: /eng/ci/templates/public/dependency-validation.yml@self
@@ -101,7 +101,7 @@ extends:
         dependsOn: []
         pool:
           name: 1es-pool-azfunc-public
-          image: 1es-ubuntu-22.04
+          image: 1es-ubuntu-24.04-min
           os: linux
         jobs:
           - template: /eng/ci/templates/public/language-e2e.yml@self

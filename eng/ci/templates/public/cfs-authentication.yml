@@ -20,26 +20,6 @@ steps:
 
   - pwsh: |
       $ErrorActionPreference = 'Stop'
-      $repository = @{
-        Name = 'cfs-powershell-gallery'
-        SourceLocation = 'https://pkgs.dev.azure.com/azfunc/public/_packaging/upstream-public/nuget/v2'
-        InstallationPolicy = 'Trusted'
-        Credential = [PSCredential]::new(
-          'AzurePipelines',
-          (ConvertTo-SecureString $env:SYSTEM_ACCESSTOKEN -AsPlainText -Force))
-      }
-
-      if (Get-PSRepository -Name $repository.Name -ErrorAction SilentlyContinue) {
-        Set-PSRepository @repository
-      } else {
-        Register-PSRepository @repository
-      }
-    displayName: Authenticate PowerShell Gallery with CFS
-    env:
-      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
-
-  - pwsh: |
-      $ErrorActionPreference = 'Stop'
       $feedUrl = 'https://pkgs.dev.azure.com/azfunc/public/_packaging/upstream-public/maven/v1'
 
       $settingsPath = Join-Path $HOME '.m2/settings.xml'

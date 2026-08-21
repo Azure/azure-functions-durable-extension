@@ -19,10 +19,10 @@ jobs:
         inputs:
           packageType: sdk
           version: 8.x
-      - task: NodeTool@0
+      - task: UseNode@1
         displayName: Install Node.js 22
         inputs:
-          versionSpec: 22.x
+          version: 22.x
       - bash: |
           set -euo pipefail
           project='./test/ScaleTests/Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests.csproj'
@@ -74,10 +74,10 @@ jobs:
         inputs:
           packageType: sdk
           version: 8.x
-      - task: NodeTool@0
+      - task: UseNode@1
         displayName: Install Node.js 22
         inputs:
-          versionSpec: 22.x
+          version: 22.x
       - bash: |
           set -euo pipefail
           npm install -g azurite@$(AZURITE_VERSION)
@@ -146,10 +146,10 @@ jobs:
         inputs:
           packageType: sdk
           version: 8.x
-      - task: NodeTool@0
+      - task: UseNode@1
         displayName: Install Node.js 22
         inputs:
-          versionSpec: 22.x
+          version: 22.x
       - bash: |
           set -euo pipefail
           npm install -g azurite@$(AZURITE_VERSION)
@@ -221,10 +221,10 @@ jobs:
         inputs:
           packageType: sdk
           version: 8.x
-      - task: NodeTool@0
+      - task: UseNode@1
         displayName: Install Node.js 22
         inputs:
-          versionSpec: 22.x
+          version: 22.x
       - bash: |
           set -euo pipefail
           npm install -g azurite@$(AZURITE_VERSION)

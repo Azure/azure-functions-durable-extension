@@ -119,10 +119,10 @@ jobs:
           packageType: sdk
           version: 8.0.x
 
-      - task: NodeTool@0
+      - task: UseNode@1
         displayName: Install Node.js 22
         inputs:
-          versionSpec: 22.x
+          version: 22.x
 
       - pwsh: |
           dotnet restore ./test/WebJobs.Extensions.DurableTask.Analyzers.Test/WebJobs.Extensions.DurableTask.Analyzers.Test.csproj
@@ -162,7 +162,7 @@ jobs:
       - template: publish-test-results.yml
 
   - job: FunctionsV2E2E
-    displayName: Functions V2 E2E ($(testTargetFramework))
+    displayName: Functions V2 E2E
     timeoutInMinutes: 90
     strategy:
       matrix:
@@ -191,10 +191,10 @@ jobs:
           packageType: sdk
           version: 8.0.x
 
-      - task: NodeTool@0
+      - task: UseNode@1
         displayName: Install Node.js 22
         inputs:
-          versionSpec: 22.x
+          version: 22.x
 
       - pwsh: |
           dotnet restore ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj

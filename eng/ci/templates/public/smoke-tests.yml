@@ -106,7 +106,7 @@ jobs:
         displayName: Run Java 8 smoke test
 
   - job: DotNetIsolatedSmoke
-    displayName: Smoke test - .NET isolated ($(testTargetFramework))
+    displayName: Smoke test - .NET isolated
     timeoutInMinutes: 90
     strategy:
       matrix:
@@ -143,10 +143,10 @@ jobs:
         inputs:
           packageType: sdk
           version: 10.0.x
-      - task: NodeTool@0
+      - task: UseNode@1
         displayName: Install Node.js 22
         inputs:
-          versionSpec: 22.x
+          version: 22.x
       - pwsh: |
           dotnet restore ./WebJobs.Extensions.DurableTask.sln
           dotnet build -c Release ./src/WebJobs.Extensions.DurableTask/WebJobs.Extensions.DurableTask.csproj
