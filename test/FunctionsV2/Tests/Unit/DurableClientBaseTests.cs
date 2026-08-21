@@ -472,6 +472,71 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task SignalEntityAsync_ExactCaseProviderCaseVariantExplicitTaskHub_UsesRequestedClient(
+            bool scheduled)
+        {
+            var currentServiceClient = new Mock<IOrchestrationServiceClient>();
+            currentServiceClient
+                .Setup(client => client.SendTaskOrchestrationMessageAsync(It.IsAny<TaskMessage>()))
+                .Returns(Task.CompletedTask);
+            var targetServiceClient = new Mock<IOrchestrationServiceClient>();
+            targetServiceClient
+                .Setup(client => client.SendTaskOrchestrationMessageAsync(It.IsAny<TaskMessage>()))
+                .Returns(Task.CompletedTask);
+            var currentProvider = new DurabilityProvider(
+                "exactCaseProvider",
+                new Mock<IOrchestrationService>().Object,
+                currentServiceClient.Object,
+                TestConstants.ConnectionName);
+            var targetProvider = new DurabilityProvider(
+                "exactCaseProvider",
+                new Mock<IOrchestrationService>().Object,
+                targetServiceClient.Object,
+                TestConstants.ConnectionName);
+            DurableTaskExtension extension = GetDurableTaskConfig(targetProvider, "CurrentHub");
+            var client = (IDurableEntityClient)new DurableClient(
+                currentProvider,
+                extension,
+                extension.HttpApiHandler,
+                new DurableClientAttribute
+                {
+                    TaskHub = "CurrentHub",
+                    ConnectionName = TestConstants.ConnectionName,
+                });
+            var entityId = new EntityId("MissingEntity", "entity-key");
+
+            if (scheduled)
+            {
+                await client.SignalEntityAsync(
+                    entityId,
+                    DateTime.UtcNow.AddMinutes(1),
+                    "operation",
+                    operationInput: null,
+                    taskHubName: "currenthub",
+                    connectionName: TestConstants.ConnectionName);
+            }
+            else
+            {
+                await client.SignalEntityAsync(
+                    entityId,
+                    "operation",
+                    operationInput: null,
+                    taskHubName: "currenthub",
+                    connectionName: TestConstants.ConnectionName);
+            }
+
+            currentServiceClient.Verify(
+                serviceClient => serviceClient.SendTaskOrchestrationMessageAsync(It.IsAny<TaskMessage>()),
+                Times.Never());
+            targetServiceClient.Verify(
+                serviceClient => serviceClient.SendTaskOrchestrationMessageAsync(It.IsAny<TaskMessage>()),
+                Times.Once());
+        }
+
+        [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(false)]
         [InlineData(true)]
@@ -877,10 +942,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         private static DurableTaskExtension GetDurableTaskConfig(
-            Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider defaultProvider = null)
+            Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider defaultProvider = null,
+            string taskHubName = "DurableTaskHub")
         {
             var options = new DurableTaskOptions();
-            options.HubName = "DurableTaskHub";
+            options.HubName = taskHubName;
             options.WebhookUriProviderOverride = () => new Uri("https://sampleurl.net");
             var wrappedOptions = new OptionsWrapper<DurableTaskOptions>(options);
             var nameResolver = TestHelpers.GetTestNameResolver();

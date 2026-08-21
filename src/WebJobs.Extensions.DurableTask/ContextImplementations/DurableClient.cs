@@ -104,7 +104,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private IDurableClient GetDurableClient(string taskHubName, string connectionName)
         {
-            if (string.Equals(this.TaskHubName, taskHubName, StringComparison.OrdinalIgnoreCase)
+            if (this.DurabilityProvider.TaskHubNameMatches(this.TaskHubName, taskHubName)
                 && string.Equals(this.attribute.ConnectionName, connectionName, StringComparison.OrdinalIgnoreCase))
             {
                 return this;
