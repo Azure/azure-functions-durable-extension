@@ -73,7 +73,7 @@ function Start-And-Wait-Orchestration {
 }
 
 $ErrorActionPreference = "Stop"
-$AzuriteVersion = "3.35.0"
+$AzuriteVersion = "3.36.0"
 
 if ($NoSetup -eq $false) {
 	# Build the docker image first, since that's the most critical step
