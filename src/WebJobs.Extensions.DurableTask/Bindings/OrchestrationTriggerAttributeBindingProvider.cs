@@ -198,12 +198,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     var triggerData = new TriggerData(contextValueProvider, EmptyBindingData);
                     return Task.FromResult<ITriggerData>(triggerData);
                 }
-                else
+
+                // Portal/Admin API invocations use a serialized string trigger value.
+                else if (value is string)
                 {
                     throw new InvalidOperationException(
                         "Durable orchestrator functions do not support direct invocation. " +
-                        "To start an orchestration, use an HTTP trigger function or the DurableClient binding to call 'StartNewAsync'.");
+                        "Start an orchestration from a client function by using a Durable client.");
                 }
+
+                throw new ArgumentException($"Don't know how to bind to {value?.GetType().Name ?? "null"}.", nameof(value));
             }
 
             public ParameterDescriptor ToParameterDescriptor()
