@@ -47,10 +47,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal static readonly string LoggerCategoryName = LogCategories.CreateTriggerCategory("DurableTask");
 
-        // Creating client objects is expensive, so we cache them when the attributes match.
-        // Note that DurableClientAttribute defines a custom equality comparer.
-        private readonly ConcurrentDictionary<DurableClientAttribute, DurableClient> cachedClients =
-            new ConcurrentDictionary<DurableClientAttribute, DurableClient>();
+        // Creating client objects is expensive, so we cache them when their semantic configuration matches.
+        private readonly ConcurrentDictionary<DurableClientCacheKey, DurableClient> cachedClients =
+            new ConcurrentDictionary<DurableClientCacheKey, DurableClient>();
 
         private readonly ConcurrentDictionary<FunctionName, RegisteredFunctionInfo> knownOrchestrators =
             new ConcurrentDictionary<FunctionName, RegisteredFunctionInfo>();
@@ -1379,12 +1378,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // We must ensure the TaskHubWorker exists so that we know we have started the appropriate server.
             _ = this.EnsureTaskHubWorker();
 
+            var cacheKey = new DurableClientCacheKey(attribute);
             DurableClient client = this.cachedClients.GetOrAdd(
-                attribute,
-                attr =>
+                cacheKey,
+                _ =>
                 {
                     DurabilityProvider innerClient = this.durabilityProviderFactory.GetDurabilityProvider(attribute);
-                    return new DurableClient(innerClient, this, this.HttpApiHandler, attr);
+                    return new DurableClient(innerClient, this, this.HttpApiHandler, attribute);
                 });
 
             return client;

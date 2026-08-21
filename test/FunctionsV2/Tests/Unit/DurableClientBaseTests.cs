@@ -31,6 +31,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             this.output = output;
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void DurableClientAttribute_CaseVariantEqualValues_HaveEqualHashCodes()
+        {
+            var current = new DurableClientAttribute
+            {
+                TaskHub = "CurrentHub",
+                ConnectionName = "Storage",
+            };
+            var caseVariant = new DurableClientAttribute
+            {
+                TaskHub = "currenthub",
+                ConnectionName = "storage",
+            };
+
+            Assert.Equal(current, caseVariant);
+            Assert.Equal(current.GetHashCode(), caseVariant.GetHashCode());
+        }
+
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData("@invalid")]
@@ -536,6 +555,112 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Times.Once());
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task SignalEntityAsync_ExactCaseProviderCaseVariantTaskHub_UsesRequestedCachedClient()
+        {
+            var currentServiceClient = new Mock<IOrchestrationServiceClient>();
+            currentServiceClient
+                .Setup(client => client.SendTaskOrchestrationMessageAsync(It.IsAny<TaskMessage>()))
+                .Returns(Task.CompletedTask);
+            var targetServiceClient = new Mock<IOrchestrationServiceClient>();
+            targetServiceClient
+                .Setup(client => client.SendTaskOrchestrationMessageAsync(It.IsAny<TaskMessage>()))
+                .Returns(Task.CompletedTask);
+            var currentProvider = new DurabilityProvider(
+                "exactCaseProvider",
+                new Mock<IOrchestrationService>().Object,
+                currentServiceClient.Object,
+                TestConstants.ConnectionName);
+            var targetProvider = new DurabilityProvider(
+                "exactCaseProvider",
+                new Mock<IOrchestrationService>().Object,
+                targetServiceClient.Object,
+                TestConstants.ConnectionName);
+            DurableTaskExtension extension = GetDurableTaskConfig(
+                currentProvider,
+                "CurrentHub",
+                attribute => string.Equals(attribute.TaskHub, "CurrentHub", StringComparison.Ordinal)
+                    ? currentProvider
+                    : targetProvider);
+            var currentClient = (IDurableEntityClient)extension.GetClient(
+                new DurableClientAttribute
+                {
+                    TaskHub = "CurrentHub",
+                    ConnectionName = TestConstants.ConnectionName,
+                });
+
+            await currentClient.SignalEntityAsync(
+                new EntityId("MissingEntity", "entity-key"),
+                "operation",
+                operationInput: null,
+                taskHubName: "currenthub",
+                connectionName: TestConstants.ConnectionName);
+
+            currentServiceClient.Verify(
+                serviceClient => serviceClient.SendTaskOrchestrationMessageAsync(It.IsAny<TaskMessage>()),
+                Times.Never());
+            targetServiceClient.Verify(
+                serviceClient => serviceClient.SendTaskOrchestrationMessageAsync(It.IsAny<TaskMessage>()),
+                Times.Once());
+        }
+
+        [Theory]
+        [InlineData("currenthub", false)]
+        [InlineData("CurrentHub", true)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void DurableClientFactory_DistinctSemanticAttributes_ReturnDistinctCachedClients(
+            string secondTaskHub,
+            bool secondExternalClient)
+        {
+            var currentProvider = new DurabilityProvider(
+                "exactCaseProvider",
+                new Mock<IOrchestrationService>().Object,
+                new Mock<IOrchestrationServiceClient>().Object,
+                TestConstants.ConnectionName);
+            var targetProvider = new DurabilityProvider(
+                "exactCaseProvider",
+                new Mock<IOrchestrationService>().Object,
+                new Mock<IOrchestrationServiceClient>().Object,
+                TestConstants.ConnectionName);
+            var providerFactory = new Mock<IDurabilityProviderFactory>();
+            providerFactory
+                .Setup(factory => factory.GetDurabilityProvider(It.IsAny<DurableClientAttribute>()))
+                .Returns((DurableClientAttribute attribute) =>
+                    string.Equals(attribute.TaskHub, "CurrentHub", StringComparison.Ordinal)
+                    && !attribute.ExternalClient
+                        ? currentProvider
+                        : targetProvider);
+            using var factory = new ContextImplementations.DurableClientFactory(
+                Microsoft.Extensions.Options.Options.Create(
+                    new DurableClientOptions
+                    {
+                        TaskHub = "CurrentHub",
+                        ConnectionName = TestConstants.ConnectionName,
+                    }),
+                Microsoft.Extensions.Options.Options.Create(new DurableTaskOptions { HubName = "CurrentHub" }),
+                providerFactory.Object,
+                NullLoggerFactory.Instance);
+
+            IDurableClient currentClient = factory.CreateClient(
+                new DurableClientOptions
+                {
+                    TaskHub = "CurrentHub",
+                    ConnectionName = TestConstants.ConnectionName,
+                    IsExternalClient = false,
+                });
+            IDurableClient targetClient = factory.CreateClient(
+                new DurableClientOptions
+                {
+                    TaskHub = secondTaskHub,
+                    ConnectionName = TestConstants.ConnectionName,
+                    IsExternalClient = secondExternalClient,
+                });
+
+            Assert.NotSame(currentClient, targetClient);
+            Assert.Same(targetProvider, ((DurableClient)targetClient).DurabilityProvider);
+        }
+
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(false)]
@@ -943,7 +1068,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         private static DurableTaskExtension GetDurableTaskConfig(
             Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider defaultProvider = null,
-            string taskHubName = "DurableTaskHub")
+            string taskHubName = "DurableTaskHub",
+            Func<DurableClientAttribute, Microsoft.Azure.WebJobs.Extensions.DurableTask.DurabilityProvider> providerSelector = null)
         {
             var options = new DurableTaskOptions();
             options.HubName = taskHubName;
@@ -969,7 +1095,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 serviceFactoryMock.Setup(factory => factory.GetDurabilityProvider()).Returns(defaultProvider);
                 serviceFactoryMock
                     .Setup(factory => factory.GetDurabilityProvider(It.IsAny<DurableClientAttribute>()))
-                    .Returns(defaultProvider);
+                    .Returns((DurableClientAttribute attribute) =>
+                        providerSelector?.Invoke(attribute) ?? defaultProvider);
                 serviceFactory = serviceFactoryMock.Object;
             }
 
