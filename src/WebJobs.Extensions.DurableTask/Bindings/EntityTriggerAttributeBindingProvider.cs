@@ -108,7 +108,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return contract;
             }
 
-            public Task<ITriggerData> BindAsync(object value, ValueBindingContext context)
+            public Task<ITriggerData> BindAsync(object? value, ValueBindingContext context)
             {
                 if (value is DurableEntityContext entityContext)
                 {
@@ -151,8 +151,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     return Task.FromResult<ITriggerData>(triggerData);
                 }
 
-                // Portal/Admin API invocations use a serialized string trigger value.
-                else if (value is string)
+                // Portal/Admin API invocations use null when input is omitted and a serialized string otherwise.
+                else if (value is null || value is string)
                 {
                     throw new InvalidOperationException(
                         "Durable entity functions do not support direct invocation. " +

@@ -18,20 +18,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     public class TriggerBindingProviderTests
     {
+        public static IEnumerable<object?[]> DirectInvocationTriggerValues()
+        {
+            yield return new object?[] { null };
+            yield return new object?[] { string.Empty };
+        }
+
         public static IEnumerable<object?[]> UnsupportedTriggerValues()
         {
-            yield return new object?[] { null, "null" };
             yield return new object?[] { 42, "Int32" };
         }
 
-        [Fact]
+        [Theory]
+        [MemberData(nameof(DirectInvocationTriggerValues))]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task OrchestrationBinding_StringValue_ThrowsDirectInvocationError()
+        public async Task OrchestrationBinding_DirectInvocationValue_ThrowsDirectInvocationError(object? value)
         {
             ITriggerBinding binding = await CreateOrchestrationBindingAsync();
 
             InvalidOperationException exception = await Assert.ThrowsAsync<InvalidOperationException>(
-                () => binding.BindAsync(string.Empty, context: null!));
+                () => binding.BindAsync(value!, context: null!));
 
             Assert.Equal(
                 "Durable orchestrator functions do not support direct invocation. " +
@@ -39,14 +45,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 exception.Message);
         }
 
-        [Fact]
+        [Theory]
+        [MemberData(nameof(DirectInvocationTriggerValues))]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task EntityBinding_StringValue_ThrowsDirectInvocationError()
+        public async Task EntityBinding_DirectInvocationValue_ThrowsDirectInvocationError(object? value)
         {
             ITriggerBinding binding = await CreateEntityBindingAsync();
 
             InvalidOperationException exception = await Assert.ThrowsAsync<InvalidOperationException>(
-                () => binding.BindAsync(string.Empty, context: null!));
+                () => binding.BindAsync(value!, context: null!));
 
             Assert.Equal(
                 "Durable entity functions do not support direct invocation. " +
