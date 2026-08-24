@@ -1,0 +1,224 @@
+parameters:
+  - name: platform
+    type: string
+    values:
+      - windows
+      - linux
+
+jobs:
+  - job: LanguageE2E
+    displayName: Language E2E
+    timeoutInMinutes: 180
+    strategy:
+      matrix:
+        ${{ if eq(parameters.platform, 'windows') }}:
+          AzureStorageNet8:
+            backendName: AzureStorage
+            backendFilter: AzureStorage
+            testTargetFramework: net8.0
+          AzureStorageNet10:
+            backendName: AzureStorage
+            backendFilter: AzureStorage
+            testTargetFramework: net10.0
+        ${{ if eq(parameters.platform, 'linux') }}:
+          AzureStorageNet8:
+            backendName: AzureStorage
+            backendFilter: AzureStorage
+            testTargetFramework: net8.0
+          AzureStorageNet10:
+            backendName: AzureStorage
+            backendFilter: AzureStorage
+            testTargetFramework: net10.0
+          DTSNet8:
+            backendName: DTS
+            backendFilter: DTS
+            testTargetFramework: net8.0
+          DTSNet10:
+            backendName: DTS
+            backendFilter: DTS
+            testTargetFramework: net10.0
+          MSSQLNet8:
+            backendName: MSSQL
+            backendFilter: MSSQL
+            testTargetFramework: net8.0
+          MSSQLNet10:
+            backendName: MSSQL
+            backendFilter: MSSQL
+            testTargetFramework: net10.0
+    steps:
+      - checkout: self
+        clean: true
+
+      - template: cfs-authentication.yml
+
+      - pwsh: |
+          $ErrorActionPreference = 'Stop'
+          $headers = @{ Authorization = "Bearer $env:SYSTEM_ACCESSTOKEN" }
+          $feedIndex = Invoke-RestMethod `
+            -Uri 'https://pkgs.dev.azure.com/azfunc/public/_packaging/upstream-public/nuget/v3/index.json' `
+            -Headers $headers
+          $packageBase = $feedIndex.resources |
+            Where-Object { $_.'@type' -contains 'PackageBaseAddress/3.0.0' } |
+            Select-Object -ExpandProperty '@id' -First 1
+          if (!$packageBase) {
+            throw 'CFS did not return a NuGet package base address.'
+          }
+
+          $packageId = 'azurefunctions.powershell.durable.sdk'
+          $versions = Invoke-RestMethod `
+            -Uri "$packageBase$packageId/index.json" `
+            -Headers $headers
+          $version = $versions.versions |
+            Where-Object { $_ -match '^2\.\d+\.\d+$' } |
+            Sort-Object { [version] $_ } -Descending |
+            Select-Object -First 1
+          if (!$version) {
+            throw 'AzureFunctions.PowerShell.Durable.SDK 2.x was not found in CFS.'
+          }
+
+          $app = './test/e2e/Apps/BasicPowerShell'
+          $module = 'AzureFunctions.PowerShell.Durable.SDK'
+          $moduleDirectory = Join-Path "$app/Modules/$module" $version
+          New-Item -ItemType Directory -Path $moduleDirectory -Force | Out-Null
+          $package = Join-Path $env:AGENT_TEMPDIRECTORY "$packageId.$version.zip"
+          Invoke-WebRequest `
+            -Uri "$packageBase$packageId/$version/$packageId.$version.nupkg" `
+            -Headers $headers `
+            -OutFile $package
+          Expand-Archive -LiteralPath $package -DestinationPath $moduleDirectory -Force
+
+          $hostConfigPath = "$app/host.json"
+          $hostConfig = Get-Content $hostConfigPath -Raw | ConvertFrom-Json
+          $hostConfig.managedDependency.enabled = $false
+          $hostConfig | ConvertTo-Json -Depth 10 | Set-Content $hostConfigPath
+        displayName: Restore PowerShell Durable SDK from CFS
+        env:
+          SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+
+      - task: UseDotNet@2
+        displayName: Install .NET SDK from global.json
+        inputs:
+          packageType: sdk
+          useGlobalJson: true
+
+      - task: UseDotNet@2
+        displayName: Install .NET 8 SDK
+        inputs:
+          packageType: sdk
+          version: 8.0.x
+
+      - task: UseNode@1
+        displayName: Install Node.js 22
+        inputs:
+          version: 22.x
+
+      - task: UsePythonVersion@0
+        displayName: Install Python 3.13
+        inputs:
+          versionSpec: 3.13
+
+      - task: JavaToolInstaller@0
+        displayName: Install JDK 17
+        inputs:
+          versionSpec: 17
+          jdkArchitectureOption: x64
+          jdkSourceOption: PreInstalled
+
+      - pwsh: |
+          $ErrorActionPreference = 'Stop'
+          $azuriteDirectory = Join-Path $env:AGENT_TEMPDIRECTORY 'azurite'
+          New-Item -ItemType Directory -Path $azuriteDirectory -Force | Out-Null
+          Push-Location $azuriteDirectory
+          try {
+            '{"name":"azurite-local","private":true}' | Set-Content package.json
+            npm install azurite@$(AZURITE_VERSION)
+            if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          } finally {
+            Pop-Location
+          }
+
+          if ($IsWindows) {
+            $azurite = Resolve-Path (Join-Path $azuriteDirectory 'node_modules/.bin/azurite.cmd')
+          } else {
+            $azurite = Resolve-Path (Join-Path $azuriteDirectory 'node_modules/.bin/azurite')
+          }
+          $azuriteOut = Join-Path $env:AGENT_TEMPDIRECTORY 'azurite.stdout.log'
+          $azuriteErr = Join-Path $env:AGENT_TEMPDIRECTORY 'azurite.stderr.log'
+          Start-Process $azurite `
+            -ArgumentList '--silent','--skipApiVersionCheck','--inMemoryPersistence','--blobPort','10000','--queuePort','10001','--tablePort','10002' `
+            -RedirectStandardOutput $azuriteOut `
+            -RedirectStandardError $azuriteErr
+          for ($i = 1; $i -le 30; $i++) {
+            try {
+              $tcp = [System.Net.Sockets.TcpClient]::new('127.0.0.1', 10000)
+              $tcp.Dispose()
+              Write-Host 'Azurite is ready'
+              break
+            } catch {
+              if ($i -eq 30) { throw 'Azurite did not start within 30 seconds' }
+              Start-Sleep -Seconds 1
+            }
+          }
+        displayName: Start Azurite
+
+      - pwsh: |
+          $ErrorActionPreference = 'Stop'
+          $arguments = @{
+            TargetFramework = '$(testTargetFramework)'
+            SkipStorageEmulator = $true
+          }
+
+          switch ('$(backendName)') {
+            'DTS' {
+              $arguments.StartDTSContainer = $true
+              $backend = 'azureManaged'
+            }
+            'MSSQL' {
+              $password = "TEST12_$([guid]::NewGuid().ToString('N').Substring(0, 12))!"
+              $arguments.StartMSSqlContainer = $true
+              $arguments.MSSQLpwd = $password
+              $backend = 'MSSQL'
+              Write-Host "##vso[task.setvariable variable=MSSQL_SA_PASSWORD;issecret=true]$password"
+            }
+            default {
+              $backend = 'AzureStorage'
+            }
+          }
+
+          Write-Host "##vso[task.setvariable variable=E2E_TEST_DURABLE_BACKEND]$backend"
+          ./test/e2e/Tests/build-e2e-test.ps1 @arguments
+        displayName: Build E2E applications and start emulators
+
+      - pwsh: |
+          $ErrorActionPreference = 'Stop'
+          $cases = @(
+            @{ Name = 'dotnet-isolated'; App = 'BasicDotNetIsolated'; Filter = 'Dotnet' }
+            @{ Name = 'powershell'; App = 'BasicPowerShell'; Filter = 'PowerShell' }
+            @{ Name = 'python'; App = 'BasicPython'; Filter = 'Python' }
+            @{ Name = 'node'; App = 'BasicNode'; Filter = 'Node' }
+            @{ Name = 'java'; App = 'BasicJava'; Filter = 'Java' }
+          )
+
+          $testProject = './test/e2e/Tests'
+          dotnet build $testProject -f $(testTargetFramework)
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+
+          foreach ($case in $cases) {
+            $env:E2E_TEST_FUNCTIONS_LANGUAGE = $case.Name
+            $env:TEST_APP_NAME = $case.App
+            $backendFilter = '$(backendFilter)'
+            $filter = "$($backendFilter)!=Skip&$($case.Filter)!=Skip&$($case.Filter)-$($backendFilter)!=Skip"
+            dotnet test $testProject `
+              -f $(testTargetFramework) `
+              --no-build `
+              --filter $filter `
+              --logger "trx;LogFileName=language-e2e-$(backendName)-$(testTargetFramework)-$($case.Name).trx" `
+              --results-directory "$env:AGENT_TEMPDIRECTORY/TestResults"
+            if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          }
+        displayName: Run language E2E tests
+        env:
+          E2E_TEST_DURABLE_BACKEND: $(E2E_TEST_DURABLE_BACKEND)
+          MSSQL_SA_PASSWORD: $(MSSQL_SA_PASSWORD)
+
+      - template: publish-test-results.yml

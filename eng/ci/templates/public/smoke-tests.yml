@@ -1,0 +1,214 @@
+jobs:
+  - job: NodeSmoke
+    displayName: Smoke test - Node 20
+    timeoutInMinutes: 60
+    steps:
+      - checkout: self
+        clean: true
+      - template: cfs-authentication.yml
+      - pwsh: >
+          ./test/SmokeTests/e2e-test.ps1
+          -DockerfilePath test/SmokeTests/OOProcSmokeTests/durableJS/Dockerfile
+          -HttpStartPath api/DurableFunctionsHttpStart
+          -TargetFramework net8.0
+          -DotnetSdkTag 10.0
+          -ContainerName nodeApp
+          -TestWithCustomInstanceId
+        displayName: Run Node 20 smoke test
+
+  - job: PythonSmoke
+    displayName: Smoke test - Python 3.11
+    timeoutInMinutes: 60
+    steps:
+      - checkout: self
+        clean: true
+      - template: cfs-authentication.yml
+      - pwsh: >
+          ./test/SmokeTests/e2e-test.ps1
+          -DockerfilePath test/SmokeTests/OOProcSmokeTests/durablePy/Dockerfile
+          -HttpStartPath api/DurableFunctionsHttpStart
+          -TargetFramework net8.0
+          -DotnetSdkTag 10.0
+          -ContainerName pyApp
+          -TestWithCustomInstanceId
+        displayName: Run Python 3.11 smoke test
+
+  - job: NetheriteSmoke
+    displayName: Smoke test - .NET in-process with Netherite
+    timeoutInMinutes: 60
+    variables:
+      FUNCTIONS_INPROC_NET8_ENABLED: 1
+    steps:
+      - checkout: self
+        clean: true
+      - template: cfs-authentication.yml
+      - pwsh: >
+          ./test/SmokeTests/e2e-test.ps1
+          -DockerfilePath test/SmokeTests/BackendSmokeTests/Netherite/Dockerfile
+          -HttpStartPath api/DurableFunctionsHttpStart
+          -ContainerName NetheriteApp
+        displayName: Run Netherite smoke test
+
+  - job: MSSQLSmoke
+    displayName: Smoke test - .NET in-process with MSSQL
+    timeoutInMinutes: 75
+    variables:
+      FUNCTIONS_INPROC_NET8_ENABLED: 1
+    steps:
+      - checkout: self
+        clean: true
+      - template: cfs-authentication.yml
+      - pwsh: |
+          $password = "TEST12_$([guid]::NewGuid().ToString('N').Substring(0, 12))!"
+          Write-Host "##vso[task.setvariable variable=MSSQL_SA_PASSWORD;issecret=true]$password"
+        displayName: Generate SQL Server password
+      - pwsh: >
+          ./test/SmokeTests/e2e-test.ps1
+          -DockerfilePath test/SmokeTests/BackendSmokeTests/MSSQL/Dockerfile
+          -HttpStartPath api/DurableFunctionsHttpStart
+          -ContainerName MSSQLApp
+          -SetupSQLServer
+        displayName: Run MSSQL smoke test
+        env:
+          SA_PASSWORD: $(MSSQL_SA_PASSWORD)
+
+  - job: JavaSmoke
+    displayName: Smoke test - Java 8
+    timeoutInMinutes: 75
+    pool:
+      name: 1es-pool-azfunc-public
+      image: 1es-ubuntu-22.04
+      os: linux
+    steps:
+      - checkout: self
+        clean: true
+      - template: cfs-authentication.yml
+      - task: JavaToolInstaller@0
+        displayName: Install JDK 17
+        inputs:
+          versionSpec: 17
+          jdkArchitectureOption: x64
+          jdkSourceOption: PreInstalled
+      - pwsh: |
+          $project = './test/SmokeTests/OOProcSmokeTests/durableJava/pom.xml'
+          mvn --batch-mode --file $project clean package
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+
+          $appDirectory = Split-Path -Parent $project
+          $mavenOutput = Join-Path $appDirectory 'target/azure-functions/durableJava'
+          $dockerOutput = Join-Path $appDirectory 'build/azure-functions/durableJava'
+          New-Item -ItemType Directory -Path (Split-Path -Parent $dockerOutput) -Force | Out-Null
+          Copy-Item -LiteralPath $mavenOutput -Destination $dockerOutput -Recurse -Force
+        displayName: Build Java Functions sample
+      - pwsh: >
+          ./test/SmokeTests/e2e-test.ps1
+          -DockerfilePath test/SmokeTests/OOProcSmokeTests/durableJava/Dockerfile
+          -HttpStartPath api/StartOrchestration
+          -TargetFramework net8.0
+          -DotnetSdkTag 10.0
+          -TestWithCustomInstanceId
+        displayName: Run Java 8 smoke test
+
+  - job: DotNetIsolatedSmoke
+    displayName: Smoke test - .NET isolated
+    timeoutInMinutes: 90
+    pool:
+      name: 1es-pool-azfunc-public
+      image: 1es-ubuntu-22.04
+      os: linux
+    strategy:
+      matrix:
+        Net8:
+          testTargetFramework: net8.0
+        Net10:
+          testTargetFramework: net10.0
+    steps:
+      - checkout: self
+        clean: true
+      - template: cfs-authentication.yml
+      - task: UseDotNet@2
+        displayName: Install .NET 8 SDK
+        inputs:
+          packageType: sdk
+          version: 8.x
+      - task: UseDotNet@2
+        displayName: Install .NET 10 SDK
+        inputs:
+          packageType: sdk
+          version: 10.0.x
+      - task: UseNode@1
+        displayName: Install Node.js 22
+        inputs:
+          version: 22.x
+      - pwsh: |
+          dotnet restore ./WebJobs.Extensions.DurableTask.sln
+          dotnet build -c Release ./src/WebJobs.Extensions.DurableTask/WebJobs.Extensions.DurableTask.csproj
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          dotnet pack -c Release --no-build ./src/WebJobs.Extensions.DurableTask/WebJobs.Extensions.DurableTask.csproj
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          New-Item -ItemType Directory -Path "$HOME/packages" -Force | Out-Null
+          $packages = @(
+            Get-ChildItem ./src/WebJobs.Extensions.DurableTask/bin/Release `
+              -Filter 'Microsoft.Azure.WebJobs.Extensions.DurableTask.*.nupkg' |
+              Where-Object Name -NotLike '*.symbols.nupkg')
+          if ($packages.Count -ne 1) {
+            throw "Expected one Durable Task extension package, found $($packages.Count)."
+          }
+          dotnet nuget push $packages[0].FullName --source "$HOME/packages"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          $configPath = Join-Path (Resolve-Path './test/SmokeTests/OOProcSmokeTests/DotNetIsolated') 'NuGet.config'
+          ./eng/cfs/New-LocalNuGetConfig.ps1 `
+            -DestinationPath $configPath `
+            -LocalSourcePath "$HOME/packages" `
+            -PackagePatterns 'Microsoft.Azure.WebJobs.Extensions.DurableTask'
+        displayName: Build and pack WebJobs extension
+      - pwsh: |
+          Push-Location ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated
+          try {
+            $configPath = Join-Path (Get-Location) 'NuGet.config'
+            dotnet restore --configfile $configPath --verbosity normal -p:TargetFramework=$(testTargetFramework)
+            dotnet build -c Release -f $(testTargetFramework) --no-restore
+          } finally {
+            Pop-Location
+          }
+        displayName: Build .NET isolated smoke application
+      - bash: npm install -g azure-functions-core-tools@4 --unsafe-perm true
+        displayName: Install Azure Functions Core Tools
+      - pwsh: |
+          $azuriteDirectory = Join-Path $env:AGENT_TEMPDIRECTORY 'azurite'
+          New-Item -ItemType Directory -Path $azuriteDirectory -Force | Out-Null
+          Push-Location $azuriteDirectory
+          try {
+            '{"name":"azurite-local","private":true}' | Set-Content package.json
+            npm install azurite@$(AZURITE_VERSION)
+          } finally {
+            Pop-Location
+          }
+          $azurite = Resolve-Path (Join-Path $azuriteDirectory 'node_modules/.bin/azurite')
+          $azuriteOut = Join-Path $env:AGENT_TEMPDIRECTORY 'azurite.stdout.log'
+          $azuriteErr = Join-Path $env:AGENT_TEMPDIRECTORY 'azurite.stderr.log'
+          Start-Process $azurite `
+            -ArgumentList '--silent','--skipApiVersionCheck','--blobPort','10000','--queuePort','10001','--tablePort','10002' `
+            -RedirectStandardOutput $azuriteOut `
+            -RedirectStandardError $azuriteErr
+          for ($i = 1; $i -le 30; $i++) {
+            try {
+              $tcp = [System.Net.Sockets.TcpClient]::new('127.0.0.1', 10000)
+              $tcp.Dispose()
+              break
+            } catch {
+              if ($i -eq 30) { throw 'Azurite did not start within 30 seconds' }
+              Start-Sleep -Seconds 1
+            }
+          }
+        displayName: Start Azurite
+      - pwsh: |
+          $script = './test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1'
+          & $script -HttpStartPath api/StartHelloCitiesTyped
+          & $script -HttpStartPath api/StartHelloCitiesUntyped
+          & $script -HttpStartPath api/StartHelloCitiesUntyped -TestWithCustomInstanceId
+          & $script -HttpStartPath api/durable_HttpStartProcessExitOrchestrator
+          & $script -HttpStartPath api/durable_HttpStartTimeoutOrchestrator
+          & $script -HttpStartPath api/durable_HttpStartOOMOrchestrator
+          & $script -HttpStartPath api/StartEntityOrchestration
+        displayName: Run .NET isolated smoke tests

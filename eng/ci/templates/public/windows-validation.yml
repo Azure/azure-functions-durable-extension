@@ -1,0 +1,225 @@
+jobs:
+  - job: CodeQLBuild
+    displayName: Build solution for CodeQL
+    timeoutInMinutes: 60
+    steps:
+      - checkout: self
+        clean: true
+        submodules: true
+
+      - template: cfs-authentication.yml
+
+      - task: UseDotNet@2
+        displayName: Install .NET SDK from global.json
+        inputs:
+          packageType: sdk
+          useGlobalJson: true
+
+      - pwsh: |
+          dotnet restore ./WebJobs.Extensions.DurableTask.sln
+          dotnet build ./WebJobs.Extensions.DurableTask.sln --no-restore
+        displayName: Build solution
+
+      - task: JavaToolInstaller@0
+        displayName: Install JDK 17
+        inputs:
+          versionSpec: 17
+          jdkArchitectureOption: x64
+          jdkSourceOption: PreInstalled
+
+      - pwsh: >
+          mvn --batch-mode
+          --file ./test/SmokeTests/OOProcSmokeTests/durableJava/pom.xml
+          clean package
+        displayName: Build Java smoke application for CodeQL
+
+  - job: UnitTests
+    displayName: Validate build and unit tests
+    timeoutInMinutes: 60
+    steps:
+      - checkout: self
+        clean: true
+        submodules: true
+
+      - template: cfs-authentication.yml
+
+      - task: UseDotNet@2
+        displayName: Install .NET SDK from global.json
+        inputs:
+          packageType: sdk
+          useGlobalJson: true
+
+      - task: UseDotNet@2
+        displayName: Install .NET 8 SDK
+        inputs:
+          packageType: sdk
+          version: 8.0.x
+
+      - pwsh: |
+          dotnet restore ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          dotnet restore ./test/Worker.Extensions.DurableTask.Tests/Worker.Extensions.DurableTask.Tests.csproj
+        displayName: Restore dependencies
+
+      - pwsh: |
+          dotnet build ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj --no-restore
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          dotnet build ./test/Worker.Extensions.DurableTask.Tests/Worker.Extensions.DurableTask.Tests.csproj --no-restore
+        displayName: Build
+
+      - pwsh: |
+          $results = Join-Path $env:AGENT_TEMPDIRECTORY 'TestResults'
+          dotnet test ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj `
+            --no-build `
+            --filter 'TestType!=E2E' `
+            --logger 'trx;LogFileName=functions-v2-unit.trx' `
+            --results-directory $results
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          dotnet test ./test/Worker.Extensions.DurableTask.Tests/Worker.Extensions.DurableTask.Tests.csproj `
+            --no-build `
+            --logger 'trx;LogFileName=worker-extension-unit.trx' `
+            --results-directory $results
+        displayName: Run unit tests
+
+      - template: publish-test-results.yml
+
+  - job: AnalyzerTests
+    displayName: Validate analyzer
+    timeoutInMinutes: 60
+    variables:
+      AzureWebJobsStorage: UseDevelopmentStorage=true
+    steps:
+      - checkout: self
+        clean: true
+        submodules: true
+
+      - template: cfs-authentication.yml
+
+      - task: UseDotNet@2
+        displayName: Install .NET SDK from global.json
+        inputs:
+          packageType: sdk
+          useGlobalJson: true
+
+      - task: UseDotNet@2
+        displayName: Install .NET 8 SDK
+        inputs:
+          packageType: sdk
+          version: 8.0.x
+
+      - task: UseNode@1
+        displayName: Install Node.js 22
+        inputs:
+          version: 22.x
+
+      - pwsh: |
+          dotnet restore ./test/WebJobs.Extensions.DurableTask.Analyzers.Test/WebJobs.Extensions.DurableTask.Analyzers.Test.csproj
+          dotnet build ./test/WebJobs.Extensions.DurableTask.Analyzers.Test/WebJobs.Extensions.DurableTask.Analyzers.Test.csproj --no-restore
+        displayName: Build analyzer tests
+
+      - pwsh: |
+          $azuriteDirectory = Join-Path $env:AGENT_TEMPDIRECTORY 'azurite'
+          New-Item -ItemType Directory -Path $azuriteDirectory -Force | Out-Null
+          Set-Location $azuriteDirectory
+          '{"name":"azurite-local","private":true}' | Set-Content package.json
+          npm install azurite@$(AZURITE_VERSION)
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+
+          $azurite = Resolve-Path 'node_modules/.bin/azurite.cmd'
+          Start-Process $azurite -ArgumentList '--silent','--skipApiVersionCheck','--blobPort','10000','--queuePort','10001','--tablePort','10002'
+          for ($i = 1; $i -le 30; $i++) {
+            try {
+              $tcp = [System.Net.Sockets.TcpClient]::new('127.0.0.1', 10000)
+              $tcp.Dispose()
+              Write-Host 'Azurite is ready'
+              break
+            } catch {
+              if ($i -eq 30) { throw 'Azurite did not start within 30 seconds' }
+              Start-Sleep -Seconds 1
+            }
+          }
+        displayName: Start Azurite
+
+      - pwsh: |
+          dotnet test ./test/WebJobs.Extensions.DurableTask.Analyzers.Test/WebJobs.Extensions.DurableTask.Analyzers.Test.csproj `
+            --no-build `
+            --logger 'trx;LogFileName=analyzer.trx' `
+            --results-directory "$env:AGENT_TEMPDIRECTORY/TestResults"
+        displayName: Run analyzer tests
+
+      - template: publish-test-results.yml
+
+  - job: FunctionsV2E2E
+    displayName: Functions V2 E2E
+    timeoutInMinutes: 90
+    strategy:
+      matrix:
+        Net8:
+          testTargetFramework: net8.0
+        Net10:
+          testTargetFramework: net10.0
+    variables:
+      AzureWebJobsStorage: UseDevelopmentStorage=true
+    steps:
+      - checkout: self
+        clean: true
+        submodules: true
+
+      - template: cfs-authentication.yml
+
+      - task: UseDotNet@2
+        displayName: Install .NET SDK from global.json
+        inputs:
+          packageType: sdk
+          useGlobalJson: true
+
+      - task: UseDotNet@2
+        displayName: Install .NET 8 SDK
+        inputs:
+          packageType: sdk
+          version: 8.0.x
+
+      - task: UseNode@1
+        displayName: Install Node.js 22
+        inputs:
+          version: 22.x
+
+      - pwsh: |
+          dotnet restore ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj
+          dotnet build ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj --no-restore
+        displayName: Build E2E tests
+
+      - pwsh: |
+          $azuriteDirectory = Join-Path $env:AGENT_TEMPDIRECTORY 'azurite'
+          New-Item -ItemType Directory -Path $azuriteDirectory -Force | Out-Null
+          Set-Location $azuriteDirectory
+          '{"name":"azurite-local","private":true}' | Set-Content package.json
+          npm install azurite@$(AZURITE_VERSION)
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+
+          $azurite = Resolve-Path 'node_modules/.bin/azurite.cmd'
+          Start-Process $azurite -ArgumentList '--silent','--skipApiVersionCheck','--blobPort','10000','--queuePort','10001','--tablePort','10002'
+          for ($i = 1; $i -le 30; $i++) {
+            try {
+              $tcp = [System.Net.Sockets.TcpClient]::new('127.0.0.1', 10000)
+              $tcp.Dispose()
+              Write-Host 'Azurite is ready'
+              break
+            } catch {
+              if ($i -eq 30) { throw 'Azurite did not start within 30 seconds' }
+              Start-Sleep -Seconds 1
+            }
+          }
+        displayName: Start Azurite
+
+      - pwsh: |
+          dotnet test ./test/FunctionsV2/WebJobs.Extensions.DurableTask.Tests.V2.csproj `
+            --framework $(testTargetFramework) `
+            --no-build `
+            --filter 'TestType=E2E' `
+            --logger 'trx;LogFileName=functions-v2-e2e-$(testTargetFramework).trx' `
+            --results-directory "$env:AGENT_TEMPDIRECTORY/TestResults" `
+            -- xunit.maxParallelThreads=1
+        displayName: Run Functions V2 E2E tests
+
+      - template: publish-test-results.yml

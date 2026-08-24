@@ -1,0 +1,109 @@
+trigger:
+  batch: true
+  branches:
+    include:
+      - main
+      - dev
+  paths:
+    exclude:
+      - '**/*.md'
+
+pr:
+  autoCancel: true
+  branches:
+    include:
+      - main
+      - dev
+  paths:
+    exclude:
+      - '**/*.md'
+
+schedules:
+  - cron: '0 0 * * 1'
+    displayName: Weekly security build
+    branches:
+      include:
+        - dev
+    always: true
+
+resources:
+  repositories:
+    - repository: 1es
+      type: git
+      name: 1ESPipelineTemplates/1ESPipelineTemplates
+      ref: refs/tags/release
+
+variables:
+  - name: AZURITE_VERSION
+    value: 3.36.0
+  - name: CORE_TOOLS_VERSION
+    value: 4.8.0
+  - name: NPM_CONFIG_USERCONFIG
+    value: $(Build.SourcesDirectory)/eng/cfs/.npmrc
+  - name: DOTNET_CLI_TELEMETRY_OPTOUT
+    value: 1
+
+extends:
+  template: v1/1ES.Unofficial.PipelineTemplate.yml@1es
+  parameters:
+    pool:
+      name: 1es-pool-azfunc-public
+      image: 1es-windows-2022
+      os: windows
+
+    sdl:
+      codeql:
+        compiled:
+          enabled: true
+        runSourceLanguagesInSourceAnalysis: true
+
+    settings:
+      # Fork PRs cannot set the informational build tags added by 1ES.
+      skipBuildTagsForGitHubPullRequests: ${{ variables['System.PullRequest.IsFork'] }}
+
+    stages:
+      - stage: WindowsValidation
+        displayName: Windows validation
+        dependsOn: []
+        pool:
+          name: 1es-pool-azfunc-public
+          image: 1es-windows-2022
+          os: windows
+        jobs:
+          - template: /eng/ci/templates/public/windows-validation.yml@self
+
+      - stage: LinuxValidation
+        displayName: Linux validation
+        dependsOn: []
+        pool:
+          name: 1es-pool-azfunc-public
+          image: 1es-ubuntu-24.04-min
+          os: linux
+        jobs:
+          - template: /eng/ci/templates/public/dependency-validation.yml@self
+          - template: /eng/ci/templates/public/smoke-tests.yml@self
+          - template: /eng/ci/templates/public/scale-tests.yml@self
+
+      - stage: WindowsLanguageE2E
+        displayName: Windows language E2E
+        dependsOn: []
+        pool:
+          name: 1es-pool-azfunc-public
+          image: 1es-windows-2022
+          os: windows
+        jobs:
+          - template: /eng/ci/templates/public/language-e2e.yml@self
+            parameters:
+              platform: windows
+
+      - stage: LinuxLanguageE2E
+        displayName: Linux language E2E
+        dependsOn: []
+        pool:
+          name: 1es-pool-azfunc-public
+          image: 1es-ubuntu-22.04
+          os: linux
+        jobs:
+          - template: /eng/ci/templates/public/language-e2e.yml@self
+            parameters:
+              platform: linux

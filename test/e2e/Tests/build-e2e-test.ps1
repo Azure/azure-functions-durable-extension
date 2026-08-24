@@ -196,16 +196,6 @@ function InstallExtensionAndBuildTestApp($testAppDir) {
       StopOnFailedExecution
     }
 
-    if (Test-Path ".\requirements.psd1") {
-      Write-Host "Ensuring PSGallery repository is registered for managed dependencies"
-      if (-not (Get-PSRepository -Name PSGallery -ErrorAction SilentlyContinue)) {
-        Register-PSRepository -Default
-        Write-Host "PSGallery repository registered"
-      } else {
-        Write-Host "PSGallery repository already registered"
-      }
-    }
-
     if (Test-Path ".\pom.xml") {
       Write-Host "Building Java project"
       mvn clean package -q
