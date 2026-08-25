@@ -14,6 +14,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     internal class AzureStorageDurabilityProviderFactory : IDurabilityProviderFactory
     {
         private const string LoggerName = "Host.Triggers.DurableTask.AzureStorage";
+        private const string TaskHubNamesDocumentationUrl =
+            "https://docs.azure.cn/en-us/durable-task/common/durable-task-hubs" +
+            "?tabs=csharp%2Cportal&pivots=durable-functions#task-hub-names";
+
         private const string UseLegacyPartitionManagementSettingName = "useLegacyPartitionManagement";
         private const string UseTablePartitionManagementSettingName = "useTablePartitionManagement";
         internal const string ProviderName = "AzureStorage";
@@ -141,8 +145,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     this.azureStorageOptions.ValidateHubName(this.options.HubName);
                 }
-                else if (!this.azureStorageOptions.IsSanitizedHubName(this.options.HubName, out string sanitizedHubName))
+                else if (!this.azureStorageOptions.IsSanitizedHubName(this.options.HubName, out string sanitizedHubName, out bool wasTruncated))
                 {
+                    if (wasTruncated)
+                    {
+                        ILogger logger = this.loggerFactory.CreateLogger(LoggerName);
+                        logger.LogWarning(
+                            "The default task hub name '{UnsanitizedHubName}' exceeds the 45-character limit and was truncated " +
+                            "to '{SanitizedHubName}'. " +
+                            "This may cause task hub collisions when multiple function apps use the same storage account. " +
+                            "Check the generated task hub name and configure a unique `hubName` in `host.json`. " +
+                            "For more information, see {TaskHubNamesDocumentationUrl}.",
+                            this.options.HubName,
+                            sanitizedHubName,
+                            TaskHubNamesDocumentationUrl);
+                    }
+
                     this.options.SetDefaultHubName(sanitizedHubName);
                 }
 

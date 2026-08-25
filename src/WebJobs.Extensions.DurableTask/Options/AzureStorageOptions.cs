@@ -285,7 +285,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return $"Task hub name '{hubName}' should contain only alphanumeric characters, start with a letter, and have length between {MinTaskHubNameSize} and {MaxTaskHubNameSize}.";
         }
 
-        internal bool IsSanitizedHubName(string hubName, out string sanitizedHubName)
+        internal bool IsSanitizedHubName(string hubName, out string sanitizedHubName, out bool wasTruncated)
         {
             // Only alphanumeric characters are valid.
             var validHubNameCharacters = hubName.ToCharArray().Where(char.IsLetterOrDigit);
@@ -293,6 +293,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (!validHubNameCharacters.Any())
             {
                 sanitizedHubName = "DefaultTaskHub";
+                wasTruncated = false;
                 return false;
             }
 
@@ -304,6 +305,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 ((List<char>)validHubNameCharacters).Insert(0, 't');
             }
 
+            wasTruncated = validHubNameCharacters.Skip(MaxTaskHubNameSize).Any();
             sanitizedHubName = new string(validHubNameCharacters
                                 .Take(MaxTaskHubNameSize)
                                 .ToArray());
