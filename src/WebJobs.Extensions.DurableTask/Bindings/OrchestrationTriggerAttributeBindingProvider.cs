@@ -207,7 +207,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         "Start an orchestration from a client function by using a Durable client.");
                 }
 
-                throw new ArgumentException($"Don't know how to bind to {value?.GetType().Name ?? "null"}.", nameof(value));
+                throw new ArgumentException($"Don't know how to bind to {value.GetType().Name}.", nameof(value));
             }
 
             public ParameterDescriptor ToParameterDescriptor()
