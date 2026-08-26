@@ -5,14 +5,18 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
+using Azure.Identity;
 using DurableTask.Core;
 using Microsoft.ApplicationInsights.Channel;
 using Microsoft.ApplicationInsights.DataContracts;
+using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.ApplicationInsights.Extensibility.Implementation;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Xunit;
 using Xunit.Abstractions;
@@ -126,6 +130,205 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData("Authorization=AAD", "system-assigned")]
+        [InlineData("Authorization=AAD;ClientId=00000000-0000-0000-0000-000000000001", "user-assigned")]
+        [InlineData(" authoRization=AAD ;; ClIentId = 00000000-0000-0000-0000-000000000001 ", "user-assigned")]
+        public void TelemetryActivator_ValidAuthenticationString_EnablesEntraAuthentication(
+            string authenticationString,
+            string expectedIdentityType)
+        {
+            TraceOptions traceOptions = new TraceOptions()
+            {
+                DistributedTracingEnabled = true,
+                Version = DurableDistributedTracingVersion.V2,
+            };
+            DurableTaskOptions options = new DurableTaskOptions
+            {
+                Tracing = traceOptions,
+            };
+            var mockNameResolver = GetNameResolverMock(
+                new[]
+                {
+                    ("APPLICATIONINSIGHTS_CONNECTION_STRING", "InstrumentationKey=00000000-0000-0000-0000-000000000000"),
+                    ("APPLICATIONINSIGHTS_AUTHENTICATION_STRING", authenticationString),
+                });
+
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.TelemetryActivator_ValidAuthenticationString_EnablesEntraAuthentication),
+                enableExtendedSessions: false,
+                nameResolver: mockNameResolver.Object,
+                options: options))
+            {
+                string expectedMessage =
+                    $"Microsoft Entra authentication enabled for Durable distributed tracing using the {expectedIdentityType} managed identity.";
+                Assert.Contains(
+                    this.loggerProvider.GetAllLogMessages(),
+                    log => log.FormattedMessage?.StartsWith(expectedMessage, StringComparison.Ordinal) == true);
+            }
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData("Authorization=AAD1")]
+        [InlineData("Auth123=AAD")]
+        [InlineData("Authorization=AAD;ClientId=123")]
+        public void TelemetryActivator_InvalidAuthenticationString_LogsWarning(string authenticationString)
+        {
+            TraceOptions traceOptions = new TraceOptions()
+            {
+                DistributedTracingEnabled = true,
+                Version = DurableDistributedTracingVersion.V2,
+            };
+            DurableTaskOptions options = new DurableTaskOptions
+            {
+                Tracing = traceOptions,
+            };
+            var mockNameResolver = GetNameResolverMock(
+                new[]
+                {
+                    ("APPLICATIONINSIGHTS_CONNECTION_STRING", "InstrumentationKey=00000000-0000-0000-0000-000000000000"),
+                    ("APPLICATIONINSIGHTS_AUTHENTICATION_STRING", authenticationString),
+                });
+
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.TelemetryActivator_InvalidAuthenticationString_LogsWarning),
+                enableExtendedSessions: false,
+                nameResolver: mockNameResolver.Object,
+                options: options))
+            {
+                const string expectedMessage =
+                    "APPLICATIONINSIGHTS_AUTHENTICATION_STRING is invalid and will not be used for Durable Functions distributed tracing.";
+                Assert.Contains(
+                    this.loggerProvider.GetAllLogMessages(),
+                    log => log.FormattedMessage?.StartsWith(expectedMessage, StringComparison.Ordinal) == true);
+            }
+        }
+
+        /*
+         * Reproduces the root cause of #3497 end to end. Durable keeps a private
+         * TelemetryConfiguration, which has no Microsoft Entra credential of its own, so with
+         * DisableLocalAuth=true its spans are rejected at ingestion. The fix forwards them to the
+         * host channel, which already carries the host's credential. Capturing on that host channel
+         * proves the spans really traverse it, and leaving onSend unset means the TelemetryActivator
+         * comes purely from the production DI registration.
+         */
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task DistributedTracingV2_EntraAuthentication_ForwardsModuleSpansThroughHostChannel()
+        {
+            string[] orchestrationFunctionNames =
+            {
+                nameof(TestOrchestrations.SayHelloWithActivity),
+            };
+
+            using TelemetryConfiguration hostTelemetryConfiguration = TelemetryConfiguration.CreateDefault();
+            TelemetryActivator activator = null;
+
+            var result = await this.ExecuteOrchestrationWithExceptionAsync(
+                orchestrationFunctionNames,
+                "DTV2EntraForward",
+                "world",
+                extendedSessions: false,
+                protocol: "W3CTraceContext",
+                version: DurableDistributedTracingVersion.V2,
+                authenticationString: "Authorization=AAD",
+                hostTelemetryConfiguration: hostTelemetryConfiguration,
+                inspectTelemetryActivator: telemetryActivator => activator = telemetryActivator,
+                captureThroughHostChannel: true);
+
+            // The activator must come from production DI with the host-aware constructor selected,
+            // otherwise this test would silently degrade to the standalone credential path.
+            Assert.NotNull(activator);
+            FieldInfo hostConfigurationField = typeof(TelemetryActivator).GetField(
+                "hostTelemetryConfiguration",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(hostConfigurationField);
+            Assert.Same(hostTelemetryConfiguration, hostConfigurationField.GetValue(activator));
+
+            var forwardingChannel = Assert.IsType<HostForwardingTelemetryChannel>(
+                activator.TelemetryConfiguration.TelemetryChannel);
+            Assert.Same(hostTelemetryConfiguration.TelemetryChannel, forwardingChannel.HostChannel);
+
+            const string expectedMessage =
+                "Microsoft Entra authentication enabled for Durable distributed tracing using the system-assigned managed identity.";
+            Assert.Contains(
+                this.loggerProvider.GetAllLogMessages(),
+                log => log.FormattedMessage?.StartsWith(expectedMessage, StringComparison.Ordinal) == true);
+
+            const string fallbackWarning =
+                "The Application Insights telemetry channel owned by the Functions host could not be read";
+            Assert.DoesNotContain(
+                this.loggerProvider.GetAllLogMessages(),
+                log => log.FormattedMessage?.Contains(fallbackWarning) == true);
+
+            AssertSayHelloWithActivitySpans(result.Item1);
+        }
+
+        /*
+         * Outside the Functions host there is no host configuration to forward to, so Durable still
+         * has to authenticate on its own. This keeps the pre-existing behaviour covered and guards
+         * the missing-spans regression that caused #3009 to be reverted by #3053.
+         */
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task DistributedTracingV2_EntraAuthentication_WithoutHostConfiguration_PreservesModuleSpans()
+        {
+            string[] orchestrationFunctionNames =
+            {
+                nameof(TestOrchestrations.SayHelloWithActivity),
+            };
+
+            TelemetryActivator activator = null;
+
+            var result = await this.ExecuteOrchestrationWithExceptionAsync(
+                orchestrationFunctionNames,
+                "DTV2EntraFallback",
+                "world",
+                extendedSessions: false,
+                protocol: "W3CTraceContext",
+                version: DurableDistributedTracingVersion.V2,
+                authenticationString: "Authorization=AAD",
+                inspectTelemetryActivator: telemetryActivator => activator = telemetryActivator);
+
+            Assert.NotNull(activator);
+            Assert.IsNotType<HostForwardingTelemetryChannel>(activator.TelemetryConfiguration.TelemetryChannel);
+
+            const string expectedMessage =
+                "Microsoft Entra authentication enabled for Durable distributed tracing using the system-assigned managed identity.";
+            Assert.Contains(
+                this.loggerProvider.GetAllLogMessages(),
+                log => log.FormattedMessage?.StartsWith(expectedMessage, StringComparison.Ordinal) == true);
+
+            AssertSayHelloWithActivitySpans(result.Item1);
+        }
+
+        private static void AssertSayHelloWithActivitySpans(List<OperationTelemetry> telemetry)
+        {
+            DependencyTelemetry createOrchestration = Assert.Single(
+                telemetry.OfType<DependencyTelemetry>(),
+                item => item.Name.StartsWith($"{TraceActivityConstants.CreateOrchestration}:", StringComparison.Ordinal));
+            RequestTelemetry orchestration = Assert.Single(
+                telemetry.OfType<RequestTelemetry>(),
+                item => item.Name.StartsWith($"{TraceActivityConstants.Orchestration}:", StringComparison.Ordinal));
+            DependencyTelemetry scheduleActivity = Assert.Single(
+                telemetry.OfType<DependencyTelemetry>(),
+                item => item.Name.StartsWith($"{TraceActivityConstants.Activity}:", StringComparison.Ordinal));
+            RequestTelemetry activity = Assert.Single(
+                telemetry.OfType<RequestTelemetry>(),
+                item => item.Name.StartsWith($"{TraceActivityConstants.Activity}:", StringComparison.Ordinal));
+
+            Assert.Equal(createOrchestration.Id, orchestration.Context.Operation.ParentId);
+            Assert.Equal(orchestration.Id, scheduleActivity.Context.Operation.ParentId);
+            Assert.Equal(scheduleActivity.Id, activity.Context.Operation.ParentId);
+            Assert.All(
+                new OperationTelemetry[] { createOrchestration, orchestration, scheduleActivity, activity },
+                item => Assert.Equal(orchestration.Context.Operation.Id, item.Context.Operation.Id));
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(false, "W3CTraceContext")]
         [InlineData(true, "HttpCorrelationProtocol")]
         [InlineData(true, "W3CTraceContext")]
@@ -208,7 +411,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 object input,
                 bool extendedSessions,
                 string protocol,
-                DurableDistributedTracingVersion version = DurableDistributedTracingVersion.V1)
+                DurableDistributedTracingVersion version = DurableDistributedTracingVersion.V1,
+                string authenticationString = null,
+                TelemetryConfiguration hostTelemetryConfiguration = null,
+                Action<TelemetryActivator> inspectTelemetryActivator = null,
+                bool captureThroughHostChannel = false)
         {
             ConcurrentQueue<ITelemetry> sendItems = new ConcurrentQueue<ITelemetry>();
             TraceOptions traceOptions = new TraceOptions()
@@ -222,9 +429,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var sendAction = new Action<ITelemetry>(
                 delegate(ITelemetry telemetry) { sendItems.Enqueue(telemetry); });
 
+            // Capturing on the host channel instead of the OnSend hook leaves the TelemetryActivator
+            // entirely to the production registration and proves telemetry really travels through
+            // the host channel, which is what carries the host's Entra credential.
+            if (captureThroughHostChannel)
+            {
+                hostTelemetryConfiguration.TelemetryChannel = new NoOpTelemetryChannel { OnSend = sendAction };
+            }
+
             string siteNameEnvironmentVarName = "WEBSITE_SITE_NAME";
             string siteNameEnvironmentVarValue = TestSiteName;
-            var mockNameResolver = GetNameResolverMock(new[] { (siteNameEnvironmentVarName, siteNameEnvironmentVarValue) });
+            var mockNameResolver = GetNameResolverMock(
+                new[]
+                {
+                    (siteNameEnvironmentVarName, siteNameEnvironmentVarValue),
+                    ("APPLICATIONINSIGHTS_CONNECTION_STRING", "InstrumentationKey=00000000-0000-0000-0000-000000000000"),
+                    ("APPLICATIONINSIGHTS_AUTHENTICATION_STRING", authenticationString),
+                });
 
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
@@ -232,9 +453,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 extendedSessions,
                 options: options,
                 nameResolver: mockNameResolver.Object,
-                onSend: sendAction))
+                onSend: captureThroughHostChannel ? null : sendAction,
+                hostTelemetryConfiguration: hostTelemetryConfiguration))
             {
                 await host.StartAsync();
+
+                if (inspectTelemetryActivator != null)
+                {
+                    IServiceProvider services =
+                        ((PlatformSpecificHelpers.FunctionsV2HostWrapper)host).InnerHost.Services;
+                    inspectTelemetryActivator(
+                        Assert.IsType<TelemetryActivator>(services.GetRequiredService<ITelemetryActivator>()));
+                }
+
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], input, this.output);
                 await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(90));
                 await host.StopAsync();
@@ -413,6 +644,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     p.Name.Contains(TraceConstants.Orchestrator) ||
                     p.Name.Contains(TraceConstants.Client) ||
                     p.Name.Contains("Operation") ||
+                    p.Name.StartsWith($"{TraceActivityConstants.CreateOrchestration}:", StringComparison.Ordinal) ||
                     p.Name.StartsWith($"{TraceActivityConstants.Orchestration}:", StringComparison.Ordinal) ||
                     p.Name.StartsWith($"{TraceActivityConstants.Activity}:", StringComparison.Ordinal));
         }
