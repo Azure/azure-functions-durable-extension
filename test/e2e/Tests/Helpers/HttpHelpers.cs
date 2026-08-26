@@ -5,6 +5,7 @@ using System;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
@@ -25,6 +26,18 @@ class HttpHelpers
         request.Content = new StringContent(body);
         request.Content.Headers.ContentType = new MediaTypeHeaderValue(mediaType);
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(mediaType));
+        return await GetResponseMessage(request);
+    }
+
+    public static async Task<HttpResponseMessage> InvokeAdminFunction(string functionName, string body)
+    {
+        using HttpRequestMessage request = new()
+        {
+            RequestUri = new Uri($"{Constants.FunctionsHostUrl}/admin/functions/{functionName}"),
+            Method = HttpMethod.Post,
+            Content = new StringContent(body, Encoding.UTF8, "application/json"),
+        };
+
         return await GetResponseMessage(request);
     }
 
