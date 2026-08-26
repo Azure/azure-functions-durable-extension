@@ -14,10 +14,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     internal class AzureStorageDurabilityProviderFactory : IDurabilityProviderFactory
     {
         private const string LoggerName = "Host.Triggers.DurableTask.AzureStorage";
-        private const string TaskHubNamesDocumentationUrl =
-            "https://docs.azure.cn/en-us/durable-task/common/durable-task-hubs" +
-            "?tabs=csharp%2Cportal&pivots=durable-functions#task-hub-names";
-
+        private const string TaskHubNamesDocumentationUrl = "https://go.microsoft.com/fwlink/?LinkId=2377701";
         private const string UseLegacyPartitionManagementSettingName = "useLegacyPartitionManagement";
         private const string UseTablePartitionManagementSettingName = "useTablePartitionManagement";
         internal const string ProviderName = "AzureStorage";

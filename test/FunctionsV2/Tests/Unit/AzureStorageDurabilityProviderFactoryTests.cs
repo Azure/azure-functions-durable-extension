@@ -371,7 +371,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 Assert.Contains("was truncated", warning.FormattedMessage);
                 Assert.Contains("task hub collisions", warning.FormattedMessage);
                 Assert.Contains(
-                    "https://docs.azure.cn/en-us/durable-task/common/durable-task-hubs?tabs=csharp%2Cportal&pivots=durable-functions#task-hub-names",
+                    "https://go.microsoft.com/fwlink/?LinkId=2377701",
                     warning.FormattedMessage);
             }
             finally
