@@ -13,6 +13,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <summary>
         /// Creates or retrieves <see cref="JsonSerializerSettings"/> to be used throughout the extension for message serialization.
         /// </summary>
+        /// <remarks>
+        /// For more information about Durable Functions serialization and deserialization, see
+        /// <see href="https://go.microsoft.com/fwlink/?LinkId=2377701">the documentation</see>.
+        /// </remarks>
         /// <returns><see cref="JsonSerializerSettings"/> to be used by the Durable Task Extension for message serialization.</returns>
         JsonSerializerSettings CreateJsonSerializerSettings();
     }
