@@ -519,6 +519,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         InstanceId = "02",
                         RuntimeStatus = OrchestrationRuntimeStatus.Completed,
                     },
+                    new DurableOrchestrationStatus
+                    {
+                        Name = "DoOther",
+                        InstanceId = "03",
+                        RuntimeStatus = OrchestrationRuntimeStatus.Pending,
+                    },
                 },
             };
 
@@ -540,7 +546,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 CancellationToken.None);
             Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
             Assert.Equal(string.Empty, responseMessage.Headers.GetValues("x-ms-continuation-token").FirstOrDefault());
-            var actual = JsonConvert.DeserializeObject<IList<StatusResponsePayload>>(await responseMessage.Content.ReadAsStringAsync());
+            string responseContent = await responseMessage.Content.ReadAsStringAsync();
+            var actual = JsonConvert.DeserializeObject<IList<StatusResponsePayload>>(responseContent);
+            JArray responsePayload = JArray.Parse(responseContent);
 
             Assert.Equal("DoThis", actual[0].Name);
             Assert.Equal("1.0", actual[0].Version);
@@ -550,6 +558,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal("2.0", actual[1].Version);
             Assert.Equal("02", actual[1].InstanceId);
             Assert.Equal("Completed", actual[1].RuntimeStatus);
+            Assert.Null(((JObject)responsePayload[2]).Property("version"));
         }
 
         [Fact]
