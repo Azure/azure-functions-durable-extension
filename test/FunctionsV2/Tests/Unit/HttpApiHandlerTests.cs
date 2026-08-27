@@ -508,12 +508,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     new DurableOrchestrationStatus
                     {
                         Name = "DoThis",
+                        Version = "1.0",
                         InstanceId = "01",
                         RuntimeStatus = OrchestrationRuntimeStatus.Running,
                     },
                     new DurableOrchestrationStatus
                     {
                         Name = "DoThat",
+                        Version = "2.0",
                         InstanceId = "02",
                         RuntimeStatus = OrchestrationRuntimeStatus.Completed,
                     },
@@ -541,9 +543,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var actual = JsonConvert.DeserializeObject<IList<StatusResponsePayload>>(await responseMessage.Content.ReadAsStringAsync());
 
             Assert.Equal("DoThis", actual[0].Name);
+            Assert.Equal("1.0", actual[0].Version);
             Assert.Equal("01", actual[0].InstanceId);
             Assert.Equal("Running", actual[0].RuntimeStatus);
             Assert.Equal("DoThat", actual[1].Name);
+            Assert.Equal("2.0", actual[1].Version);
             Assert.Equal("02", actual[1].InstanceId);
             Assert.Equal("Completed", actual[1].RuntimeStatus);
         }
@@ -871,6 +875,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 new DurableOrchestrationStatus
                 {
                     Name = "DoThis",
+                    Version = "2.0",
                     InstanceId = instanceId,
                     RuntimeStatus = OrchestrationRuntimeStatus.Completed,
                 },
@@ -896,6 +901,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var actual = JsonConvert.DeserializeObject<StatusResponsePayload>(await responseMessage.Content.ReadAsStringAsync());
             Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
             Assert.Equal(instanceId, actual.InstanceId);
+            Assert.Equal("2.0", actual.Version);
         }
 
         [Theory]

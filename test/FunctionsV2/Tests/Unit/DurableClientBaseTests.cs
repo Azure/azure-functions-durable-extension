@@ -593,6 +593,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task GetStatusAsync_IncludesVersion()
+        {
+            const string Version = "2.0";
+            var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
+            orchestrationServiceClientMock.Setup(x => x.GetOrchestrationStateAsync(It.IsAny<string>(), It.IsAny<bool>()))
+                .ReturnsAsync(GetInstanceState(OrchestrationStatus.Running, version: Version));
+
+            var durableOrchestrationClient = this.GetDurableClient(orchestrationServiceClientMock.Object);
+            DurableOrchestrationStatus status = await durableOrchestrationClient.GetStatusAsync("testInstanceId");
+
+            Assert.Equal(Version, status.Version);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task DurableClient_ExternalApp_TerminateAsync_TerminateEventPlaced()
         {
             var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
@@ -784,12 +799,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return null;
         }
 
-        private static List<OrchestrationState> GetInstanceState(OrchestrationStatus status, string parentInstanceId = null)
+        private static List<OrchestrationState> GetInstanceState(
+            OrchestrationStatus status,
+            string parentInstanceId = null,
+            string version = null)
         {
             return new List<OrchestrationState>()
             {
                 new OrchestrationState()
                 {
+                    Version = version,
                     OrchestrationInstance = new OrchestrationInstance
                     {
                         InstanceId = "valid_instance_id",
