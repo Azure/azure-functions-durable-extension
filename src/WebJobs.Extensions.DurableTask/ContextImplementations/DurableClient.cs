@@ -1209,7 +1209,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return new DurableOrchestrationStatus
             {
                 Name = orchestrationState.Name,
-                Version = orchestrationState.Version,
+                Version = string.IsNullOrEmpty(orchestrationState.Version) ? null : orchestrationState.Version,
                 InstanceId = orchestrationState.OrchestrationInstance.InstanceId,
                 ParentInstanceId = orchestrationState.ParentInstance?.OrchestrationInstance?.InstanceId,
                 CreatedTime = orchestrationState.CreatedTime,

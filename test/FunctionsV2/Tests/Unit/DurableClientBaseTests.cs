@@ -591,19 +591,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(ParentInstanceId, status.ParentInstanceId);
         }
 
-        [Fact]
+        [Theory]
+        [InlineData("2.0", "2.0")]
+        [InlineData("", null)]
+        [InlineData(null, null)]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task GetStatusAsync_IncludesVersion()
+        public async Task GetStatusAsync_NormalizesVersion(string orchestrationVersion, string expectedVersion)
         {
-            const string Version = "2.0";
             var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
             orchestrationServiceClientMock.Setup(x => x.GetOrchestrationStateAsync(It.IsAny<string>(), It.IsAny<bool>()))
-                .ReturnsAsync(GetInstanceState(OrchestrationStatus.Running, version: Version));
+                .ReturnsAsync(GetInstanceState(OrchestrationStatus.Running, version: orchestrationVersion));
 
             var durableOrchestrationClient = this.GetDurableClient(orchestrationServiceClientMock.Object);
             DurableOrchestrationStatus status = await durableOrchestrationClient.GetStatusAsync("testInstanceId");
 
-            Assert.Equal(Version, status.Version);
+            Assert.Equal(expectedVersion, status.Version);
         }
 
         [Fact]
