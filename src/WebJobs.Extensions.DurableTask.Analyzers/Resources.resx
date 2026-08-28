@@ -255,6 +255,15 @@
   <data name="EntityInterfaceReturnTypeAnalyzerTitle" xml:space="preserve">
     <value>An entity interface must only have methods that return void, Task, or Task&lt;T&gt;</value>
   </data>
+  <data name="EntityProxyLockAnalyzerDescription" xml:space="preserve">
+    <value>A void-returning entity proxy method sends a one-way signal. While an orchestration holds an entity lock, calls to that entity must return Task and be awaited.</value>
+  </data>
+  <data name="EntityProxyLockAnalyzerMessageFormat" xml:space="preserve">
+    <value>Synchronous entity proxy method '{0}' sends a signal and cannot target an entity whose lock is held; return Task and await the call instead</value>
+  </data>
+  <data name="EntityProxyLockAnalyzerTitle" xml:space="preserve">
+    <value>Synchronous entity proxy calls cannot target locked entities</value>
+  </data>
   <data name="EntityStaticAnalyzerDescription" xml:space="preserve">
     <value>Entity functions in an entity class must be static.</value>
   </data>

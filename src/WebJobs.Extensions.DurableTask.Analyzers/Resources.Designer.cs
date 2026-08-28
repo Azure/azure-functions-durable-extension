@@ -473,6 +473,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
                 return ResourceManager.GetString("EntityInterfaceReturnTypeAnalyzerTitle", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to A void-returning entity proxy method sends a one-way signal. While an orchestration holds an entity lock, calls to that entity must return Task and be awaited..
+        /// </summary>
+        public static string EntityProxyLockAnalyzerDescription {
+            get {
+                return ResourceManager.GetString("EntityProxyLockAnalyzerDescription", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Synchronous entity proxy method '{0}' sends a signal and cannot target an entity whose lock is held; return Task and await the call instead.
+        /// </summary>
+        public static string EntityProxyLockAnalyzerMessageFormat {
+            get {
+                return ResourceManager.GetString("EntityProxyLockAnalyzerMessageFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Synchronous entity proxy calls cannot target locked entities.
+        /// </summary>
+        public static string EntityProxyLockAnalyzerTitle {
+            get {
+                return ResourceManager.GetString("EntityProxyLockAnalyzerTitle", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   Looks up a localized string similar to Entity functions in an entity class must be static..
