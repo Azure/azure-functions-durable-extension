@@ -16,6 +16,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using Moq;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
 using static Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.HttpApiHandlerTests;
@@ -576,6 +577,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(OrchestrationRuntimeStatus.Running, status.RuntimeStatus);
         }
 
+        [Theory]
+        [InlineData(OrchestrationStatus.Running)]
+        [InlineData(OrchestrationStatus.ContinuedAsNew)]
+        [InlineData(OrchestrationStatus.Pending)]
+        [InlineData(OrchestrationStatus.Suspended)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task GetStatusAsync_InProgressInstanceWithStoredOutput_ReturnsNullOutput(
+            OrchestrationStatus orchestrationStatus)
+        {
+            var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
+            orchestrationServiceClientMock.Setup(x => x.GetOrchestrationStateAsync(It.IsAny<string>(), It.IsAny<bool>()))
+                .ReturnsAsync(GetInstanceState(orchestrationStatus, output: "\"stale output\""));
+
+            IDurableOrchestrationClient durableOrchestrationClient = this.GetDurableClient(orchestrationServiceClientMock.Object);
+
+            DurableOrchestrationStatus status = await durableOrchestrationClient.GetStatusAsync("testInstanceId");
+
+            Assert.Equal(JTokenType.Null, status.Output.Type);
+        }
+
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task GetStatusAsync_IncludesParentInstanceId()
@@ -804,7 +825,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private static List<OrchestrationState> GetInstanceState(
             OrchestrationStatus status,
             string parentInstanceId = null,
-            string version = null)
+            string version = null,
+            string output = null)
         {
             return new List<OrchestrationState>()
             {
@@ -825,6 +847,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                             },
                         },
                     OrchestrationStatus = status,
+                    Output = output,
                 },
             };
         }

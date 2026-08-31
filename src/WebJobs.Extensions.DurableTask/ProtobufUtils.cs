@@ -530,7 +530,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     Version = state.Version,
                     ParentInstanceId = state.ParentInstance?.OrchestrationInstance?.InstanceId,
                     Input = state.Input,
-                    Output = state.Output,
+                    Output = DurableClient.GetVisibleOrchestrationOutput(state),
                     ScheduledStartTimestamp = state.ScheduledStartTime == null ? null : Timestamp.FromDateTime(state.ScheduledStartTime.Value),
                     CreatedTimestamp = Timestamp.FromDateTime(state.CreatedTime),
                     LastUpdatedTimestamp = Timestamp.FromDateTime(state.LastUpdatedTime),

@@ -430,6 +430,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void CreateQueryInstancesResponse_InProgressInstanceWithStoredOutput_OmitsOutput()
+        {
+            OrchestrationState state = CreateOrchestrationState("parent-instance");
+            state.Output = "\"stale output\"";
+            var result = new OrchestrationQueryResult(new[] { state }, continuationToken: null);
+
+            P.QueryInstancesResponse response =
+                ProtobufUtils.CreateQueryInstancesResponse(result, new P.QueryInstancesRequest());
+
+            Assert.Null(Assert.Single(response.OrchestrationState).Output);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void ToHistoryEventProto_HistoryStateIncludesParentInstanceId()
         {
             const string ParentInstanceId = "parent-instance";

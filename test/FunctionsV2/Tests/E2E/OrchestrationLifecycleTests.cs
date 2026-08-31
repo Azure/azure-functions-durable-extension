@@ -390,6 +390,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
         public async Task RewindOrchestration(string storageProvider)
         {
+            TestOrchestrations.SayHelloWithActivityForRewindShouldFail = true;
+
             string[] orchestratorFunctionNames =
             {
                 nameof(TestOrchestrations.SayHelloWithActivityForRewind),
@@ -436,6 +438,41 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         orchestratorFunctionNames,
                         activityFunctionName);
                 }
+            }
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
+        public async Task RewindOrchestration_ClearsFailureOutput(string storageProvider)
+        {
+            TestOrchestrations.SayHelloWithActivityForRewindShouldFail = true;
+
+            using (ITestHost host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.RewindOrchestration_ClearsFailureOutput),
+                enableExtendedSessions: false,
+                storageProviderType: storageProvider))
+            {
+                await host.StartAsync();
+
+                TestDurableClient client = await host.StartOrchestratorAsync(
+                    nameof(TestOrchestrations.SayHelloWithActivityForRewind),
+                    "Catherine",
+                    this.output);
+
+                DurableOrchestrationStatus failedStatus = await client.WaitForCompletionAsync(this.output);
+                Assert.Equal(OrchestrationRuntimeStatus.Failed, failedStatus.RuntimeStatus);
+                Assert.NotEqual(JTokenType.Null, failedStatus.Output.Type);
+
+                await host.StopAsync();
+                await client.RewindAsync("rewind!");
+
+                DurableOrchestrationStatus rewoundStatus = await client.GetStatusAsync();
+                Assert.Equal(OrchestrationRuntimeStatus.Pending, rewoundStatus.RuntimeStatus);
+                Assert.Equal(JTokenType.Null, rewoundStatus.Output.Type);
+
+                TestOrchestrations.SayHelloWithActivityForRewindShouldFail = false;
             }
         }
 

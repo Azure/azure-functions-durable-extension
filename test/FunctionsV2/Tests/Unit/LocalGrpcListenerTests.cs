@@ -151,6 +151,57 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task TestGrpcListener_GetInProgressInstanceOmitsStoredOutput()
+        {
+            const string InstanceId = "rewound-instance";
+            var orchestrationState = new OrchestrationState
+            {
+                Name = "RewoundOrchestration",
+                OrchestrationInstance = new OrchestrationInstance
+                {
+                    InstanceId = InstanceId,
+                    ExecutionId = "rewound-execution",
+                },
+                CreatedTime = DateTime.UtcNow,
+                LastUpdatedTime = DateTime.UtcNow,
+                OrchestrationStatus = OrchestrationStatus.Pending,
+                Output = "\"stale output\"",
+            };
+            var orchestrationServiceClient = new Mock<IOrchestrationServiceClient>();
+            orchestrationServiceClient
+                .Setup(client => client.GetOrchestrationStateAsync(InstanceId, (string)null))
+                .ReturnsAsync(orchestrationState);
+            DurabilityProvider durabilityProvider = CreateDurabilityProvider(
+                new Mock<IOrchestrationService>().Object,
+                orchestrationServiceClient.Object);
+            using DurableTaskExtension extension = this.CreateExtension(
+                "GetInProgressInstanceOmitsStoredOutput",
+                durabilityProvider);
+            ILocalGrpcListener listener = LocalGrpcListener.Create(extension, LocalGrpcListenerMode.AspNetCore);
+
+            try
+            {
+                await listener.StartAsync(default);
+                using GrpcChannel channel = GrpcChannel.ForAddress(listener.ListenAddress);
+                var client = new P.TaskHubSidecarService.TaskHubSidecarServiceClient(channel);
+
+                P.GetInstanceResponse response = await client.GetInstanceAsync(
+                    new P.GetInstanceRequest
+                    {
+                        InstanceId = InstanceId,
+                        GetInputsAndOutputs = true,
+                    }).ResponseAsync;
+
+                Assert.Null(response.OrchestrationState.Output);
+            }
+            finally
+            {
+                await listener.StopAsync(default);
+            }
+        }
+
         [Theory]
         [InlineData("AttributionOtherHub", "AttributionOtherHub")]
         [InlineData(null, AttributionDefaultHubName)]

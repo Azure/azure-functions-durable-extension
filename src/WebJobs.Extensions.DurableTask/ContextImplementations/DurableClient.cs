@@ -1217,9 +1217,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 RuntimeStatus = (OrchestrationRuntimeStatus)orchestrationState.OrchestrationStatus,
                 CustomStatus = ParseToJToken(orchestrationState.Status),
                 Input = ParseToJToken(orchestrationState.Input),
-                Output = ParseToJToken(orchestrationState.Output),
+                Output = ParseToJToken(GetVisibleOrchestrationOutput(orchestrationState)),
                 History = historyArray,
             };
+        }
+
+        internal static string GetVisibleOrchestrationOutput(OrchestrationState orchestrationState)
+        {
+            return IsOrchestrationRunning(orchestrationState)
+                ? null
+                : orchestrationState.Output;
         }
 
         internal static JToken ParseToJToken(string value)

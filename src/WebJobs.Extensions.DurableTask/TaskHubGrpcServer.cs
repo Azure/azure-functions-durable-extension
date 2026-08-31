@@ -564,7 +564,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 CreatedTimestamp = Timestamp.FromDateTime(state.CreatedTime),
                 LastUpdatedTimestamp = Timestamp.FromDateTime(state.LastUpdatedTime),
                 Input = request.GetInputsAndOutputs ? state.Input : null,
-                Output = request.GetInputsAndOutputs ? state.Output : null,
+                Output = request.GetInputsAndOutputs ? DurableClient.GetVisibleOrchestrationOutput(state) : null,
                 CustomStatus = request.GetInputsAndOutputs ? state.Status : null,
                 FailureDetails = request.GetInputsAndOutputs ? GetFailureDetails(state.FailureDetails) : null,
             };
