@@ -28,6 +28,7 @@
 - Fixed a poison loop where dispatching a disabled-but-still-deployed activity or entity function caused in-flight orchestrations to retry indefinitely (e.g. throwing `ArgumentNullException('executor')` on the activity dispatch path) instead of failing gracefully. Such registered-but-inactive functions are now treated as unavailable and fail deterministically. (#3471)
 - Fixed the Event Grid `Terminated` lifecycle notification never being published when an orchestration is terminated. It is now raised from the orchestration dispatch middleware, which covers both the in-process/legacy out-of-proc path and the middleware-passthrough path. Previously no notification was sent at all on the former, and the latter incorrectly published a `Completed` notification. (#286)
 - Fixed empty Application Insights operation names for Distributed Tracing V2 orchestration and activity telemetry when instance ID suffixes are disabled. (#3156)
+- Fixed the local gRPC listener failing to start when the port it had probed for became unavailable between the probe and the actual bind. Kestrel now requests a dynamic port (`0`) so the OS assigns it as part of the bind itself, closing the race window; the bound address is still discovered through `IServerAddressesFeature`. Previously this surfaced as a `FunctionListenerException` wrapping a `SocketException` and left the Durable trigger listener unable to start.
 
 ### Breaking Changes
 
