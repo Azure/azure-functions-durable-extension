@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@azure/functions": "^4.16.2",
-    "durable-functions": "^3.4.0"
+    "durable-functions": "^3.5.0"
   },
   "devDependencies": {
     "@types/node": "^20.x",
