@@ -2177,6 +2177,97 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Times.Once);
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task MakePrimary_Returns_HTTP_400_When_AppLease_Is_Disabled()
+        {
+            (HttpApiHandler handler, Mock<DurabilityProvider> provider) =
+                CreateMakePrimaryHandler(useAppLease: false);
+            provider
+                .Setup(p => p.MakeCurrentAppPrimaryAsync())
+                .Returns(Task.CompletedTask);
+
+            HttpResponseMessage response = await handler.HandleRequestAsync(
+                new HttpRequestMessage(
+                    HttpMethod.Post,
+                    "http://localhost/runtime/webhooks/durabletask/makeprimary"),
+                CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            string content = await response.Content.ReadAsStringAsync();
+            var error = JsonConvert.DeserializeObject<JObject>(content);
+            Assert.Equal(
+                "Cannot make current app primary. This app is not using the AppLease feature.",
+                error["Message"].ToString());
+            provider.Verify(p => p.MakeCurrentAppPrimaryAsync(), Times.Never);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task MakePrimary_Returns_HTTP_200_When_AppLease_Is_Enabled()
+        {
+            (HttpApiHandler handler, Mock<DurabilityProvider> provider) =
+                CreateMakePrimaryHandler(useAppLease: true);
+            provider
+                .Setup(p => p.MakeCurrentAppPrimaryAsync())
+                .Returns(Task.CompletedTask);
+
+            HttpResponseMessage response = await handler.HandleRequestAsync(
+                new HttpRequestMessage(
+                    HttpMethod.Post,
+                    "http://localhost/runtime/webhooks/durabletask/makeprimary"),
+                CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Empty(await response.Content.ReadAsByteArrayAsync());
+            provider.Verify(p => p.MakeCurrentAppPrimaryAsync(), Times.Once);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task MakePrimary_Returns_HTTP_500_When_Provider_Fails()
+        {
+            (HttpApiHandler handler, Mock<DurabilityProvider> provider) =
+                CreateMakePrimaryHandler(useAppLease: true);
+            provider
+                .Setup(p => p.MakeCurrentAppPrimaryAsync())
+                .ThrowsAsync(new InvalidOperationException("Provider failure."));
+
+            HttpResponseMessage response = await handler.HandleRequestAsync(
+                new HttpRequestMessage(
+                    HttpMethod.Post,
+                    "http://localhost/runtime/webhooks/durabletask/makeprimary"),
+                CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+            string content = await response.Content.ReadAsStringAsync();
+            var error = JsonConvert.DeserializeObject<JObject>(content);
+            Assert.Equal("Something went wrong while processing your request", error["Message"].ToString());
+            provider.Verify(p => p.MakeCurrentAppPrimaryAsync(), Times.Once);
+        }
+
+        private static (HttpApiHandler Handler, Mock<DurabilityProvider> Provider) CreateMakePrimaryHandler(
+            bool useAppLease)
+        {
+            var orchestrationService = new Mock<IOrchestrationService>();
+            var orchestrationServiceClient = new Mock<IOrchestrationServiceClient>();
+            var provider = new Mock<DurabilityProvider>(
+                "storageProviderName",
+                orchestrationService.Object,
+                orchestrationServiceClient.Object,
+                TestConstants.ConnectionName);
+            var options = new DurableTaskOptions
+            {
+                UseAppLease = useAppLease,
+                WebhookUriProviderOverride = () =>
+                    new Uri("http://localhost/runtime/webhooks/durabletask"),
+                HubName = TestConstants.TaskHub,
+            };
+            var extension = TestDurableTaskExtension.CreateWithProvider(options, provider.Object);
+
+            return (new HttpApiHandler(extension, NullLogger.Instance), provider);
+        }
+
         private static DurableTaskExtension GetTestExtension()
         {
             var options = new DurableTaskOptions();
