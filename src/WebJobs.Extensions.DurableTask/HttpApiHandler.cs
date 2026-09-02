@@ -754,6 +754,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return new StatusResponsePayload
             {
                 Name = status.Name,
+                Version = status.Version,
                 InstanceId = status.InstanceId,
                 ParentInstanceId = status.ParentInstanceId,
                 RuntimeStatus = status.RuntimeStatus.ToString(),
