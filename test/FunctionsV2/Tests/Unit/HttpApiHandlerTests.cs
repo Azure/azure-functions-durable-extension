@@ -508,14 +508,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     new DurableOrchestrationStatus
                     {
                         Name = "DoThis",
+                        Version = "1.0",
                         InstanceId = "01",
                         RuntimeStatus = OrchestrationRuntimeStatus.Running,
                     },
                     new DurableOrchestrationStatus
                     {
                         Name = "DoThat",
+                        Version = "2.0",
                         InstanceId = "02",
                         RuntimeStatus = OrchestrationRuntimeStatus.Completed,
+                    },
+                    new DurableOrchestrationStatus
+                    {
+                        Name = "DoOther",
+                        InstanceId = "03",
+                        RuntimeStatus = OrchestrationRuntimeStatus.Pending,
                     },
                 },
             };
@@ -538,14 +546,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 CancellationToken.None);
             Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
             Assert.Equal(string.Empty, responseMessage.Headers.GetValues("x-ms-continuation-token").FirstOrDefault());
-            var actual = JsonConvert.DeserializeObject<IList<StatusResponsePayload>>(await responseMessage.Content.ReadAsStringAsync());
+            string responseContent = await responseMessage.Content.ReadAsStringAsync();
+            var actual = JsonConvert.DeserializeObject<IList<StatusResponsePayload>>(responseContent);
+            JArray responsePayload = JArray.Parse(responseContent);
 
             Assert.Equal("DoThis", actual[0].Name);
+            Assert.Equal("1.0", actual[0].Version);
             Assert.Equal("01", actual[0].InstanceId);
             Assert.Equal("Running", actual[0].RuntimeStatus);
             Assert.Equal("DoThat", actual[1].Name);
+            Assert.Equal("2.0", actual[1].Version);
             Assert.Equal("02", actual[1].InstanceId);
             Assert.Equal("Completed", actual[1].RuntimeStatus);
+            Assert.Null(((JObject)responsePayload[2]).Property("version"));
         }
 
         [Fact]
@@ -871,6 +884,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 new DurableOrchestrationStatus
                 {
                     Name = "DoThis",
+                    Version = "2.0",
                     InstanceId = instanceId,
                     RuntimeStatus = OrchestrationRuntimeStatus.Completed,
                 },
@@ -896,6 +910,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var actual = JsonConvert.DeserializeObject<StatusResponsePayload>(await responseMessage.Content.ReadAsStringAsync());
             Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
             Assert.Equal(instanceId, actual.InstanceId);
+            Assert.Equal("2.0", actual.Version);
         }
 
         [Theory]
@@ -2160,6 +2175,97 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     It.IsAny<TaskMessage>(),
                     It.IsAny<OrchestrationStatus[]>()),
                 Times.Once);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task MakePrimary_Returns_HTTP_400_When_AppLease_Is_Disabled()
+        {
+            (HttpApiHandler handler, Mock<DurabilityProvider> provider) =
+                CreateMakePrimaryHandler(useAppLease: false);
+            provider
+                .Setup(p => p.MakeCurrentAppPrimaryAsync())
+                .Returns(Task.CompletedTask);
+
+            HttpResponseMessage response = await handler.HandleRequestAsync(
+                new HttpRequestMessage(
+                    HttpMethod.Post,
+                    "http://localhost/runtime/webhooks/durabletask/makeprimary"),
+                CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            string content = await response.Content.ReadAsStringAsync();
+            var error = JsonConvert.DeserializeObject<JObject>(content);
+            Assert.Equal(
+                "Cannot make current app primary. This app is not using the AppLease feature.",
+                error["Message"].ToString());
+            provider.Verify(p => p.MakeCurrentAppPrimaryAsync(), Times.Never);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task MakePrimary_Returns_HTTP_200_When_AppLease_Is_Enabled()
+        {
+            (HttpApiHandler handler, Mock<DurabilityProvider> provider) =
+                CreateMakePrimaryHandler(useAppLease: true);
+            provider
+                .Setup(p => p.MakeCurrentAppPrimaryAsync())
+                .Returns(Task.CompletedTask);
+
+            HttpResponseMessage response = await handler.HandleRequestAsync(
+                new HttpRequestMessage(
+                    HttpMethod.Post,
+                    "http://localhost/runtime/webhooks/durabletask/makeprimary"),
+                CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Empty(await response.Content.ReadAsByteArrayAsync());
+            provider.Verify(p => p.MakeCurrentAppPrimaryAsync(), Times.Once);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task MakePrimary_Returns_HTTP_500_When_Provider_Fails()
+        {
+            (HttpApiHandler handler, Mock<DurabilityProvider> provider) =
+                CreateMakePrimaryHandler(useAppLease: true);
+            provider
+                .Setup(p => p.MakeCurrentAppPrimaryAsync())
+                .ThrowsAsync(new InvalidOperationException("Provider failure."));
+
+            HttpResponseMessage response = await handler.HandleRequestAsync(
+                new HttpRequestMessage(
+                    HttpMethod.Post,
+                    "http://localhost/runtime/webhooks/durabletask/makeprimary"),
+                CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+            string content = await response.Content.ReadAsStringAsync();
+            var error = JsonConvert.DeserializeObject<JObject>(content);
+            Assert.Equal("Something went wrong while processing your request", error["Message"].ToString());
+            provider.Verify(p => p.MakeCurrentAppPrimaryAsync(), Times.Once);
+        }
+
+        private static (HttpApiHandler Handler, Mock<DurabilityProvider> Provider) CreateMakePrimaryHandler(
+            bool useAppLease)
+        {
+            var orchestrationService = new Mock<IOrchestrationService>();
+            var orchestrationServiceClient = new Mock<IOrchestrationServiceClient>();
+            var provider = new Mock<DurabilityProvider>(
+                "storageProviderName",
+                orchestrationService.Object,
+                orchestrationServiceClient.Object,
+                TestConstants.ConnectionName);
+            var options = new DurableTaskOptions
+            {
+                UseAppLease = useAppLease,
+                WebhookUriProviderOverride = () =>
+                    new Uri("http://localhost/runtime/webhooks/durabletask"),
+                HubName = TestConstants.TaskHub,
+            };
+            var extension = TestDurableTaskExtension.CreateWithProvider(options, provider.Object);
+
+            return (new HttpApiHandler(extension, NullLogger.Instance), provider);
         }
 
         private static DurableTaskExtension GetTestExtension()
