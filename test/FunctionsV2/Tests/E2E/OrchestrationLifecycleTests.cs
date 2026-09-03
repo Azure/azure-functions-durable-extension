@@ -444,13 +444,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [MemberData(nameof(TestDataGenerator.GetFullFeaturedStorageProviderOptions), MemberType = typeof(TestDataGenerator))]
-        public async Task RewindOrchestration_ClearsFailureOutput(string storageProvider)
+        public async Task RewindOrchestration_HidesFailureOutput(string storageProvider)
         {
             TestOrchestrations.SayHelloWithActivityForRewindShouldFail = true;
 
             using (ITestHost host = TestHelpers.GetJobHost(
                 this.loggerProvider,
-                nameof(this.RewindOrchestration_ClearsFailureOutput),
+                nameof(this.RewindOrchestration_HidesFailureOutput),
                 enableExtendedSessions: false,
                 storageProviderType: storageProvider))
             {
