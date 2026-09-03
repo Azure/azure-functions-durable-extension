@@ -1,18 +1,22 @@
+using System.Text.Json;
+using Google.Protobuf;
 using Microsoft.Azure.Functions.Worker.Converters;
 using Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
+using Microsoft.Azure.Functions.Worker.Extensions.DurableTask.Exceptions;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Worker;
 using Microsoft.Extensions.Options;
 using Moq;
+using P = Microsoft.DurableTask.Protobuf;
 
 namespace Microsoft.Azure.Functions.Worker.Tests;
 
 public class ActivityInputConverterTests
 {
     [Fact]
-    public async Task ConvertAsync_DeserializationFails_ReturnsActionableFailure()
+    public void ConvertAsync_DeserializationFails_ThrowsActionableFailure()
     {
-        var originalException = new InvalidOperationException("Original deserialization error.");
+        var originalException = new JsonException("Original deserialization error.");
         var options = new DurableTaskWorkerOptions
         {
             DataConverter = new ThrowingDataConverter(originalException),
@@ -27,10 +31,8 @@ public class ActivityInputConverterTests
         converterContext.SetupGet(context => context.TargetType).Returns(typeof(ITestService));
         converterContext.SetupGet(context => context.FunctionContext).Returns(functionContext.Object);
 
-        ConversionResult result = await converter.ConvertAsync(converterContext.Object);
-
-        Assert.Equal(ConversionStatus.Failed, result.Status);
-        InvalidOperationException exception = Assert.IsType<InvalidOperationException>(result.Error);
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
+            () => converter.ConvertAsync(converterContext.Object));
         Assert.Contains("Failed to deserialize input for activity function 'TestActivity'", exception.Message);
         Assert.Contains($"into type '{typeof(ITestService).FullName}'", exception.Message);
         Assert.Contains("Activity inputs must be JSON-serializable values", exception.Message);
@@ -39,6 +41,12 @@ public class ActivityInputConverterTests
             exception.Message);
         Assert.Contains("The original error was: Original deserialization error.", exception.Message);
         Assert.Same(originalException, exception.InnerException);
+
+        var serializationException = new DurableSerializationException(exception);
+        P.TaskFailureDetails failure = JsonParser.Default.Parse<P.TaskFailureDetails>(serializationException.Message);
+        Assert.Equal(typeof(InvalidOperationException).FullName, failure.ErrorType);
+        Assert.Equal(typeof(JsonException).FullName, failure.InnerFailure.ErrorType);
+        Assert.Equal(originalException.Message, failure.InnerFailure.ErrorMessage);
     }
 
     private interface ITestService

@@ -55,8 +55,7 @@ internal class ActivityInputConverter : IInputConverter
         catch (Exception exception)
         {
             string activityName = context.FunctionContext.FunctionDefinition.Name;
-            return new(ConversionResult.Failed(
-                CreateDeserializationException(activityName, context.TargetType, exception)));
+            throw CreateDeserializationException(activityName, context.TargetType, exception);
         }
     }
 

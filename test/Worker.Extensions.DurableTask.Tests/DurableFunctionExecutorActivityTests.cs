@@ -80,6 +80,8 @@ public class DurableFunctionExecutorActivityTests
 
     private static IServiceProvider CreateServicesWithCachedInput(string input)
     {
+        // BindInputAsync requires Worker Core's internal binding cache; pre-populating it keeps this
+        // executor-level test focused on the class-based activity deserialization path.
         Assembly workerAssembly = typeof(FunctionContext).Assembly;
         Type cacheInterface = workerAssembly.GetType("Microsoft.Azure.Functions.Worker.IBindingCache`1", true)!
             .MakeGenericType(typeof(ConversionResult));
