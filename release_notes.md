@@ -10,8 +10,11 @@
 ### Bug Fixes
 
 - Check if function invocation already has an executor before registering durable executor. (#3265)
+- Improved .NET isolated activity input deserialization diagnostics for both function-style and class-based activities. Failures now identify the activity and target type and preserve the original serializer error as the inner failure. (#3531)
 
 ### Breaking Changes
+
+- For .NET isolated function-style and class-based activities, input deserialization failures now use `System.InvalidOperationException` as the top-level `TaskFailureDetails.ErrorType`; the original serializer exception type is preserved in `InnerFailure`. (#3531)
 
 ### Dependency Updates
 
