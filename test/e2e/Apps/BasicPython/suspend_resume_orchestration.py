@@ -11,7 +11,7 @@ bp = df.Blueprint()
 
 @bp.route(route="SuspendInstance", methods=["GET", "POST"])
 @bp.durable_client_input(client_name="client")
-async def suspend_instance(req: func.HttpRequest, client: df.DurableOrchestrationClient):
+async def suspend_instance(req: func.HttpRequest, client):
     instance_id = req.params.get("instanceId")
     suspend_reason = "Suspending the instance for test."
     try:
@@ -29,7 +29,7 @@ async def suspend_instance(req: func.HttpRequest, client: df.DurableOrchestratio
 
 @bp.route(route="ResumeInstance", methods=["GET", "POST"])
 @bp.durable_client_input(client_name="client")
-async def resume_instance(req: func.HttpRequest, client: df.DurableOrchestrationClient):
+async def resume_instance(req: func.HttpRequest, client):
     instance_id = req.params.get("instanceId")
     resume_reason = "Resuming the instance for test."
     try:

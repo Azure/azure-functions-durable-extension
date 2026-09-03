@@ -15,7 +15,7 @@ bp = df.Blueprint()
 
 @bp.route(route="TimeoutOrchestrator_HttpStart", methods=["GET", "POST"])
 @bp.durable_client_input(client_name="client")
-async def timer_http_start(req: func.HttpRequest, client: df.DurableOrchestrationClient):
+async def timer_http_start(req: func.HttpRequest, client):
     timeoutSeconds = req.params.get("timeoutSeconds")
     if not timeoutSeconds or not str.isnumeric(timeoutSeconds):
         return func.HttpResponse(

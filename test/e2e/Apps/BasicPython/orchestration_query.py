@@ -5,18 +5,19 @@
 
 import json
 
-import azure.functions as func
 import azure.durable_functions as df
+import azure.functions as func
 
 bp = df.Blueprint()
 
 
 @bp.route(route="GetAllInstances", methods=["GET", "POST"])
 @bp.durable_client_input(client_name="client")
-async def get_all_instances(req: func.HttpRequest, client: df.DurableOrchestrationClient):
+async def get_all_instances(req: func.HttpRequest, client):
     try:
         instances = await client.get_status_all()
-        # This would not be necessary if we implemnted __str__ for DurableOrchestrationStatus using to_json under the hood
+        # This would not be necessary if we implemnted __str__ for
+        # DurableOrchestrationStatus using to_json under the hood
         instances = json.dumps([i.to_json() for i in instances])
         response = func.HttpResponse(
             instances,
@@ -35,7 +36,7 @@ async def get_all_instances(req: func.HttpRequest, client: df.DurableOrchestrati
 
 @bp.route(route="GetRunningInstances", methods=["GET", "POST"])
 @bp.durable_client_input(client_name="client")
-async def get_running_instances(req: func.HttpRequest, client: df.DurableOrchestrationClient):
+async def get_running_instances(req: func.HttpRequest, client):
     try:
         filter_statuses = [
             df.OrchestrationRuntimeStatus.Running,
@@ -43,7 +44,30 @@ async def get_running_instances(req: func.HttpRequest, client: df.DurableOrchest
             df.OrchestrationRuntimeStatus.ContinuedAsNew
         ]
         instances = await client.get_status_by(runtime_status=filter_statuses)
-        # This would not be necessary if we implemnted __str__ for DurableOrchestrationStatus using to_json under the hood
+        # This would not be necessary if we implemnted __str__ for
+        # DurableOrchestrationStatus using to_json under the hood
+        instances = json.dumps([i.to_json() for i in instances])
+        response = func.HttpResponse(
+            instances,
+            status_code=200,
+            mimetype="application/json"
+        )
+        return response
+    except Exception as ex:
+        response = func.HttpResponse(
+            str(ex),
+            status_code=400,
+            mimetype="text/plain"
+        )
+        return response
+
+
+@bp.route(route="GetInstancesByPrefix", methods=["GET", "POST"])
+@bp.durable_client_input(client_name="client")
+async def get_instances_by_prefix(req: func.HttpRequest, client):
+    try:
+        instance_id_prefix = req.params.get("instanceIdPrefix")
+        instances = await client.get_status_by(instance_id_prefix=instance_id_prefix)
         instances = json.dumps([i.to_json() for i in instances])
         response = func.HttpResponse(
             instances,

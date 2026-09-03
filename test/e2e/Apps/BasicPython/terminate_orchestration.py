@@ -32,7 +32,7 @@ def simulated_work_activity(sleepms: int) -> str:
 
 @bp.route(route="TerminateInstance", methods=["GET", "POST"])
 @bp.durable_client_input(client_name="client")
-async def terminate_instance(req: func.HttpRequest, client: df.DurableOrchestrationClient):
+async def terminate_instance(req: func.HttpRequest, client):
     instance_id = req.route_params.get("instanceId") or req.params.get("instanceId")
     reason = "Long-running orchestration was terminated early."
     try:
