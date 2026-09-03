@@ -1271,13 +1271,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         async Task<string> IDurableOrchestrationClient.RestartAsync(string instanceId, bool restartWithNewInstanceId)
         {
-            // GetOrchestrationInstanceStateAsync will throw ArgumentException if the provided instanceid is not found.
-            OrchestrationState state = await this.GetOrchestrationInstanceStateAsync(instanceId);
-
-            this.ThrowIfOrchestratorFunctionIsDisabled(state.Name);
-
-            JToken input = ParseToJToken(state.Input);
-
             string newInstanceId = null;
 
             if (restartWithNewInstanceId)
@@ -1285,12 +1278,57 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 newInstanceId = Guid.NewGuid().ToString("N");
             }
 
+            return await this.RestartCoreAsync(
+                sourceInstanceId: instanceId,
+                newInstanceId: restartWithNewInstanceId ? newInstanceId : instanceId,
+                version: null);
+        }
+
+        internal Task<string> RestartWithOptionsAsync(string sourceInstanceId, string newInstanceId, string version)
+        {
+            ValidateRestartTargetInstanceId(newInstanceId);
+            return this.RestartCoreAsync(sourceInstanceId, newInstanceId, version);
+        }
+
+        private async Task<string> RestartCoreAsync(string sourceInstanceId, string newInstanceId, string version)
+        {
+            // GetOrchestrationInstanceStateAsync will throw ArgumentException if the provided instance ID is not found.
+            OrchestrationState state = await this.GetOrchestrationInstanceStateAsync(sourceInstanceId);
+
+            this.ThrowIfOrchestratorFunctionIsDisabled(state.Name);
+
+            JToken input = ParseToJToken(state.Input);
+
             return await this.CreateOrchestrationInstanceAndTraceAsync(
                 orchestratorFunctionName: state.Name,
-                instanceId: restartWithNewInstanceId ? newInstanceId : instanceId,
+                instanceId: newInstanceId,
                 input: input,
                 tags: state.Tags,
-                reason: "RestartInstance");
+                reason: "RestartInstance",
+                version: version);
+        }
+
+        private static void ValidateRestartTargetInstanceId(string newInstanceId)
+        {
+            if (string.IsNullOrEmpty(newInstanceId))
+            {
+                throw new ArgumentException("A new orchestration instance ID must be provided.", nameof(newInstanceId));
+            }
+
+            if (newInstanceId.StartsWith("@"))
+            {
+                throw new ArgumentException("Orchestration instance IDs must not start with @.", nameof(newInstanceId));
+            }
+
+            if (newInstanceId.Any(IsInvalidCharacter))
+            {
+                throw new ArgumentException("Orchestration instance IDs must not contain /, \\, #, ?, or control characters.", nameof(newInstanceId));
+            }
+
+            if (newInstanceId.Length > MaxInstanceIdLength)
+            {
+                throw new ArgumentException($"Instance ID lengths must not exceed {MaxInstanceIdLength} characters.", nameof(newInstanceId));
+            }
         }
 
         /// <inheritdoc/>
@@ -1353,12 +1391,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId,
             object input,
             IDictionary<string, string> tags,
-            string reason)
+            string reason,
+            string version = null)
         {
             OrchestrationStatus[] dedupeStatuses = this.GetStatusesNotToOverride();
             Task<OrchestrationInstance> createTask = this.client.CreateOrchestrationInstanceAsync(
                 orchestratorFunctionName,
-                this.durableTaskOptions.DefaultVersion,
+                version ?? this.durableTaskOptions.DefaultVersion,
                 instanceId,
                 input,
                 tags,
