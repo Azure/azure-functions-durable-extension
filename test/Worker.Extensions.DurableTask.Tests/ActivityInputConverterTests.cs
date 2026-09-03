@@ -12,9 +12,10 @@ public class ActivityInputConverterTests
     [Fact]
     public async Task ConvertAsync_DeserializationFails_ReturnsActionableFailure()
     {
+        var originalException = new InvalidOperationException("Original deserialization error.");
         var options = new DurableTaskWorkerOptions
         {
-            DataConverter = new ThrowingDataConverter(),
+            DataConverter = new ThrowingDataConverter(originalException),
         };
         var converter = new ActivityInputConverter(Options.Create(options));
         var functionDefinition = new Mock<FunctionDefinition>();
@@ -37,18 +38,18 @@ public class ActivityInputConverterTests
             "data transfer objects instead of interfaces or dependency-injected services",
             exception.Message);
         Assert.Contains("The original error was: Original deserialization error.", exception.Message);
-        Assert.IsType<InvalidOperationException>(exception.InnerException);
+        Assert.Same(originalException, exception.InnerException);
     }
 
     private interface ITestService
     {
     }
 
-    private sealed class ThrowingDataConverter : DataConverter
+    private sealed class ThrowingDataConverter(Exception exception) : DataConverter
     {
         public override object? Deserialize(string? data, Type targetType)
         {
-            throw new InvalidOperationException("Original deserialization error.");
+            throw exception;
         }
 
         public override string? Serialize(object? value)

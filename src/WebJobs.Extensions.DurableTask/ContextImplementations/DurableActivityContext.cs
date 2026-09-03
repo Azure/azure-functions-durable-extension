@@ -107,63 +107,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal object GetInput(Type destinationType)
         {
-            try
-            {
-                return this.GetInputCore(destinationType);
-            }
-            catch (Exception exception)
-            {
-                string destinationTypeName = destinationType.FullName ?? destinationType.Name;
-                throw new JsonSerializationException(
-                    $"Failed to deserialize input for activity function '{this.functionName}' into type " +
-                    $"'{destinationTypeName}'. Activity inputs must be JSON-serializable values. Pass concrete " +
-                    "data transfer objects instead of interfaces or dependency-injected services, and ensure the " +
-                    $"input matches the target type. The original error was: {exception.Message}",
-                    exception);
-            }
-        }
-
-        internal string GetSerializedOutput()
-        {
-            return this.serializedOutput;
-        }
-
-        /// <summary>
-        /// Sets the JSON-serializeable output of the activity function.
-        /// </summary>
-        /// <remarks>
-        /// If this method is not called explicitly, the return value of the activity function is used as the output.
-        /// </remarks>
-        /// <param name="output">
-        /// The JSON-serializeable value to use as the activity function output.
-        /// </param>
-        internal void SetOutput(object output)
-        {
-            if (this.serializedOutput != null)
-            {
-                throw new InvalidOperationException("The output has already been set of this activity instance.");
-            }
-
-            if (output != null)
-            {
-                JToken json = output as JToken;
-                if (json != null)
-                {
-                    this.serializedOutput = json.ToString(Formatting.None);
-                }
-                else
-                {
-                    this.serializedOutput = this.messageDataConverter.Serialize(output);
-                }
-            }
-            else
-            {
-                this.serializedOutput = null;
-            }
-        }
-
-        private object GetInputCore(Type destinationType)
-        {
             if (this.serializedInput == null)
             {
                 return destinationType.IsValueType ?
@@ -204,6 +147,45 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return this.messageDataConverter.Deserialize(serializedValue, destinationType);
+        }
+
+        internal string GetSerializedOutput()
+        {
+            return this.serializedOutput;
+        }
+
+        /// <summary>
+        /// Sets the JSON-serializeable output of the activity function.
+        /// </summary>
+        /// <remarks>
+        /// If this method is not called explicitly, the return value of the activity function is used as the output.
+        /// </remarks>
+        /// <param name="output">
+        /// The JSON-serializeable value to use as the activity function output.
+        /// </param>
+        internal void SetOutput(object output)
+        {
+            if (this.serializedOutput != null)
+            {
+                throw new InvalidOperationException("The output has already been set of this activity instance.");
+            }
+
+            if (output != null)
+            {
+                JToken json = output as JToken;
+                if (json != null)
+                {
+                    this.serializedOutput = json.ToString(Formatting.None);
+                }
+                else
+                {
+                    this.serializedOutput = this.messageDataConverter.Serialize(output);
+                }
+            }
+            else
+            {
+                this.serializedOutput = null;
+            }
         }
     }
 }
