@@ -20,6 +20,7 @@
 ### New Features
 
 - Allow overriding orchestration version when starting orchestrations via APIs in PowerShell, Python, and Node.js (https://github.com/Azure/azure-functions-durable-extension/pull/3213)
+- Added the opt-in `extensions.durableTask.tracing.useHostTelemetryInitializers` setting for distributed tracing V2 (default: `false`). Selected Functions-host Application Insights initializers can enrich existing Durable requests and dependencies. Host invocation/HTTP-context initializers are excluded; host processors, sampling, redaction, and isolated-worker initializers are not inherited. (#1792)
 - Added `ClientOperationReceived` trace event to `DurableFunctionsEvents` for correlating out-of-process worker invocations with orchestration events. The event includes `FunctionInvocationId`, `OperationType`, and `InstanceId` fields for cross-log correlation. (#3317)
 - Existing extension-generated `FunctionScheduled` trace events now include a `TargetInstanceId` field for entity, sub-orchestration, and Durable Client scheduling paths when the target ID is known. Sub-orchestrations without an explicit ID report the target as not supplied because DTFx generates it downstream. This change does not add `FunctionScheduled` events to modern gRPC worker middleware paths, which do not currently emit that event. (#1496)
 

@@ -1,6 +1,6 @@
 # Opt-in host initializer enrichment for Durable distributed tracing V2
 
-**Status:** Design for review; no production implementation in this change.
+**Status:** Approved design, implemented on this branch. Public documentation approval and real Functions-host/Azure staging validation remain merge/release gates.
 
 **Issue:** [#1792 - Duplicate App Insight Telemetry](https://github.com/Azure/azure-functions-durable-extension/issues/1792).
 
@@ -66,9 +66,9 @@ The AI SDK invokes initializers in collection order, handles initializer excepti
 
 ### Not yet established
 
-These experiments validate the selection and ordering mechanism, not a completed extension feature. They did not exercise the new option or production wiring, a real replaying orchestration, Functions host restart/load-context behavior, authenticated Azure ingestion, all host versions, or portal presentation.
+The original probes validate the selection and ordering mechanism. The implementation adds option/SDK compatibility coverage and real WebJobs Application Insights integration tests with raw host and Durable capture, successful and failing activities, replay, entities, and both private-channel and Entra-forwarding paths. These local tests do not establish Functions Script-host restart/load-context behavior, authenticated Azure ingestion, all host versions, or portal presentation.
 
-Full-host initializer inventory and the acceptance cases in section 9 remain implementation/release requirements. The historical production cause of #3053's missing spans was not established; this spec does not claim otherwise.
+Full Functions-host initializer inventory/restart coverage and Azure staging remain release requirements in section 9. The historical production cause of #3053's missing spans was not established; this spec does not claim otherwise.
 
 ## 3. Scope and alternatives
 
@@ -90,7 +90,7 @@ Add one public Boolean property to `TraceOptions`:
 
 `UseHostTelemetryInitializers`, default `false`.
 
-Proposed `host.json` setting:
+`host.json` setting (unreleased):
 
 ```json
 {
@@ -205,7 +205,7 @@ Only the host configuration available in this process participates. Custom initi
 
 ## 7. Implementation touchpoints
 
-Paths are repository-relative. These are future implementation changes, not part of this specification commit.
+Paths are repository-relative. The implementation follows these touchpoints; new selection/SDK compatibility and naming-order coverage is grouped in `HostTelemetryInitializerTests.cs`.
 
 | File/surface | Required work |
 | --- | --- |
@@ -264,7 +264,7 @@ Use the repository's existing xUnit project/runners; do not introduce a new test
 5. Verify Functions-host `ScriptTelemetryInitializer` retention and host-instance changes across host restart against a real supported host. Confirm worker-only custom initializers are not represented as host initializers.
 6. Before release, use an Azure staging deployment to confirm ingestion and role-filtered presentation with the actual loaded host/SDK versions. Do not claim this spec's local probes satisfy that gate.
 
-For targeted implementation validation, start with the affected `TelemetryActivatorTests`, naming tests, and options formatter/binding tests in `test\FunctionsV2\WebJobs.Extensions.DurableTask.Tests.V2.csproj` on `net8.0`; include both target frameworks in release coverage. Run correlation E2E scenarios with the repository's existing storage prerequisites. No production implementation is approved or performed by the specification task.
+For targeted implementation validation, run `TelemetryActivatorTests`, `HostTelemetryInitializerTests`, naming tests, and options formatter/binding tests in `test\FunctionsV2\WebJobs.Extensions.DurableTask.Tests.V2.csproj`; include both target frameworks. Run correlation E2E scenarios with the repository's existing storage prerequisites.
 
 ## 10. Evidence references
 

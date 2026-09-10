@@ -42,7 +42,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             bool addDurableClientFactory,
             ITypeLocator typeLocator,
             Action<ScaleOptions> configureScaleOptions = null,
-            TelemetryConfiguration hostTelemetryConfiguration = null)
+            TelemetryConfiguration hostTelemetryConfiguration = null,
+            Action<ILoggingBuilder> configureLogging = null)
         {
             // Unless specified, use table partition management for tests as it makes the task hubs start up faster.
             // These tests run on a single task hub workers, so they don't test partition management anyways, and that is tested
@@ -57,6 +58,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     loggingBuilder =>
                     {
                         loggingBuilder.AddProvider(loggerProvider);
+                        configureLogging?.Invoke(loggingBuilder);
                     })
                 .ConfigureWebJobs(
                     webJobsBuilder =>

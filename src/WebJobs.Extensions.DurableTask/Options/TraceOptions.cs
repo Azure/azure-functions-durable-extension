@@ -86,10 +86,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </value>
         public bool IncludeInstanceIdInOperationName { get; set; } = false;
 
+        /// <summary>
+        /// Gets or sets a value indicating whether distributed tracing V2 reuses selected
+        /// Application Insights telemetry initializers from the Functions host.
+        /// </summary>
+        /// <remarks>
+        /// The default is <c>false</c>. This setting requires <see cref="DistributedTracingEnabled"/>
+        /// and <see cref="Version"/> set to <see cref="DurableDistributedTracingVersion.V2"/>.
+        /// The known host invocation and HTTP client-IP initializers are excluded.
+        /// Custom initializers retain their order and normal mutation behavior, and must support
+        /// repeated, concurrent initialization outside a function invocation.
+        /// Host processors, sampling settings, and isolated-worker initializers are not inherited.
+        /// Changes to the host initializer list require a host restart.
+        /// </remarks>
+        public bool UseHostTelemetryInitializers { get; set; } = false;
+
         internal void AddToDebugString(StringBuilder builder)
         {
             builder.Append(nameof(this.TraceReplayEvents)).Append(": ").Append(this.TraceReplayEvents).Append(", ");
-            builder.Append(nameof(this.TraceInputsAndOutputs)).Append(": ").Append(this.TraceInputsAndOutputs);
+            builder.Append(nameof(this.TraceInputsAndOutputs)).Append(": ").Append(this.TraceInputsAndOutputs).Append(", ");
+            builder.Append(nameof(this.UseHostTelemetryInitializers)).Append(": ").Append(this.UseHostTelemetryInitializers);
         }
     }
 }

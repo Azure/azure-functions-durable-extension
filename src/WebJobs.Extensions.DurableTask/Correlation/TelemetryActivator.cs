@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Linq;
 using System.Security.Authentication;
 using System.Threading.Tasks;
 using Azure.Identity;
@@ -9,6 +10,7 @@ using DurableTask.ApplicationInsights;
 using DurableTask.Core;
 using DurableTask.Core.Settings;
 using Microsoft.ApplicationInsights;
+using Microsoft.ApplicationInsights.AspNetCore.TelemetryInitializers;
 using Microsoft.ApplicationInsights.Channel;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Azure.WebJobs.Logging.ApplicationInsights;
@@ -105,6 +107,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         public void Initialize(ILogger logger)
         {
             this.endToEndTraceHelper = new EndToEndTraceHelper(logger, this.options.Tracing.TraceReplayEvents);
+
+            if (this.options.Tracing.UseHostTelemetryInitializers &&
+                (!this.options.Tracing.DistributedTracingEnabled ||
+                 this.options.Tracing.Version != Options.DurableDistributedTracingVersion.V2))
+            {
+                this.LogTracingWarning(
+                    "UseHostTelemetryInitializers requires distributed tracing to be enabled with version V2. Host telemetry initializers will not be used.");
+            }
 
             if (this.options.Tracing.DistributedTracingEnabled)
             {
@@ -211,6 +221,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                 config.TelemetryChannel = new NoOpTelemetryChannel { OnSend = this.OnSend };
             }
 
+            if (this.options.Tracing.UseHostTelemetryInitializers &&
+                this.options.Tracing.Version == Options.DurableDistributedTracingVersion.V2)
+            {
+                this.AddHostTelemetryInitializers(config);
+            }
+
             config.TelemetryInitializers.Add(new DurableTaskInstanceIdTelemetryInitializer(this.options.Tracing.IncludeInstanceIdInOperationName));
 
             string resolvedInstrumentationKey = this.nameResolver.Resolve("APPINSIGHTS_INSTRUMENTATIONKEY");
@@ -309,6 +325,51 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             }
 
             return config;
+        }
+
+        private void AddHostTelemetryInitializers(TelemetryConfiguration configuration)
+        {
+            if (this.hostTelemetryConfiguration == null)
+            {
+                this.LogTracingWarning(
+                    "UseHostTelemetryInitializers is enabled, but the Functions host telemetry configuration is unavailable. Durable tracing will continue without host telemetry initializers.");
+                return;
+            }
+
+            bool hasOperationCorrelationInitializer = configuration.TelemetryInitializers
+                .Any(initializer => initializer.GetType() == typeof(OperationCorrelationTelemetryInitializer));
+            int imported = 0;
+            int excluded = 0;
+
+            // Borrow the completed host configuration's instances without changing its pipeline.
+            // Snapshot membership before either Durable listener starts emitting telemetry.
+            foreach (ITelemetryInitializer initializer in this.hostTelemetryConfiguration.TelemetryInitializers.ToArray())
+            {
+                Type type = initializer.GetType();
+                bool isHostInvocationInitializer =
+                    type.Assembly == typeof(ApplicationInsightsLoggerOptions).Assembly &&
+                    type.FullName == "Microsoft.Azure.WebJobs.Logging.ApplicationInsights.WebJobsTelemetryInitializer";
+
+                // Ambient invocation/HTTP context need not describe the Durable span being emitted.
+                if (isHostInvocationInitializer ||
+                    type == typeof(ClientIpHeaderTelemetryInitializer) ||
+                    (hasOperationCorrelationInitializer && type == typeof(OperationCorrelationTelemetryInitializer)))
+                {
+                    excluded++;
+                    continue;
+                }
+
+                configuration.TelemetryInitializers.Add(initializer);
+                imported++;
+                hasOperationCorrelationInitializer |= type == typeof(OperationCorrelationTelemetryInitializer);
+            }
+
+            this.endToEndTraceHelper.ExtensionInformationalEvent(
+                hubName: this.options.HubName,
+                functionName: string.Empty,
+                instanceId: string.Empty,
+                message: $"Durable distributed tracing V2 is using host telemetry initializers. Imported: {imported}. Excluded: {excluded}.",
+                writeToUserLogs: true);
         }
 
         /// <summary>

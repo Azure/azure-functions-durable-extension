@@ -17,6 +17,7 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 using Xunit.Abstractions;
@@ -126,6 +127,119 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.All(
                 durableTaskTelemetry,
                 telemetry => Assert.Equal(telemetry.Name, telemetry.Context.Operation.Name));
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task HostTelemetryInitializers_PreserveRawV2Spans(bool forwardToHostChannel)
+        {
+            string[] baseline = null;
+            foreach (bool useHostInitializers in new[] { false, true })
+            {
+                var hostTelemetry = new ConcurrentQueue<ITelemetry>();
+                var durableTelemetry = new ConcurrentQueue<ITelemetry>();
+                const string connectionString = "InstrumentationKey=00000000-0000-0000-0000-000000000001";
+                var resolver = new SimpleNameResolver(new Dictionary<string, string>
+                {
+                    ["APPLICATIONINSIGHTS_CONNECTION_STRING"] = connectionString,
+                    ["APPLICATIONINSIGHTS_AUTHENTICATION_STRING"] = forwardToHostChannel ? "Authorization=AAD" : null,
+                });
+                var options = new DurableTaskOptions
+                {
+                    Tracing = new TraceOptions
+                    {
+                        DistributedTracingEnabled = true,
+                        Version = DurableDistributedTracingVersion.V2,
+                        UseHostTelemetryInitializers = useHostInitializers,
+                    },
+                };
+                using (var host = TestHelpers.GetJobHost(
+                    this.loggerProvider,
+                    nameof(this.HostTelemetryInitializers_PreserveRawV2Spans),
+                    enableExtendedSessions: false,
+                    options: options,
+                    nameResolver: resolver,
+                    onSend: forwardToHostChannel ? null : durableTelemetry.Enqueue,
+                    configureLogging: logging =>
+                    {
+                        logging.AddApplicationInsightsWebJobs(
+                            ai =>
+                            {
+                                ai.ConnectionString = connectionString;
+                                ai.EnableDependencyTracking = false;
+                                ai.EnablePerformanceCountersCollection = false;
+                                ai.EnableLiveMetrics = false;
+                                ai.SamplingSettings = null;
+                            },
+                            configuration => configuration.TelemetryInitializers.Add(new HostMetadataInitializer()));
+                        logging.Services.AddSingleton<ITelemetryChannel>(
+                            new NoOpTelemetryChannel { OnSend = hostTelemetry.Enqueue });
+                    }))
+                {
+                    await host.StartAsync();
+                    var success = await host.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloWithActivity), "world", this.output);
+                    Assert.Equal(OrchestrationRuntimeStatus.Completed, (await success.WaitForCompletionAsync(this.output)).RuntimeStatus);
+                    var failure = await host.StartOrchestratorAsync(nameof(TestOrchestrations.ThrowOrchestrator), "expected failure", this.output);
+                    Assert.Equal(OrchestrationRuntimeStatus.Failed, (await failure.WaitForCompletionAsync(this.output)).RuntimeStatus);
+                    var entity = await host.StartOrchestratorAsync(
+                        nameof(TestOrchestrations.EntityId_CallAndDeleteStringStore),
+                        new EntityId("StringStore2", Guid.NewGuid().ToString()),
+                        this.output);
+                    Assert.Equal(OrchestrationRuntimeStatus.Completed, (await entity.WaitForCompletionAsync(this.output)).RuntimeStatus);
+                    await host.StopAsync();
+                }
+
+                // Inspect both raw streams before any Durable-name filtering or correlation sorting.
+                OperationTelemetry[] allSpans = hostTelemetry.Concat(durableTelemetry).OfType<OperationTelemetry>().ToArray();
+                Assert.NotEmpty(hostTelemetry);
+                Assert.Equal(19, allSpans.Length);
+                Assert.Equal(allSpans.Length, allSpans.Select(span => (span.Context.Operation.Id, span.Id)).Distinct().Count());
+                Assert.All(allSpans, span =>
+                {
+                    Assert.False(string.IsNullOrEmpty(span.Id));
+                    Assert.False(string.IsNullOrEmpty(span.Context.Operation.Id));
+                });
+
+                var signature = allSpans.Select(span => $"{span.GetType().Name}|{span.Name}|{span.Success}")
+                    .OrderBy(value => value, StringComparer.Ordinal).ToArray();
+                this.output.WriteLine(string.Join(Environment.NewLine, signature));
+                if (baseline == null)
+                {
+                    baseline = signature;
+                }
+                else
+                {
+                    Assert.Equal(baseline, signature);
+                }
+
+                RequestTelemetry hello = Assert.Single(allSpans.OfType<RequestTelemetry>(), span => span.Name == "activity:Hello");
+                Assert.True(hello.Success);
+                RequestTelemetry failedActivity = Assert.Single(allSpans.OfType<RequestTelemetry>(), span => span.Name == "activity:ThrowActivity");
+                Assert.False(failedActivity.Success);
+                Assert.Single(allSpans.OfType<RequestTelemetry>(), span => span.Name == "orchestration:SayHelloWithActivity");
+                Assert.False(Assert.Single(allSpans.OfType<RequestTelemetry>(), span => span.Name == "orchestration:ThrowOrchestrator").Success);
+                Assert.Contains(allSpans, span => span.Name.StartsWith("entity:", StringComparison.Ordinal));
+
+                foreach (var span in allSpans.Where(span =>
+                    span.Name.StartsWith("orchestration:", StringComparison.Ordinal) ||
+                    span.Name.StartsWith("activity:", StringComparison.Ordinal) ||
+                    span.Name.StartsWith("entity:", StringComparison.Ordinal)))
+                {
+                    Assert.Equal(span.Name, span.Context.Operation.Name);
+                    Assert.Equal(useHostInitializers, span.Properties.ContainsKey("host-enrichment"));
+                    if (useHostInitializers)
+                    {
+                        Assert.Equal("orders-functions", span.Context.Cloud.RoleName);
+                    }
+
+                    if (!string.IsNullOrEmpty(span.Context.Operation.ParentId))
+                    {
+                        Assert.Contains(allSpans, parent => parent.Id == span.Context.Operation.ParentId &&
+                            parent.Context.Operation.Id == span.Context.Operation.Id);
+                    }
+                }
+            }
         }
 
         [Theory]
@@ -662,6 +776,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
 
             return converted;
+        }
+
+        private sealed class HostMetadataInitializer : ITelemetryInitializer
+        {
+            public void Initialize(ITelemetry telemetry)
+            {
+                telemetry.Context.Cloud.RoleName = "orders-functions";
+                if (telemetry is ISupportProperties properties)
+                {
+                    properties.Properties["host-enrichment"] = "enabled";
+                }
+            }
         }
     }
 
