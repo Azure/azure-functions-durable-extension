@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
@@ -39,11 +40,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var resolver = new Mock<INameResolver>();
             resolver.Setup(value => value.Resolve("APPLICATIONINSIGHTS_CONNECTION_STRING"))
                 .Returns("InstrumentationKey=00000000-0000-0000-0000-000000000001");
-            var captured = new List<ITelemetry>();
+            var captured = new ConcurrentQueue<ITelemetry>();
             using var activator = new TelemetryActivator(
                 Microsoft.Extensions.Options.Options.Create(options), resolver.Object, hostConfiguration)
             {
-                OnSend = captured.Add,
+                OnSend = captured.Enqueue,
             };
 
             activator.Initialize(NullLogger.Instance);
