@@ -153,6 +153,91 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task AzureStorage_HostedClientCache_PreservesExternalClientMode(
+            bool externalFirst)
+        {
+            string taskHubName = TestHelpers.GetTaskHubNameFromTestName(
+                nameof(this.AzureStorage_HostedClientCache_PreservesExternalClientMode),
+                enableExtendedSessions: false);
+            string externalInstanceId = $"external-{Guid.NewGuid():N}";
+            string internalInstanceId = $"internal-{Guid.NewGuid():N}";
+            var nameResolver = new SimpleNameResolver(
+                new Dictionary<string, string>
+                {
+                    { "TestTaskHub", taskHubName },
+                });
+            var options = new DurableTaskOptions
+            {
+                HubName = taskHubName,
+            };
+
+            try
+            {
+                using ITestHost targetHost = TestHelpers.GetJobHostWithOptions(
+                    this.loggerProvider,
+                    options,
+                    nameResolver: nameResolver,
+                    types: new[] { typeof(CurrentAppDetectionFunctions) });
+                using ITestHost clientHost = TestHelpers.GetJobHostWithOptions(
+                    this.loggerProvider,
+                    options,
+                    nameResolver: nameResolver,
+                    types: new[] { typeof(HostedClientCacheFunctions) });
+                await targetHost.StartAsync();
+                await clientHost.StartAsync();
+
+                IDurableClient firstClient = await CaptureHostedClientAsync(
+                    clientHost,
+                    externalFirst
+                        ? nameof(HostedClientCacheFunctions.CaptureExternalClient)
+                        : nameof(HostedClientCacheFunctions.CaptureInternalClient),
+                    taskHubName);
+                IDurableClient secondClient = await CaptureHostedClientAsync(
+                    clientHost,
+                    externalFirst
+                        ? nameof(HostedClientCacheFunctions.CaptureInternalClient)
+                        : nameof(HostedClientCacheFunctions.CaptureExternalClient),
+                    taskHubName);
+                IDurableClient externalClient = externalFirst ? firstClient : secondClient;
+                IDurableClient internalClient = externalFirst ? secondClient : firstClient;
+
+                DateTime externalCreationTime = DateTime.UtcNow;
+                await externalClient.StartNewAsync(
+                    nameof(CurrentAppDetectionFunctions.TargetOnlyOrchestrator),
+                    externalInstanceId,
+                    "external");
+                var externalTestClient = new TestDurableClient(
+                    externalClient,
+                    nameof(CurrentAppDetectionFunctions.TargetOnlyOrchestrator),
+                    externalInstanceId,
+                    externalCreationTime);
+                DurableOrchestrationStatus externalStatus =
+                    await externalTestClient.WaitForCompletionAsync(this.output);
+                Assert.Equal("target:external", externalStatus.Output);
+
+                ArgumentException internalException = await Assert.ThrowsAsync<ArgumentException>(
+                    () => internalClient.StartNewAsync(
+                        nameof(CurrentAppDetectionFunctions.TargetOnlyOrchestrator),
+                        internalInstanceId,
+                        "internal"));
+                Assert.Contains(
+                    "No orchestrator functions are currently registered",
+                    internalException.Message);
+                await AssertInstanceRemainsAbsentAsync(externalClient, internalInstanceId);
+
+                await clientHost.StopAsync();
+                await targetHost.StopAsync();
+            }
+            finally
+            {
+                await DeleteTaskHubAsync(taskHubName, TestHelpers.GetStorageConnectionString());
+            }
+        }
+
         private static async Task AssertInstanceRemainsAbsentAsync(
             IDurableOrchestrationClient client,
             string instanceId)
@@ -168,6 +253,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             while (stopwatch.Elapsed < TimeSpan.FromSeconds(2));
 
             Assert.True(observations >= 3);
+        }
+
+        private static async Task<IDurableClient> CaptureHostedClientAsync(
+            ITestHost host,
+            string methodName,
+            string taskHubName)
+        {
+            var clients = new IDurableClient[1];
+            await host.CallAsync(
+                typeof(HostedClientCacheFunctions).GetMethod(methodName),
+                new Dictionary<string, object>
+                {
+                    { "hub", taskHubName },
+                    { "clients", clients },
+                });
+            return clients[0];
         }
 
         private async Task<TestDurableClient> StartOnSecondaryStorageAsync(
