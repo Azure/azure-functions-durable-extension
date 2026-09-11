@@ -104,8 +104,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                             {
                                 // Let the container pick the constructor exactly as the production
                                 // AddSingleton<ITelemetryActivator, TelemetryActivator>() registration does.
-                                var telemetryActivator =
-                                    ActivatorUtilities.CreateInstance<TelemetryActivator>(serviceProvider);
+                                var telemetryActivator = TelemetryActivator.Create(serviceProvider);
                                 telemetryActivator.OnSend = onSend;
                                 return telemetryActivator;
                             });

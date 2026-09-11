@@ -30,56 +30,64 @@ Next, you'll need to copy the connection string or instrumentation key for that 
 
 If the Application Insights resource has local authentication disabled, also configure `APPLICATIONINSIGHTS_AUTHENTICATION_STRING`. Use `Authorization=AAD` for the function app's system-assigned managed identity, or `Authorization=AAD;ClientId=<USER_ASSIGNED_CLIENT_ID>` for a user-assigned managed identity. The selected identity needs the `Monitoring Metrics Publisher` role on the Application Insights resource. Microsoft Entra authentication for Application Insights isn't supported by the Functions host during local development.
 
-### Optional host telemetry enrichment
+### Optional Durable telemetry enrichment
 
-The unreleased `useHostTelemetryInitializers` option lets Durable distributed tracing V2 reuse selected Application Insights initializers registered in the **Functions host**. It defaults to `false`; it is not available merely by selecting V2 in an older extension package.
-
-```json
-{
-  "version": "2.0",
-  "extensions": {
-    "durableTask": {
-      "tracing": {
-        "distributedTracingEnabled": true,
-        "version": "V2",
-        "useHostTelemetryInitializers": true
-      }
-    }
-  }
-}
-```
-
-For example, an in-process app can register this initializer in its existing `FunctionsStartup.Configure` method with `builder.Services.AddSingleton<ITelemetryInitializer, ServiceTelemetryInitializer>()` (using `Microsoft.Extensions.DependencyInjection`):
+An in-process app can explicitly register Application Insights initializers for Durable distributed tracing V2. Host Application Insights registrations are not inherited automatically.
 
 ```csharp
+using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.ApplicationInsights.Channel;
 using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.ApplicationInsights.Extensibility;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+using Microsoft.Extensions.DependencyInjection;
 
-public sealed class ServiceTelemetryInitializer : ITelemetryInitializer
+[assembly: FunctionsStartup(typeof(DistributedTracingSample.Startup))]
+
+namespace DistributedTracingSample
 {
-    public void Initialize(ITelemetry telemetry)
+    public sealed class Startup : FunctionsStartup
     {
-        telemetry.Context.Cloud.RoleName = "orders-functions";
-        if (telemetry is ISupportProperties properties)
+        public override void Configure(IFunctionsHostBuilder builder)
         {
-            properties.Properties["environment"] = "production";
+            var initializer = new ServiceTelemetryInitializer();
+
+            // The same externally owned instance deliberately enriches both destinations.
+            builder.Services.AddSingleton<ITelemetryInitializer>(initializer);
+            builder.Services.AddDurableTaskTelemetryInitializer(initializer);
+        }
+    }
+
+    public sealed class ServiceTelemetryInitializer : ITelemetryInitializer
+    {
+        public void Initialize(ITelemetry telemetry)
+        {
+            telemetry.Context.Cloud.RoleName = "orders-functions";
+            if (telemetry is ISupportProperties properties)
+            {
+                properties.Properties["environment"] = "production";
+            }
         }
     }
 }
 ```
 
-With the option off, the initializer enriches host telemetry but not Durable's requests and dependencies. With it on, existing Durable V2 records also receive `cloud_RoleName=orders-functions` and `environment=production`. No additional records are emitted by this integration. A role name identifies the application in Application Insights; it is not an Azure authorization role.
+Existing Durable V2 records now receive `cloud_RoleName=orders-functions` and `environment=production`. No additional records are emitted. A role name identifies the application in Application Insights; it is not an Azure authorization role.
 
-Eligible initializers keep their host order, after Durable's SDK defaults and before its existing operation-name/instance-ID initializer. The host's invocation-context initializer and exact HTTP client-IP initializer are excluded because unrelated ambient context can overwrite Durable names, failure status, or client IP. The default SDK correlation initializer is not added twice. Environment role enrichment and custom initializers are retained, but this does not promise identical role-instance, invocation, or SDK metadata.
+You can instead use the factory overload to resolve an existing singleton-compatible initializer from dependency injection:
+
+```csharp
+builder.Services.AddDurableTaskTelemetryInitializer(
+    services => services.GetRequiredService<ServiceTelemetryInitializer>());
+```
+
+Register the concrete service separately as a singleton before using this form. The factory runs once when Durable V2 tracing starts. It is not resolved for disabled tracing, V1, or None. Durable borrows the result and does not dispose it, so do not return scoped services or create orphaned disposable instances in the factory.
 
 Custom initializers remain trusted, mutable SDK code. They must be thread-safe, tolerate repeated initialization, and work without a live HTTP request or function invocation. Deliberate custom operation names are retained and still receive the existing instance-ID suffix when configured. Do not infer Durable-specific identity from ambient HTTP, logging, or activity context.
 
-**Privacy and process boundaries:** Only initializers are reused, not host processors, sampling, filtering, redaction, or `TelemetryClient.Context`. Review any new properties before enabling this option; host redaction processors will not protect Durable records. Initializers registered only in a .NET isolated worker do not participate.
+**Privacy and process boundaries:** Only initializers explicitly registered with `AddDurableTaskTelemetryInitializer` participate. Host processors, sampling, filtering, redaction, and `TelemetryClient.Context` are not inherited. Review any added properties because host redaction processors will not protect Durable records. Initializers registered only in a .NET isolated worker cannot customize host-process Durable spans.
 
-Initializers are selected once at host startup. Restart after changing registrations. The option has no effect with tracing disabled or with V1/None, and logs an explanatory warning. If the host configuration is unavailable, tracing continues without host enrichment and logs a warning. Successful opt-in logs imported/excluded counts.
-
-Enable it in staging first. To roll back, set `useHostTelemetryInitializers` to `false` and restart; previously ingested telemetry is unchanged.
+Initializers are selected once for each host generation. Restart after changing registrations. To roll back, remove the Durable registration and restart; previously ingested telemetry is unchanged. This feature customizes Durable records but does not suppress the separate host function telemetry described in issue #1792.
 
 #### Run the sample
 The sample shows how Distributed Tracing V2 improves the observability of some flagship Durable Functions patterns.

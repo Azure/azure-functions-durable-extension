@@ -183,25 +183,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.NotNull(json["AppLeaseOptions"]);
         }
 
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void Format_IncludesHostTelemetryInitializerOptInUnderTracing(bool enabled)
-        {
-            var options = new DurableTaskOptions();
-            Assert.False(options.Tracing.UseHostTelemetryInitializers);
-            if (enabled)
-            {
-                options.Tracing.UseHostTelemetryInitializers = true;
-            }
-
-            IOptionsFormatter formatter = options;
-            JObject json = JObject.Parse(formatter.Format());
-
-            Assert.Equal(enabled, json["Tracing"]["UseHostTelemetryInitializers"].Value<bool>());
-        }
-
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void Format_ExcludesStorageProviderForSecurity()

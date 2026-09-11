@@ -133,10 +133,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(false)]
         [InlineData(true)]
-        public async Task HostTelemetryInitializers_PreserveRawV2Spans(bool forwardToHostChannel)
+        public async Task DurableTelemetryInitializers_PreserveRawV2Spans(bool forwardToHostChannel)
         {
             string[] baseline = null;
-            foreach (bool useHostInitializers in new[] { false, true })
+            foreach (bool useDurableInitializer in new[] { false, true })
             {
                 var hostTelemetry = new ConcurrentQueue<ITelemetry>();
                 var durableTelemetry = new ConcurrentQueue<ITelemetry>();
@@ -152,12 +152,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     {
                         DistributedTracingEnabled = true,
                         Version = DurableDistributedTracingVersion.V2,
-                        UseHostTelemetryInitializers = useHostInitializers,
                     },
                 };
+                var sharedInitializer = new HostMetadataInitializer();
                 using (var host = TestHelpers.GetJobHost(
                     this.loggerProvider,
-                    nameof(this.HostTelemetryInitializers_PreserveRawV2Spans),
+                    nameof(this.DurableTelemetryInitializers_PreserveRawV2Spans),
                     enableExtendedSessions: false,
                     options: options,
                     nameResolver: resolver,
@@ -173,9 +173,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                                 ai.EnableLiveMetrics = false;
                                 ai.SamplingSettings = null;
                             },
-                            configuration => configuration.TelemetryInitializers.Add(new HostMetadataInitializer()));
+                            configuration => configuration.TelemetryInitializers.Add(sharedInitializer));
                         logging.Services.AddSingleton<ITelemetryChannel>(
                             new NoOpTelemetryChannel { OnSend = hostTelemetry.Enqueue });
+                        if (useDurableInitializer)
+                        {
+                            logging.Services.AddDurableTaskTelemetryInitializer(sharedInitializer);
+                        }
                     }))
                 {
                     await host.StartAsync();
@@ -228,8 +232,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     span.Name.StartsWith("entity:", StringComparison.Ordinal)))
                 {
                     Assert.Equal(span.Name, span.Context.Operation.Name);
-                    Assert.Equal(useHostInitializers, span.Properties.ContainsKey("host-enrichment"));
-                    if (useHostInitializers)
+                    Assert.Equal(useDurableInitializer, span.Properties.ContainsKey("host-enrichment"));
+                    if (useDurableInitializer)
                     {
                         Assert.Equal("orders-functions", span.Context.Cloud.RoleName);
                     }

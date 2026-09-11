@@ -15,8 +15,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
     /// <remarks>
     /// <para>
     /// Durable distributed tracing keeps its own <see cref="TelemetryConfiguration"/> so that its
-    /// processors and modules stay isolated from the host pipeline. Selected host initializers
-    /// can be reused separately when explicitly enabled; forwarding itself does not run them. That
+    /// telemetry initializers, processors and modules stay isolated from the host pipeline.
+    /// Forwarding itself does not run host telemetry initializers. That
     /// private configuration has no Microsoft Entra credential of its own, so when the Application
     /// Insights component has local authentication disabled its telemetry is rejected at ingestion.
     /// </para>

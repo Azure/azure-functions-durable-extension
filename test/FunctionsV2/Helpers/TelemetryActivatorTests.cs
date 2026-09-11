@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
@@ -18,7 +17,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
-using Newtonsoft.Json;
 using Xunit;
 using ApplicationInsightsTokenCredentialOptions = Microsoft.Azure.WebJobs.Logging.ApplicationInsights.TokenCredentialOptions;
 
@@ -28,35 +26,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     {
         private const string SystemAssigned = "Authorization=AAD";
         private const string UserAssigned = "Authorization=AAD;ClientId=00000000-0000-0000-0000-000000000001";
-
-        [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void Initialize_WithHostInitializersEnabled_EnrichesDurableTelemetry()
-        {
-            var options = JsonConvert.DeserializeObject<DurableTaskOptions>(
-                @"{""tracing"":{""distributedTracingEnabled"":true,""version"":""V2"",""useHostTelemetryInitializers"":true}}");
-            using TelemetryConfiguration hostConfiguration = TelemetryConfiguration.CreateDefault();
-            hostConfiguration.TelemetryInitializers.Add(new RoleNameTelemetryInitializer());
-            var resolver = new Mock<INameResolver>();
-            resolver.Setup(value => value.Resolve("APPLICATIONINSIGHTS_CONNECTION_STRING"))
-                .Returns("InstrumentationKey=00000000-0000-0000-0000-000000000001");
-            var captured = new ConcurrentQueue<ITelemetry>();
-            using var activator = new TelemetryActivator(
-                Microsoft.Extensions.Options.Options.Create(options), resolver.Object, hostConfiguration)
-            {
-                OnSend = captured.Enqueue,
-            };
-
-            activator.Initialize(NullLogger.Instance);
-            new TelemetryClient(activator.TelemetryConfiguration).TrackRequest(
-                new RequestTelemetry("activity:Hello", DateTimeOffset.UtcNow, TimeSpan.Zero, "200", true));
-
-            var request = Assert.IsType<RequestTelemetry>(
-                Assert.Single(captured, item => item is RequestTelemetry telemetry && telemetry.Name == "activity:Hello"));
-            Assert.Equal("orders-functions", request.Context.Cloud.RoleName);
-            Assert.Equal("production", request.Properties["environment"]);
-            Assert.Equal("activity:Hello", request.Context.Operation.Name);
-        }
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
@@ -336,15 +305,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 "Credential",
                 BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             return credentialProperty?.GetValue(envelope);
-        }
-
-        private sealed class RoleNameTelemetryInitializer : ITelemetryInitializer
-        {
-            public void Initialize(ITelemetry telemetry)
-            {
-                telemetry.Context.Cloud.RoleName = "orders-functions";
-                ((ISupportProperties)telemetry).Properties["environment"] = "production";
-            }
         }
 
         private sealed class AsyncTelemetryChannel : ITelemetryChannel, IAsyncFlushable

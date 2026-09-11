@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
@@ -88,7 +89,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             serviceCollection.TryAddSingleton<IMessageSerializerSettingsFactory, MessageSerializerSettingsFactory>();
             serviceCollection.TryAddSingleton<IErrorSerializerSettingsFactory, ErrorSerializerSettingsFactory>();
             serviceCollection.TryAddSingleton<IApplicationLifetimeWrapper, HostLifecycleService>();
-            serviceCollection.AddSingleton<ITelemetryActivator, TelemetryActivator>();
+            serviceCollection.AddSingleton<ITelemetryActivator>(TelemetryActivator.Create);
             serviceCollection.TryAddSingleton<IDurableClientFactory, DurableClientFactory>();
 #pragma warning disable CS0612, CS0618 // Type or member is obsolete
             serviceCollection.TryAddSingleton<IConnectionStringResolver, WebJobsConnectionStringProvider>();
@@ -96,6 +97,57 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #pragma warning restore CS0612, CS0618 // Type or member is obsolete
 
             return builder;
+        }
+
+        /// <summary>
+        /// Adds an Application Insights telemetry initializer to the Durable distributed tracing V2 pipeline.
+        /// </summary>
+        /// <param name="services">The <see cref="IServiceCollection"/> to configure.</param>
+        /// <param name="initializer">The initializer instance to use. Durable does not own or dispose this instance.</param>
+        /// <returns>Returns the provided <see cref="IServiceCollection"/>.</returns>
+        public static IServiceCollection AddDurableTaskTelemetryInitializer(
+            this IServiceCollection services,
+            ITelemetryInitializer initializer)
+        {
+            if (services == null)
+            {
+                throw new ArgumentNullException(nameof(services));
+            }
+
+            if (initializer == null)
+            {
+                throw new ArgumentNullException(nameof(initializer));
+            }
+
+            return services.AddDurableTaskTelemetryInitializer(_ => initializer);
+        }
+
+        /// <summary>
+        /// Adds an Application Insights telemetry initializer factory to the Durable distributed tracing V2 pipeline.
+        /// </summary>
+        /// <remarks>
+        /// The factory is resolved once from the host service provider when distributed tracing V2 starts.
+        /// The returned initializer must have singleton-compatible lifetime. Durable does not own or dispose it.
+        /// </remarks>
+        /// <param name="services">The <see cref="IServiceCollection"/> to configure.</param>
+        /// <param name="factory">A factory that resolves the initializer from the host service provider.</param>
+        /// <returns>Returns the provided <see cref="IServiceCollection"/>.</returns>
+        public static IServiceCollection AddDurableTaskTelemetryInitializer(
+            this IServiceCollection services,
+            Func<IServiceProvider, ITelemetryInitializer> factory)
+        {
+            if (services == null)
+            {
+                throw new ArgumentNullException(nameof(services));
+            }
+
+            if (factory == null)
+            {
+                throw new ArgumentNullException(nameof(factory));
+            }
+
+            services.AddSingleton(new DurableTaskTelemetryInitializerRegistration(factory));
+            return services;
         }
 
         /// <summary>

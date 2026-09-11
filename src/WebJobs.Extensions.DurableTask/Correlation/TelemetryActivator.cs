@@ -2,8 +2,8 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Security.Authentication;
 using System.Threading.Tasks;
 using Azure.Identity;
@@ -11,10 +11,10 @@ using DurableTask.ApplicationInsights;
 using DurableTask.Core;
 using DurableTask.Core.Settings;
 using Microsoft.ApplicationInsights;
-using Microsoft.ApplicationInsights.AspNetCore.TelemetryInitializers;
 using Microsoft.ApplicationInsights.Channel;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Azure.WebJobs.Logging.ApplicationInsights;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ApplicationInsightsTokenCredentialOptions = Microsoft.Azure.WebJobs.Logging.ApplicationInsights.TokenCredentialOptions;
@@ -29,6 +29,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         private readonly DurableTaskOptions options;
         private readonly INameResolver nameResolver;
         private readonly TelemetryConfiguration hostTelemetryConfiguration;
+        private readonly IServiceProvider serviceProvider;
+        private readonly IReadOnlyList<DurableTaskTelemetryInitializerRegistration> initializerRegistrations;
+        private readonly object initializerLock = new object();
+        private IReadOnlyList<ITelemetryInitializer> durableTelemetryInitializers;
         private EndToEndTraceHelper endToEndTraceHelper;
         private TelemetryClient telemetryClient;
 
@@ -38,7 +42,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         /// <param name="options">DurableTask options.</param>
         /// <param name="nameResolver">Name resolver used for environment variables.</param>
         public TelemetryActivator(IOptions<DurableTaskOptions> options, INameResolver nameResolver)
-            : this(options, nameResolver, hostTelemetryConfiguration: null)
+            : this(
+                options,
+                nameResolver,
+                hostTelemetryConfiguration: null,
+                serviceProvider: null,
+                initializerRegistrations: Array.Empty<DurableTaskTelemetryInitializerRegistration>())
         {
         }
 
@@ -52,10 +61,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             IOptions<DurableTaskOptions> options,
             INameResolver nameResolver,
             TelemetryConfiguration hostTelemetryConfiguration)
+            : this(
+                options,
+                nameResolver,
+                hostTelemetryConfiguration,
+                serviceProvider: null,
+                initializerRegistrations: Array.Empty<DurableTaskTelemetryInitializerRegistration>())
+        {
+        }
+
+        internal TelemetryActivator(
+            IOptions<DurableTaskOptions> options,
+            INameResolver nameResolver,
+            TelemetryConfiguration hostTelemetryConfiguration,
+            IServiceProvider serviceProvider,
+            IReadOnlyList<DurableTaskTelemetryInitializerRegistration> initializerRegistrations)
         {
             this.options = options.Value;
             this.nameResolver = nameResolver;
             this.hostTelemetryConfiguration = hostTelemetryConfiguration;
+            this.serviceProvider = serviceProvider;
+            this.initializerRegistrations = initializerRegistrations ??
+                throw new ArgumentNullException(nameof(initializerRegistrations));
         }
 
         /// <summary>
@@ -73,6 +100,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         /// assert which credential was applied without reaching into Application Insights internals.
         /// </summary>
         internal TelemetryConfiguration TelemetryConfiguration { get; private set; }
+
+        internal static TelemetryActivator Create(IServiceProvider serviceProvider)
+        {
+            if (serviceProvider == null)
+            {
+                throw new ArgumentNullException(nameof(serviceProvider));
+            }
+
+            return new TelemetryActivator(
+                serviceProvider.GetRequiredService<IOptions<DurableTaskOptions>>(),
+                serviceProvider.GetRequiredService<INameResolver>(),
+                serviceProvider.GetService<TelemetryConfiguration>(),
+                serviceProvider,
+                serviceProvider.GetServices<DurableTaskTelemetryInitializerRegistration>().ToArray());
+        }
 
         /// <inheritdoc/>
         public async ValueTask DisposeAsync()
@@ -108,14 +150,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         public void Initialize(ILogger logger)
         {
             this.endToEndTraceHelper = new EndToEndTraceHelper(logger, this.options.Tracing.TraceReplayEvents);
-
-            if (this.options.Tracing.UseHostTelemetryInitializers &&
-                (!this.options.Tracing.DistributedTracingEnabled ||
-                 this.options.Tracing.Version != Options.DurableDistributedTracingVersion.V2))
-            {
-                this.LogTracingWarning(
-                    "UseHostTelemetryInitializers requires distributed tracing to be enabled with version V2. Host telemetry initializers will not be used.");
-            }
 
             if (this.options.Tracing.DistributedTracingEnabled)
             {
@@ -222,10 +256,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                 config.TelemetryChannel = new NoOpTelemetryChannel { OnSend = this.OnSend };
             }
 
-            if (this.options.Tracing.UseHostTelemetryInitializers &&
-                this.options.Tracing.Version == Options.DurableDistributedTracingVersion.V2)
+            if (this.options.Tracing.Version == Options.DurableDistributedTracingVersion.V2)
             {
-                this.AddHostTelemetryInitializers(config);
+                foreach (ITelemetryInitializer initializer in this.GetDurableTelemetryInitializers())
+                {
+                    config.TelemetryInitializers.Add(initializer);
+                }
             }
 
             config.TelemetryInitializers.Add(new DurableTaskInstanceIdTelemetryInitializer(this.options.Tracing.IncludeInstanceIdInOperationName));
@@ -328,69 +364,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             return config;
         }
 
-        private void AddHostTelemetryInitializers(TelemetryConfiguration configuration)
+        private IReadOnlyList<ITelemetryInitializer> GetDurableTelemetryInitializers()
         {
-            if (this.hostTelemetryConfiguration == null)
+            lock (this.initializerLock)
             {
-                this.LogTracingWarning(
-                    "UseHostTelemetryInitializers is enabled, but the Functions host telemetry configuration is unavailable. Durable tracing will continue without host telemetry initializers.");
-                return;
-            }
-
-            bool hasOperationCorrelationInitializer = configuration.TelemetryInitializers
-                .Any(initializer => initializer.GetType() == typeof(OperationCorrelationTelemetryInitializer));
-            int imported = 0;
-            int excluded = 0;
-
-            // Borrow the completed host configuration's instances without changing its pipeline.
-            // Snapshot membership before either Durable listener starts emitting telemetry.
-            foreach (ITelemetryInitializer initializer in this.hostTelemetryConfiguration.TelemetryInitializers.ToArray())
-            {
-                Type type = initializer.GetType();
-                bool isHostInvocationInitializer = IsKnownInitializer(
-                    type,
-                    "Microsoft.Azure.WebJobs.Logging.ApplicationInsights.WebJobsTelemetryInitializer",
-                    typeof(ApplicationInsightsLoggerOptions).Assembly);
-                bool isClientIpInitializer = IsKnownInitializer(
-                    type,
-                    typeof(ClientIpHeaderTelemetryInitializer).FullName,
-                    typeof(ClientIpHeaderTelemetryInitializer).Assembly);
-
-                // Ambient invocation/HTTP context need not describe the Durable span being emitted.
-                if (isHostInvocationInitializer ||
-                    isClientIpInitializer ||
-                    (hasOperationCorrelationInitializer && type == typeof(OperationCorrelationTelemetryInitializer)))
+                if (this.durableTelemetryInitializers != null)
                 {
-                    excluded++;
-                    continue;
+                    return this.durableTelemetryInitializers;
                 }
 
-                configuration.TelemetryInitializers.Add(initializer);
-                imported++;
-                hasOperationCorrelationInitializer |= type == typeof(OperationCorrelationTelemetryInitializer);
+                var initializers = new ITelemetryInitializer[this.initializerRegistrations.Count];
+                for (int i = 0; i < this.initializerRegistrations.Count; i++)
+                {
+                    ITelemetryInitializer initializer = this.initializerRegistrations[i].Factory(this.serviceProvider);
+                    if (initializer == null)
+                    {
+                        throw new InvalidOperationException(
+                            $"The Durable telemetry initializer factory at index {i} returned null.");
+                    }
+
+                    initializers[i] = initializer;
+                }
+
+                this.durableTelemetryInitializers = initializers;
+                return initializers;
             }
-
-            this.endToEndTraceHelper.ExtensionInformationalEvent(
-                hubName: this.options.HubName,
-                functionName: string.Empty,
-                instanceId: string.Empty,
-                message: $"Durable distributed tracing V2 is using host telemetry initializers. Imported: {imported}. Excluded: {excluded}.",
-                writeToUserLogs: true);
-        }
-
-        private static bool IsKnownInitializer(Type type, string fullName, Assembly definingAssembly)
-        {
-            if (type.FullName != fullName)
-            {
-                return false;
-            }
-
-            // Functions can load private host/extension dependencies in different contexts and versions.
-            // Match stable assembly identity, not runtime objects, while leaving custom types eligible.
-            AssemblyName actual = type.Assembly.GetName();
-            AssemblyName expected = definingAssembly.GetName();
-            return string.Equals(actual.Name, expected.Name, StringComparison.Ordinal) &&
-                actual.GetPublicKeyToken()?.SequenceEqual(expected.GetPublicKeyToken()) == true;
         }
 
         /// <summary>
