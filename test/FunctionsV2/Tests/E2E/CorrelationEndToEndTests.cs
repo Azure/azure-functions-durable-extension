@@ -130,6 +130,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(false)]
         [InlineData(true)]
         public async Task HostTelemetryInitializers_PreserveRawV2Spans(bool forwardToHostChannel)

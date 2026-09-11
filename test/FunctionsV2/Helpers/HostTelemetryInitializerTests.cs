@@ -38,7 +38,6 @@ using Xunit.Abstractions;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     [Collection("Non-Parallel Collection")]
-    [Trait("Category", PlatformSpecificHelpers.TestCategory)]
     public class HostTelemetryInitializerTests : IDisposable
     {
         private const string ConnectionString = "InstrumentationKey=00000000-0000-0000-0000-000000000000";
@@ -57,6 +56,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(false)]
         [InlineData(true)]
         public void TraceOptions_ReportsOptInWithoutChangingExistingDebugFields(bool enabled)
@@ -74,6 +74,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(null)]
         [InlineData(false)]
         [InlineData(true)]
@@ -111,6 +112,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(null, true, DurableDistributedTracingVersion.V2)]
         [InlineData(false, true, DurableDistributedTracingVersion.V2)]
         [InlineData(true, true, DurableDistributedTracingVersion.V2)]
@@ -188,6 +190,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(false)]
         [InlineData(true)]
         public void Initialize_MissingHostKeepsDurableTracingAndWarnsOnlyWhenRequested(bool enabled)
@@ -222,6 +225,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(false, 0)]
         [InlineData(true, 1)]
         public void Initialize_NoEligibleHostEntriesReportsZeroAndStillEmits(bool includeCorrelationDefault, int excluded)
@@ -248,6 +252,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void Initialize_PreservesHostOrderSameTypeInstancesAndRepeatedRegistrations()
         {
             using var hostConfiguration = CreateHostConfiguration();
@@ -284,6 +289,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void Initialize_UsesExactTypeNamesAndKeepsCustomSubclasses()
         {
             using var hostConfiguration = CreateHostConfiguration();
@@ -316,6 +322,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(false)]
         [InlineData(true)]
         public void Initialize_ExcludesAmbientInitializersAcrossLoadContexts(bool clientIp)
@@ -344,6 +351,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(false, true, true)]
         [InlineData(false, false, true)]
         [InlineData(false, true, false)]
@@ -384,6 +392,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(false)]
         [InlineData(true)]
         public void Initialize_CharacterizesWebJobs345InitializerInventory(bool registerHttpContextAccessor)
@@ -437,6 +446,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(false, true)]
         [InlineData(true, true)]
         [InlineData(true, false)]
@@ -547,6 +557,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData("Orders", "production", null, "orders")]
         [InlineData("Orders", "staging", null, "orders-staging")]
         [InlineData("Orders", "staging", "ExplicitRole", "ExplicitRole")]
@@ -589,6 +600,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(false, "orchestration", null, "custom-order", "custom-order")]
         [InlineData(true, "orchestration", null, "custom-order", "custom-order (order-123)")]
         [InlineData(true, "activity", null, "custom-order", "custom-order (order-123)")]
@@ -631,6 +643,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void Track_InitializerFailureUsesSdkDiagnosticsAndContinuesWithoutRollbackOrRetry()
         {
             using var hostConfiguration = CreateHostConfiguration();
@@ -664,6 +677,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void Track_TrustedCustomInitializerMayDeliberatelyChangeProducerFields()
         {
             using var hostConfiguration = CreateHostConfiguration();
@@ -691,6 +705,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void Initialize_FreezesMembershipWithoutChangingHostPipelineOrClientContext()
         {
             var hostCaptured = new List<ITelemetry>();
@@ -752,6 +767,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void Track_BorrowsHostInstancesForConcurrentUseAndDoesNotDisposeThem()
         {
             var hostCaptured = new ConcurrentQueue<ITelemetry>();
@@ -798,6 +814,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void Initialize_NewHostGenerationBorrowsOnlyItsOwnHostInstanceEnricher()
         {
             ITelemetryInitializer previousInitializer = null;
