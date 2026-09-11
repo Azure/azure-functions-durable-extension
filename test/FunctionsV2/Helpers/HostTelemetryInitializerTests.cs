@@ -59,6 +59,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(false)]
         [InlineData(true)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void TraceOptions_ReportsOptInWithoutChangingExistingDebugFields(bool enabled)
         {
             var options = new TraceOptions();
@@ -78,6 +79,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData(null)]
         [InlineData(false)]
         [InlineData(true)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void Initialize_BindsOptInThroughRegisteredDurableTaskOptions(bool? enabled)
         {
             const string tracingPath = "AzureWebJobs:extensions:durableTask:tracing:";
@@ -127,6 +129,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData(true, false, DurableDistributedTracingVersion.V2)]
         [InlineData(true, false, DurableDistributedTracingVersion.V1)]
         [InlineData(true, false, DurableDistributedTracingVersion.None)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void Initialize_ImportsOnlyForEnabledV2OptIn(
             bool? useHostInitializers,
             bool distributedTracingEnabled,
@@ -193,6 +196,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(false)]
         [InlineData(true)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void Initialize_MissingHostKeepsDurableTracingAndWarnsOnlyWhenRequested(bool enabled)
         {
             var options = V2Options();
@@ -228,6 +232,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(false, 0)]
         [InlineData(true, 1)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void Initialize_NoEligibleHostEntriesReportsZeroAndStillEmits(bool includeCorrelationDefault, int excluded)
         {
             using var hostConfiguration = CreateHostConfiguration();
@@ -325,6 +330,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(false)]
         [InlineData(true)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void Initialize_ExcludesAmbientInitializersAcrossLoadContexts(bool clientIp)
         {
             var custom = new CallbackInitializer(item => item.Context.Cloud.RoleName = "host-custom");
@@ -358,6 +364,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData(true, true, true)]
         [InlineData(true, false, true)]
         [InlineData(true, true, false)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void Initialize_MatchesAssemblyNameAndPublicKeyTokenRegardlessOfVersion(
             bool clientIp,
             bool sameAssemblyName,
@@ -395,6 +402,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(false)]
         [InlineData(true)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void Initialize_CharacterizesWebJobs345InitializerInventory(bool registerHttpContextAccessor)
         {
             IHttpContextAccessor accessor = registerHttpContextAccessor ? new HttpContextAccessor() : null;
@@ -450,6 +458,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData(false, true)]
         [InlineData(true, true)]
         [InlineData(true, false)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void Track_SupportedHostEnrichmentPreservesProducerFieldsUnderUnrelatedAmbientContext(bool useSeparateLoadContext, bool tagActivity)
         {
             var httpContext = new DefaultHttpContext();
@@ -562,6 +571,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData("Orders", "staging", null, "orders-staging")]
         [InlineData("Orders", "staging", "ExplicitRole", "ExplicitRole")]
         [InlineData(null, null, null, null)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void Track_RealHostEnvironmentInitializerRetainsSiteSlotAndExplicitRole(
             string site,
             string slot,
@@ -609,6 +619,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData(true, null, null, "custom-order", "custom-order")]
         [InlineData(false, null, null, null, "orchestration:Order")]
         [InlineData(true, "orchestration", null, null, "orchestration:Order (order-123)")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void Track_CustomNamingRunsBeforeExistingInstanceIdRules(
             bool includeInstanceId,
             string taskType,

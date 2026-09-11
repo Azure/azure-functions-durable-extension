@@ -50,7 +50,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             new TelemetryClient(activator.TelemetryConfiguration).TrackRequest(
                 new RequestTelemetry("activity:Hello", DateTimeOffset.UtcNow, TimeSpan.Zero, "200", true));
 
-            var request = Assert.IsType<RequestTelemetry>(Assert.Single(captured));
+            var request = Assert.IsType<RequestTelemetry>(
+                Assert.Single(captured, item => item is RequestTelemetry telemetry && telemetry.Name == "activity:Hello"));
             Assert.Equal("orders-functions", request.Context.Cloud.RoleName);
             Assert.Equal("production", request.Properties["environment"]);
             Assert.Equal("activity:Hello", request.Context.Operation.Name);
