@@ -7,6 +7,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Linq;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.Loader;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -40,6 +43,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     {
         private const string ConnectionString = "InstrumentationKey=00000000-0000-0000-0000-000000000000";
         private const string InvocationInitializerName = "Microsoft.Azure.WebJobs.Logging.ApplicationInsights.WebJobsTelemetryInitializer";
+        private static readonly Lazy<Assembly> IsolatedHostTestAssembly = new Lazy<Assembly>(LoadIsolatedHostTestAssembly);
         private readonly bool originalDistributedTracing = CorrelationSettings.Current.EnableDistributedTracing;
         private readonly Protocol originalProtocol = CorrelationSettings.Current.Protocol;
         private readonly ActivityIdFormat originalIdFormat = Activity.DefaultIdFormat;
@@ -280,7 +284,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
-        public void Initialize_UsesExactTypeIdentityAndKeepsCustomSubclasses()
+        public void Initialize_UsesExactTypeNamesAndKeepsCustomSubclasses()
         {
             using var hostConfiguration = CreateHostConfiguration();
             var hostDefault = hostConfiguration.TelemetryInitializers.Single();
@@ -309,6 +313,74 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.DoesNotContain(excludedClientIp, privateInitializers);
             Assert.Equal<ITelemetryInitializer>(eligible, privateInitializers.Skip(1).Take(eligible.Length));
             Assert.IsType<DurableTaskInstanceIdTelemetryInitializer>(privateInitializers.Last());
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Initialize_ExcludesAmbientInitializersAcrossLoadContexts(bool clientIp)
+        {
+            var custom = new CallbackInitializer(item => item.Context.Cloud.RoleName = "host-custom");
+            using var host = BuildWebJobsHost(
+                new HttpContextAccessor(),
+                services => services.AddSingleton<ITelemetryInitializer>(custom),
+                useSeparateLoadContext: true);
+            var hostConfiguration = host.Services.GetRequiredService<TelemetryConfiguration>();
+            var marker = clientIp ? typeof(ClientIpHeaderTelemetryInitializer) : typeof(ApplicationInsightsLoggerOptions);
+            string fullName = clientIp ? marker.FullName : InvocationInitializerName;
+            var excluded = Assert.Single(hostConfiguration.TelemetryInitializers, initializer => initializer.GetType().FullName == fullName);
+            var hostAssembly = excluded.GetType().Assembly;
+            Assert.Equal(marker.Assembly.FullName, hostAssembly.FullName);
+            Assert.NotSame(marker.Assembly, hostAssembly);
+            Assert.NotSame(AssemblyLoadContext.GetLoadContext(marker.Assembly), AssemblyLoadContext.GetLoadContext(hostAssembly));
+            Assert.Contains(typeof(ITelemetryInitializer), excluded.GetType().GetInterfaces());
+            using var activator = CreateActivator(hostConfiguration);
+
+            activator.Initialize(NullLogger.Instance);
+
+            Assert.DoesNotContain(excluded, activator.TelemetryConfiguration.TelemetryInitializers);
+            Assert.Contains(custom, activator.TelemetryConfiguration.TelemetryInitializers);
+            Assert.Contains(excluded, hostConfiguration.TelemetryInitializers);
+        }
+
+        [Theory]
+        [InlineData(false, true, true)]
+        [InlineData(false, false, true)]
+        [InlineData(false, true, false)]
+        [InlineData(true, true, true)]
+        [InlineData(true, false, true)]
+        [InlineData(true, true, false)]
+        public void Initialize_MatchesAssemblyNameAndPublicKeyTokenRegardlessOfVersion(
+            bool clientIp,
+            bool sameAssemblyName,
+            bool samePublicKey)
+        {
+            var marker = clientIp ? typeof(ClientIpHeaderTelemetryInitializer) : typeof(ApplicationInsightsLoggerOptions);
+            var markerIdentity = marker.Assembly.GetName();
+            var identity = new AssemblyName
+            {
+                Name = sameAssemblyName ? markerIdentity.Name : "CustomInitializers",
+                Version = new Version(markerIdentity.Version.Major + 1, 0, 0, 0),
+            };
+            if (samePublicKey)
+            {
+                identity.SetPublicKey(markerIdentity.GetPublicKey());
+            }
+
+            string fullName = clientIp ? marker.FullName : InvocationInitializerName;
+            var initializer = CreateInitializerLookalike(fullName, identity);
+            Assert.NotEqual(markerIdentity.Version, initializer.GetType().Assembly.GetName().Version);
+            Assert.NotEmpty(markerIdentity.GetPublicKeyToken());
+            Assert.Equal(samePublicKey, markerIdentity.GetPublicKeyToken().SequenceEqual(initializer.GetType().Assembly.GetName().GetPublicKeyToken()));
+            using var hostConfiguration = CreateHostConfiguration();
+            hostConfiguration.TelemetryInitializers.Add(initializer);
+            using var activator = CreateActivator(hostConfiguration);
+
+            activator.Initialize(NullLogger.Instance);
+
+            Assert.Equal(
+                !(sameAssemblyName && samePublicKey),
+                activator.TelemetryConfiguration.TelemetryInitializers.Contains(initializer));
         }
 
         [Theory]
@@ -364,8 +436,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Contains($"Imported: {imported.Count - 2}. Excluded: {(registerHttpContextAccessor ? 3 : 2)}.", summary.FormattedMessage);
         }
 
-        [Fact]
-        public void Track_SupportedHostEnrichmentPreservesProducerFieldsUnderUnrelatedAmbientContext()
+        [Theory]
+        [InlineData(false, true)]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        public void Track_SupportedHostEnrichmentPreservesProducerFieldsUnderUnrelatedAmbientContext(bool useSeparateLoadContext, bool tagActivity)
         {
             var httpContext = new DefaultHttpContext();
             httpContext.Request.Headers["X-Forwarded-For"] = "203.0.113.42";
@@ -377,7 +452,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 item.Context.GlobalProperties["environment"] = "production";
                 item.Context.GlobalProperties["serviceOwner"] = "payments-team";
             });
-            using var host = BuildWebJobsHost(accessor, services => services.AddSingleton<ITelemetryInitializer>(enricher));
+            using var host = BuildWebJobsHost(
+                accessor,
+                services => services.AddSingleton<ITelemetryInitializer>(enricher),
+                useSeparateLoadContext: useSeparateLoadContext);
             var hostConfiguration = host.Services.GetRequiredService<TelemetryConfiguration>();
             var captured = new List<ITelemetry>();
             using var activator = CreateActivator(hostConfiguration, captured.Add);
@@ -406,19 +484,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             });
             using var ambient = new Activity("unrelated-http")
                 .SetIdFormat(ActivityIdFormat.W3C)
-                .SetTag(LogConstants.NameKey, "UnrelatedHostInvocation")
-                .SetTag(LogConstants.SucceededKey, "true")
                 .Start();
+            if (tagActivity)
+            {
+                ambient.SetTag(LogConstants.NameKey, "UnrelatedHostInvocation");
+                ambient.SetTag(LogConstants.SucceededKey, "true");
+            }
 
             // Prove the actual excluded registrations would contaminate this same test context.
             var unsafeRequest = NewRequest();
             hostConfiguration.TelemetryInitializers.Single(initializer => initializer.GetType().FullName == InvocationInitializerName)
                 .Initialize(unsafeRequest);
-            Assert.Equal("UnrelatedHostInvocation", unsafeRequest.Name);
-            Assert.True(unsafeRequest.Success);
+            Assert.Equal("UnrelatedHostInvocation", unsafeRequest.Context.Operation.Name);
             Assert.Equal("unrelated-invocation", unsafeRequest.Properties[LogConstants.InvocationIdKey]);
+            if (tagActivity)
+            {
+                Assert.Equal("UnrelatedHostInvocation", unsafeRequest.Name);
+                Assert.True(unsafeRequest.Success);
+            }
+
             var unsafeDependency = new DependencyTelemetry();
-            hostConfiguration.TelemetryInitializers.Single(initializer => initializer.GetType() == typeof(ClientIpHeaderTelemetryInitializer))
+            hostConfiguration.TelemetryInitializers.Single(initializer => initializer.GetType().FullName == typeof(ClientIpHeaderTelemetryInitializer).FullName)
                 .Initialize(unsafeDependency);
             Assert.Equal("203.0.113.42", unsafeDependency.Context.Location.Ip);
 
@@ -788,8 +874,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private static IHost BuildWebJobsHost(
             IHttpContextAccessor httpContextAccessor = null,
             Action<IServiceCollection> configureServices = null,
-            Action<TelemetryConfiguration> additionalConfiguration = null)
+            Action<TelemetryConfiguration> additionalConfiguration = null,
+            bool useSeparateLoadContext = false)
         {
+            if (useSeparateLoadContext)
+            {
+                // Run the same real host setup against private WebJobs/ASP.NET AI copies, sharing AI core.
+                var testType = IsolatedHostTestAssembly.Value.GetType(typeof(HostTelemetryInitializerTests).FullName, throwOnError: true);
+                return (IHost)testType.GetMethod(nameof(BuildWebJobsHost), BindingFlags.NonPublic | BindingFlags.Static)
+                    .Invoke(null, new object[] { httpContextAccessor, configureServices, additionalConfiguration, false });
+            }
+
             return new HostBuilder()
                 .ConfigureLogging(logging => logging.AddApplicationInsightsWebJobs(
                     options =>
@@ -814,6 +909,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     configureServices?.Invoke(services);
                 })
                 .Build();
+        }
+
+        private static Assembly LoadIsolatedHostTestAssembly()
+        {
+            // Like the Functions host, keep one non-collectible context for these SDK assemblies:
+            // SDK process-wide listeners can retain their types even after an individual host is disposed.
+            var context = new AssemblyLoadContext("HostTelemetryInitializerTests", isCollectible: false);
+            context.LoadFromAssemblyPath(typeof(ApplicationInsightsLoggerOptions).Assembly.Location);
+            context.LoadFromAssemblyPath(typeof(ClientIpHeaderTelemetryInitializer).Assembly.Location);
+            return context.LoadFromAssemblyPath(typeof(HostTelemetryInitializerTests).Assembly.Location);
+        }
+
+        private static ITelemetryInitializer CreateInitializerLookalike(string fullName, AssemblyName identity)
+        {
+            // Synthetic metadata exercises version/key differences without adding SDK package versions.
+            var assembly = AssemblyBuilder.DefineDynamicAssembly(identity, AssemblyBuilderAccess.RunAndCollect);
+            var type = assembly.DefineDynamicModule(identity.Name).DefineType(fullName, TypeAttributes.Public);
+            type.AddInterfaceImplementation(typeof(ITelemetryInitializer));
+            type.DefineDefaultConstructor(MethodAttributes.Public);
+            var initialize = type.DefineMethod(
+                nameof(ITelemetryInitializer.Initialize),
+                MethodAttributes.Public | MethodAttributes.Virtual,
+                typeof(void),
+                new[] { typeof(ITelemetry) });
+            initialize.GetILGenerator().Emit(OpCodes.Ret);
+            return (ITelemetryInitializer)Activator.CreateInstance(type.CreateType());
         }
 
         private static RequestTelemetry NewRequest()

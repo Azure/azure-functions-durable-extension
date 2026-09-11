@@ -3,6 +3,7 @@
 
 using System;
 using System.Linq;
+using System.Reflection;
 using System.Security.Authentication;
 using System.Threading.Tasks;
 using Azure.Identity;
@@ -346,13 +347,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             foreach (ITelemetryInitializer initializer in this.hostTelemetryConfiguration.TelemetryInitializers.ToArray())
             {
                 Type type = initializer.GetType();
-                bool isHostInvocationInitializer =
-                    type.Assembly == typeof(ApplicationInsightsLoggerOptions).Assembly &&
-                    type.FullName == "Microsoft.Azure.WebJobs.Logging.ApplicationInsights.WebJobsTelemetryInitializer";
+                bool isHostInvocationInitializer = IsKnownInitializer(
+                    type,
+                    "Microsoft.Azure.WebJobs.Logging.ApplicationInsights.WebJobsTelemetryInitializer",
+                    typeof(ApplicationInsightsLoggerOptions).Assembly);
+                bool isClientIpInitializer = IsKnownInitializer(
+                    type,
+                    typeof(ClientIpHeaderTelemetryInitializer).FullName,
+                    typeof(ClientIpHeaderTelemetryInitializer).Assembly);
 
                 // Ambient invocation/HTTP context need not describe the Durable span being emitted.
                 if (isHostInvocationInitializer ||
-                    type == typeof(ClientIpHeaderTelemetryInitializer) ||
+                    isClientIpInitializer ||
                     (hasOperationCorrelationInitializer && type == typeof(OperationCorrelationTelemetryInitializer)))
                 {
                     excluded++;
@@ -370,6 +376,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                 instanceId: string.Empty,
                 message: $"Durable distributed tracing V2 is using host telemetry initializers. Imported: {imported}. Excluded: {excluded}.",
                 writeToUserLogs: true);
+        }
+
+        private static bool IsKnownInitializer(Type type, string fullName, Assembly definingAssembly)
+        {
+            if (type.FullName != fullName)
+            {
+                return false;
+            }
+
+            // Functions can load private host/extension dependencies in different contexts and versions.
+            // Match stable assembly identity, not runtime objects, while leaving custom types eligible.
+            AssemblyName actual = type.Assembly.GetName();
+            AssemblyName expected = definingAssembly.GetName();
+            return string.Equals(actual.Name, expected.Name, StringComparison.Ordinal) &&
+                actual.GetPublicKeyToken()?.SequenceEqual(expected.GetPublicKeyToken()) == true;
         }
 
         /// <summary>
