@@ -15,6 +15,7 @@ using Azure.Storage.Blobs.Models;
 using Azure.Storage.Blobs.Specialized;
 using DurableTask.AzureStorage;
 using Microsoft.ApplicationInsights.Channel;
+using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
@@ -69,7 +70,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string exactTaskHubName = null,
             bool addDurableClientFactory = false,
             Action<ScaleOptions> configureScaleOptions = null,
-            Type[] types = null)
+            Type[] types = null,
+            TelemetryConfiguration hostTelemetryConfiguration = null)
         {
             switch (storageProviderType)
             {
@@ -169,7 +171,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 addDurableClientFactory: addDurableClientFactory,
                 types: types,
                 configureScaleOptions: configureScaleOptions,
-                durabilityProviderFactoryType: durabilityProviderFactoryType);
+                durabilityProviderFactoryType: durabilityProviderFactoryType,
+                hostTelemetryConfiguration: hostTelemetryConfiguration);
         }
 
         public static ITestHost GetJobHostWithOptions(
@@ -184,7 +187,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Type durabilityProviderFactoryType = null,
             bool addDurableClientFactory = false,
             Action<ScaleOptions> configureScaleOptions = null,
-            Type[] types = null)
+            Type[] types = null,
+            TelemetryConfiguration hostTelemetryConfiguration = null)
         {
             if (serializerSettings == null)
             {
@@ -212,7 +216,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 durableHttpMessageHandler: durableHttpMessageHandler,
                 lifeCycleNotificationHelper: lifeCycleNotificationHelper,
                 serializerSettingsFactory: serializerSettings,
-                onSend: onSend);
+                onSend: onSend,
+                hostTelemetryConfiguration: hostTelemetryConfiguration);
         }
 
         public static IHost GetJobHostExternalEnvironment(IStorageServiceClientProviderFactory clientProviderFactory = null)

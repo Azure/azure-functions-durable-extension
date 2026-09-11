@@ -19,6 +19,7 @@ internal class DurableHelpers
     internal class OrchestrationStatusDetails
     {
         public string InstanceId { get; set; } = string.Empty;
+        public string Version { get; set; } = string.Empty;
         public string RuntimeStatus { get; set; } = string.Empty;
         public string Input { get; set; } = string.Empty;
         public string Output { get; set; } = string.Empty;
@@ -36,6 +37,7 @@ internal class DurableHelpers
                 return;
             }
             this.InstanceId = statusQueryJsonNode["instanceId"]?.GetValue<string>() ?? string.Empty;
+            this.Version = statusQueryJsonNode["version"]?.GetValue<string>() ?? string.Empty;
             this.RuntimeStatus = statusQueryJsonNode["runtimeStatus"]?.GetValue<string>() ?? string.Empty;
             this.Input = statusQueryJsonNode["input"]?.ToString() ?? string.Empty;
             this.Output = statusQueryJsonNode["output"]?.ToString() ?? string.Empty;

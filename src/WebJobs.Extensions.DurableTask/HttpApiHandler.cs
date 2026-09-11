@@ -735,6 +735,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private async Task<HttpResponseMessage> HandleMakePrimaryRequestAsync(HttpRequestMessage request)
         {
+            if (!this.durableTaskOptions.UseAppLease)
+            {
+                return request.CreateErrorResponse(
+                    HttpStatusCode.BadRequest,
+                    "Cannot make current app primary. This app is not using the AppLease feature.");
+            }
+
             IDurableOrchestrationClient client = this.GetClient(request);
 
             await client.MakeCurrentAppPrimaryAsync();
@@ -747,6 +754,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return new StatusResponsePayload
             {
                 Name = status.Name,
+                Version = status.Version,
                 InstanceId = status.InstanceId,
                 ParentInstanceId = status.ParentInstanceId,
                 RuntimeStatus = status.RuntimeStatus.ToString(),

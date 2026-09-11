@@ -24,6 +24,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public string Name { get; set; }
 
         /// <summary>
+        /// Gets the version assigned to the queried orchestration instance.
+        /// </summary>
+        /// <value>
+        /// The orchestration version, or <c>null</c> if no version was assigned.
+        /// </value>
+        public string Version { get; set; }
+
+        /// <summary>
         /// Gets the ID of the queried orchestration instance.
         /// </summary>
         /// <remarks>

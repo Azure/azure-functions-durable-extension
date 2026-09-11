@@ -56,7 +56,19 @@ internal partial class DurableFunctionExecutor
                 "Activity input data was either missing from the input or not a JSON string.");
         }
 
-        object? input = this.Converter.Deserialize(data, activity.InputType);
+        object? input;
+        try
+        {
+            input = this.Converter.Deserialize(data, activity.InputType);
+        }
+        catch (Exception exception)
+        {
+            throw ActivityInputConverter.CreateDeserializationException(
+                context.FunctionDefinition.Name,
+                activity.InputType,
+                exception);
+        }
+
         object? activityResult = await activity.RunAsync(new FunctionsTaskActivityContext(context), input);
         context.GetInvocationResult().Value = activityResult;
     }

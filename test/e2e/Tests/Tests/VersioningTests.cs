@@ -54,6 +54,28 @@ public class VersioningTests
         }
     }
 
+    [Fact]
+    [Trait("Dotnet", "Skip")] // This scenario validates the JavaScript client and BasicNode app.
+    [Trait("PowerShell", "Skip")] // See notes on TestVersionedOrchestration_OKWithMatchingVersion
+    [Trait("Python", "Skip")] // See notes on TestVersionedOrchestration_OKWithMatchingVersion
+    [Trait("Java", "Skip")] // See notes on TestVersionedOrchestration_OKWithMatchingVersion
+    public async Task TestVersionedOrchestration_StatusResponseIncludesVersion()
+    {
+        const string Version = "1.0";
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(
+            "OrchestrationVersion_HttpStart",
+            $"?version={Version}");
+
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
+
+        DurableHelpers.OrchestrationStatusDetails orchestrationDetails =
+            await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
+
+        Assert.Equal(Version, orchestrationDetails.Version);
+    }
+
     [Theory]
     [InlineData(null)] // Represents a non-versioned case.
     [InlineData("")] // Non-versioned/empty-versioned case.

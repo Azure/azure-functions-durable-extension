@@ -334,6 +334,93 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             Assert.Equal("Storage", provider.ConnectionName);
         }
 
+        // Tests that an unset hub name derived from a site name over 45 characters is truncated
+        // and logs a warning about possible collisions.
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void DefaultHubNameDerivedFromLongSiteName_LogsCollisionWarning()
+        {
+            string originalSiteName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME");
+            string siteName = new string('a', 47);
+            string expectedHubName = new string('a', 45);
+
+            try
+            {
+                Environment.SetEnvironmentVariable("WEBSITE_SITE_NAME", siteName);
+
+                // Leave HubName unset so DurableTaskOptions derives its default from WEBSITE_SITE_NAME.
+                var options = new DurableTaskOptions();
+                var loggerProvider = new TestLoggerProvider(null);
+                using var loggerFactory = new LoggerFactory();
+                loggerFactory.AddProvider(loggerProvider);
+                var factory = new AzureStorageDurabilityProviderFactory(
+                    new OptionsWrapper<DurableTaskOptions>(options),
+                    new TestStorageServiceClientProviderFactory(),
+                    new Mock<INameResolver>().Object,
+                    loggerFactory,
+                    TestHelpers.GetMockPlatformInformationService());
+
+                factory.GetDurabilityProvider();
+
+                Assert.Equal(expectedHubName, options.HubName);
+                var warning = Assert.Single(
+                    loggerProvider.GetAllLogMessages(),
+                    message =>
+                        message.Level == LogLevel.Warning &&
+                        message.FormattedMessage.Contains("The default task hub name"));
+                Assert.Contains("was truncated", warning.FormattedMessage);
+                Assert.Contains("task hub collisions", warning.FormattedMessage);
+                Assert.Contains(
+                    "https://go.microsoft.com/fwlink/?LinkId=2377701",
+                    warning.FormattedMessage);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("WEBSITE_SITE_NAME", originalSiteName);
+            }
+        }
+
+        // Tests that an unset hub name derived from a 45-character site name remains unchanged
+        // and does not log a collision warning.
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void DefaultHubNameDerivedFromSiteNameAtLimit_DoesNotLogCollisionWarning()
+        {
+            string originalSiteName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME");
+            string siteName = new string('a', 45);
+
+            try
+            {
+                Environment.SetEnvironmentVariable("WEBSITE_SITE_NAME", siteName);
+
+                // Leave HubName unset so DurableTaskOptions derives its default from WEBSITE_SITE_NAME.
+                var options = new DurableTaskOptions();
+                var loggerProvider = new TestLoggerProvider(null);
+                using var loggerFactory = new LoggerFactory();
+                loggerFactory.AddProvider(loggerProvider);
+                var factory = new AzureStorageDurabilityProviderFactory(
+                    new OptionsWrapper<DurableTaskOptions>(options),
+                    new TestStorageServiceClientProviderFactory(),
+                    new Mock<INameResolver>().Object,
+                    loggerFactory,
+                    TestHelpers.GetMockPlatformInformationService());
+
+                factory.GetDurabilityProvider();
+
+                // A site name at the limit remains unchanged and does not produce a warning.
+                Assert.Equal(siteName, options.HubName);
+                Assert.DoesNotContain(
+                    loggerProvider.GetAllLogMessages(),
+                    message =>
+                        message.Level == LogLevel.Warning &&
+                        message.FormattedMessage.Contains("task hub collisions"));
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("WEBSITE_SITE_NAME", originalSiteName);
+            }
+        }
+
         private static DurableTaskOptions BindDurableTaskOptions(
             IDictionary<string, string> storageProviderSettings)
         {

@@ -1,16 +1,20 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Security.Authentication;
 using System.Threading.Tasks;
+using Azure.Identity;
 using DurableTask.ApplicationInsights;
 using DurableTask.Core;
 using DurableTask.Core.Settings;
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.Channel;
 using Microsoft.ApplicationInsights.Extensibility;
+using Microsoft.Azure.WebJobs.Logging.ApplicationInsights;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using ApplicationInsightsTokenCredentialOptions = Microsoft.Azure.WebJobs.Logging.ApplicationInsights.TokenCredentialOptions;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 {
@@ -21,6 +25,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
     {
         private readonly DurableTaskOptions options;
         private readonly INameResolver nameResolver;
+        private readonly TelemetryConfiguration hostTelemetryConfiguration;
         private EndToEndTraceHelper endToEndTraceHelper;
         private TelemetryClient telemetryClient;
 
@@ -30,9 +35,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         /// <param name="options">DurableTask options.</param>
         /// <param name="nameResolver">Name resolver used for environment variables.</param>
         public TelemetryActivator(IOptions<DurableTaskOptions> options, INameResolver nameResolver)
+            : this(options, nameResolver, hostTelemetryConfiguration: null)
+        {
+        }
+
+        /// <summary>
+        /// Constructor for initializing Distributed Tracing with the host telemetry configuration.
+        /// </summary>
+        /// <param name="options">DurableTask options.</param>
+        /// <param name="nameResolver">Name resolver used for environment variables.</param>
+        /// <param name="hostTelemetryConfiguration">Application Insights configuration owned by the host.</param>
+        public TelemetryActivator(
+            IOptions<DurableTaskOptions> options,
+            INameResolver nameResolver,
+            TelemetryConfiguration hostTelemetryConfiguration)
         {
             this.options = options.Value;
             this.nameResolver = nameResolver;
+            this.hostTelemetryConfiguration = hostTelemetryConfiguration;
         }
 
         /// <summary>
@@ -45,20 +65,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 
         internal IAsyncDisposable WebJobsTelemetryModule { get; set; }
 
+        /// <summary>
+        /// Gets the private configuration Durable builds for its own telemetry. Exposed so tests can
+        /// assert which credential was applied without reaching into Application Insights internals.
+        /// </summary>
+        internal TelemetryConfiguration TelemetryConfiguration { get; private set; }
+
         /// <inheritdoc/>
-        public ValueTask DisposeAsync()
+        public async ValueTask DisposeAsync()
         {
             if (this.TelemetryModule != null)
             {
-                this.TelemetryModule.DisposeAsync();
+                await this.TelemetryModule.DisposeAsync();
             }
 
             if (this.WebJobsTelemetryModule != null)
             {
-                this.WebJobsTelemetryModule.DisposeAsync();
+                await this.WebJobsTelemetryModule.DisposeAsync();
             }
-
-            return default;
         }
 
         /// <inheritdoc/>
@@ -90,6 +114,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                 }
 
                 TelemetryConfiguration telemetryConfiguration = this.SetupTelemetryConfiguration();
+                this.TelemetryConfiguration = telemetryConfiguration;
 
                 if (this.options.Tracing.Version == Options.DurableDistributedTracingVersion.V2)
                 {
@@ -190,6 +215,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 
             string resolvedInstrumentationKey = this.nameResolver.Resolve("APPINSIGHTS_INSTRUMENTATIONKEY");
             string resolvedConnectionString = this.nameResolver.Resolve("APPLICATIONINSIGHTS_CONNECTION_STRING");
+            string resolvedAuthenticationString = this.nameResolver.Resolve("APPLICATIONINSIGHTS_AUTHENTICATION_STRING");
 
             bool instrumentationKeyProvided = !string.IsNullOrEmpty(resolvedInstrumentationKey);
             bool connectionStringProvided = !string.IsNullOrEmpty(resolvedConnectionString);
@@ -238,7 +264,101 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                 config.ConnectionString = resolvedConnectionString;
             }
 
+            if (!string.IsNullOrWhiteSpace(resolvedAuthenticationString))
+            {
+                try
+                {
+                    ApplicationInsightsTokenCredentialOptions tokenCredentialOptions =
+                        ApplicationInsightsTokenCredentialOptions.ParseAuthenticationString(resolvedAuthenticationString);
+                    bool userAssignedIdentity = tokenCredentialOptions.ClientId != null;
+                    bool reusedHostChannel = ApplyEntraAuthentication(
+                        config,
+                        this.hostTelemetryConfiguration,
+                        tokenCredentialOptions,
+                        preserveExistingChannel: this.OnSend != null);
+                    if (this.hostTelemetryConfiguration != null && !reusedHostChannel && this.OnSend == null)
+                    {
+                        this.LogTracingWarning(
+                            "The Application Insights telemetry channel owned by the Functions host could not be read, so Durable distributed tracing created its own managed identity credential. If Durable spans are missing, the host and the function app are likely loading different Azure.Core versions.");
+                    }
+
+                    this.endToEndTraceHelper.ExtensionInformationalEvent(
+                        hubName: this.options.HubName,
+                        functionName: string.Empty,
+                        instanceId: string.Empty,
+                        message:
+                            "Microsoft Entra authentication enabled for Durable distributed tracing using the "
+                            + $"{(userAssignedIdentity ? "user-assigned" : "system-assigned")} managed identity.",
+                        writeToUserLogs: true);
+                }
+                catch (AuthenticationException)
+                {
+                    this.LogTracingWarning(
+                        "APPLICATIONINSIGHTS_AUTHENTICATION_STRING is invalid and will not be used for Durable Functions distributed tracing.");
+                }
+                catch (FormatException)
+                {
+                    this.LogTracingWarning(
+                        "APPLICATIONINSIGHTS_AUTHENTICATION_STRING is invalid and will not be used for Durable Functions distributed tracing.");
+                }
+                catch (ArgumentException)
+                {
+                    this.LogTracingWarning(
+                        "APPLICATIONINSIGHTS_AUTHENTICATION_STRING could not be applied and will not be used for Durable Functions distributed tracing.");
+                }
+            }
+
             return config;
+        }
+
+        /// <summary>
+        /// Enables Microsoft Entra authenticated ingestion for the private Durable telemetry
+        /// configuration.
+        /// </summary>
+        /// <remarks>
+        /// When the Functions host exposes its telemetry configuration, Durable forwards telemetry
+        /// to the host's channel, which already holds the host's credential and Entra ingestion
+        /// endpoint. Durable therefore never creates an <c>Azure.Core.TokenCredential</c>, which is
+        /// important because the Application Insights SDK resolves that type in the host load
+        /// context and rejects a credential created in the function app load context.
+        /// Outside the Functions host there is no channel to reuse, so Durable falls back to
+        /// creating its own managed identity credential.
+        /// </remarks>
+        /// <param name="durableConfiguration">The private Durable telemetry configuration.</param>
+        /// <param name="hostConfiguration">The host telemetry configuration, if available.</param>
+        /// <param name="tokenCredentialOptions">The parsed authentication string.</param>
+        /// <param name="preserveExistingChannel">
+        /// True when the configuration already has a channel that must not be replaced, such as the
+        /// test channel installed by <see cref="OnSend"/>.
+        /// </param>
+        /// <returns>True when the host channel was reused.</returns>
+        internal static bool ApplyEntraAuthentication(
+            TelemetryConfiguration durableConfiguration,
+            TelemetryConfiguration hostConfiguration,
+            ApplicationInsightsTokenCredentialOptions tokenCredentialOptions,
+            bool preserveExistingChannel = false)
+        {
+            ITelemetryChannel hostChannel = hostConfiguration?.TelemetryChannel;
+            if (hostChannel != null && !preserveExistingChannel)
+            {
+                durableConfiguration.TelemetryChannel = new HostForwardingTelemetryChannel(hostChannel);
+                return true;
+            }
+
+            ManagedIdentityId managedIdentityId = tokenCredentialOptions.ClientId != null
+                ? ManagedIdentityId.FromUserAssignedClientId(tokenCredentialOptions.ClientId)
+                : ManagedIdentityId.SystemAssigned;
+            durableConfiguration.SetAzureTokenCredential(new ManagedIdentityCredential(managedIdentityId));
+            return false;
+        }
+
+        private void LogTracingWarning(string message)
+        {
+            this.endToEndTraceHelper.ExtensionWarningEvent(
+                hubName: this.options.HubName,
+                functionName: string.Empty,
+                instanceId: string.Empty,
+                message: message);
         }
     }
 }
