@@ -250,18 +250,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 
         private TelemetryConfiguration SetupTelemetryConfiguration()
         {
+            IReadOnlyList<ITelemetryInitializer> durableInitializers =
+                this.options.Tracing.Version == Options.DurableDistributedTracingVersion.V2
+                    ? this.GetDurableTelemetryInitializers()
+                    : Array.Empty<ITelemetryInitializer>();
+
             TelemetryConfiguration config = TelemetryConfiguration.CreateDefault();
             if (this.OnSend != null)
             {
                 config.TelemetryChannel = new NoOpTelemetryChannel { OnSend = this.OnSend };
             }
 
-            if (this.options.Tracing.Version == Options.DurableDistributedTracingVersion.V2)
+            foreach (ITelemetryInitializer initializer in durableInitializers)
             {
-                foreach (ITelemetryInitializer initializer in this.GetDurableTelemetryInitializers())
-                {
-                    config.TelemetryInitializers.Add(initializer);
-                }
+                config.TelemetryInitializers.Add(initializer);
             }
 
             config.TelemetryInitializers.Add(new DurableTaskInstanceIdTelemetryInitializer(this.options.Tracing.IncludeInstanceIdInOperationName));

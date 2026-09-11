@@ -237,33 +237,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void Initialize_NullFactoryResultSurfacesConfigurationError()
+        public void Initialize_NullFactoryResultFailsBeforeTelemetryConfigurationCreation()
         {
             using IHost host = BuildHost(
                 V2Options(),
                 builder => builder.Services.AddDurableTaskTelemetryInitializer(_ => null));
-            TelemetryActivator activator = GetActivator(host);
+            var activator = Assert.IsType<TelemetryActivator>(
+                host.Services.GetRequiredService<ITelemetryActivator>());
 
             InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
                 () => activator.Initialize(NullLogger.Instance));
 
             Assert.Contains("factory at index 0 returned null", exception.Message);
+            Assert.Null(activator.OnSend);
+            Assert.Null(activator.TelemetryConfiguration);
+            Assert.Null(activator.TelemetryModule);
+            Assert.Null(activator.WebJobsTelemetryModule);
         }
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void Initialize_FactoryExceptionIsNotSwallowed()
+        public void Initialize_FactoryExceptionFailsBeforeTelemetryConfigurationCreation()
         {
             var expected = new InvalidOperationException("registration failed");
             using IHost host = BuildHost(
                 V2Options(),
                 builder => builder.Services.AddDurableTaskTelemetryInitializer(_ => throw expected));
-            TelemetryActivator activator = GetActivator(host);
+            var activator = Assert.IsType<TelemetryActivator>(
+                host.Services.GetRequiredService<ITelemetryActivator>());
 
             InvalidOperationException actual = Assert.Throws<InvalidOperationException>(
                 () => activator.Initialize(NullLogger.Instance));
 
             Assert.Same(expected, actual);
+            Assert.Null(activator.OnSend);
+            Assert.Null(activator.TelemetryConfiguration);
+            Assert.Null(activator.TelemetryModule);
+            Assert.Null(activator.WebJobsTelemetryModule);
         }
 
         [Fact]
