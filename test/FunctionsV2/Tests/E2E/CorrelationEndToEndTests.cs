@@ -140,6 +140,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 var hostTelemetry = new ConcurrentQueue<ITelemetry>();
                 var durableTelemetry = new ConcurrentQueue<ITelemetry>();
+                var sentSpans = new ConcurrentQueue<(OperationTelemetry Telemetry, object Snapshot)>();
+                void Capture(ITelemetry telemetry, ConcurrentQueue<ITelemetry> stream)
+                {
+                    if (telemetry is OperationTelemetry span)
+                    {
+                        sentSpans.Enqueue((span, CaptureRawSpan(span)));
+                    }
+
+                    stream.Enqueue(telemetry);
+                }
+
                 const string connectionString = "InstrumentationKey=00000000-0000-0000-0000-000000000001";
                 var resolver = new SimpleNameResolver(new Dictionary<string, string>
                 {
@@ -161,7 +172,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     enableExtendedSessions: false,
                     options: options,
                     nameResolver: resolver,
-                    onSend: forwardToHostChannel ? null : durableTelemetry.Enqueue,
+                    onSend: forwardToHostChannel ? null : telemetry => Capture(telemetry, durableTelemetry),
                     configureLogging: logging =>
                     {
                         logging.AddApplicationInsightsWebJobs(
@@ -175,7 +186,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                             },
                             configuration => configuration.TelemetryInitializers.Add(sharedInitializer));
                         logging.Services.AddSingleton<ITelemetryChannel>(
-                            new NoOpTelemetryChannel { OnSend = hostTelemetry.Enqueue });
+                            new NoOpTelemetryChannel { OnSend = telemetry => Capture(telemetry, hostTelemetry) });
                         if (useDurableInitializer)
                         {
                             logging.Services.AddDurableTaskTelemetryInitializer(sharedInitializer);
@@ -199,6 +210,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 OperationTelemetry[] allSpans = hostTelemetry.Concat(durableTelemetry).OfType<OperationTelemetry>().ToArray();
                 Assert.NotEmpty(hostTelemetry);
                 Assert.Equal(19, allSpans.Length);
+                Assert.Equal(forwardToHostChannel ? 19 : 5, hostTelemetry.OfType<OperationTelemetry>().Count());
+                Assert.Equal(forwardToHostChannel ? 0 : 14, durableTelemetry.OfType<OperationTelemetry>().Count());
+                Assert.Equal(allSpans.Length, sentSpans.Count);
+                Assert.Equal(useDurableInitializer ? 19 : 5, sharedInitializer.BeforeEnrichment.Count);
+                if (useDurableInitializer)
+                {
+                    // Match by object identity, not mutable/random IDs. Compare immutable values
+                    // captured before enrichment with this same record at the channel boundary.
+                    Assert.All(sentSpans, sent =>
+                    {
+                        Assert.True(sharedInitializer.BeforeEnrichment.TryGetValue(sent.Telemetry, out object before));
+                        Assert.Equal(before, sent.Snapshot);
+                    });
+                }
+
                 Assert.Equal(allSpans.Length, allSpans.Select(span => (span.Context.Operation.Id, span.Id)).Distinct().Count());
                 Assert.All(allSpans, span =>
                 {
@@ -209,6 +235,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var signature = allSpans.Select(span => $"{span.GetType().Name}|{span.Name}|{span.Success}")
                     .OrderBy(value => value, StringComparer.Ordinal).ToArray();
                 this.output.WriteLine(string.Join(Environment.NewLine, signature));
+                foreach (var sent in sentSpans)
+                {
+                    this.output.WriteLine(sent.Snapshot.ToString());
+                }
+
                 if (baseline == null)
                 {
                     baseline = signature;
@@ -225,6 +256,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Single(allSpans.OfType<RequestTelemetry>(), span => span.Name == "orchestration:SayHelloWithActivity");
                 Assert.False(Assert.Single(allSpans.OfType<RequestTelemetry>(), span => span.Name == "orchestration:ThrowOrchestrator").Success);
                 Assert.Contains(allSpans, span => span.Name.StartsWith("entity:", StringComparison.Ordinal));
+                AssertRawV2Topology(allSpans);
 
                 foreach (var span in allSpans.Where(span =>
                     span.Name.StartsWith("orchestration:", StringComparison.Ordinal) ||
@@ -237,12 +269,62 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     {
                         Assert.Equal("orders-functions", span.Context.Cloud.RoleName);
                     }
+                }
+            }
+        }
 
-                    if (!string.IsNullOrEmpty(span.Context.Operation.ParentId))
-                    {
-                        Assert.Contains(allSpans, parent => parent.Id == span.Context.Operation.ParentId &&
-                            parent.Context.Operation.Id == span.Context.Operation.Id);
-                    }
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void RawSpanSnapshot_DetectsChangedAndDroppedProducerFields(bool isDependency)
+        {
+            var mutations = new Dictionary<string, Action<OperationTelemetry, bool>>
+            {
+                ["Id"] = (span, clear) => span.Id = clear ? null : "changed-span",
+                ["OperationId"] = (span, clear) => span.Context.Operation.Id = clear ? null : "changed-operation",
+                ["ParentId"] = (span, clear) => span.Context.Operation.ParentId = clear ? null : "changed-parent",
+                ["Timestamp"] = (span, clear) => span.Timestamp = clear ? default : span.Timestamp.AddTicks(1),
+                ["Duration"] = (span, clear) => span.Duration = clear ? default : span.Duration.Add(TimeSpan.FromTicks(1)),
+                ["Name"] = (span, clear) => span.Name = clear ? null : "changed-name",
+                ["Success"] = (span, clear) => span.Success = clear ? null : !span.Success,
+            };
+            if (isDependency)
+            {
+                mutations["ResultCode"] = (span, clear) => ((DependencyTelemetry)span).ResultCode = clear ? null : "500";
+                mutations["Type"] = (span, clear) => ((DependencyTelemetry)span).Type = clear ? null : "changed-type";
+                mutations["Target"] = (span, clear) => ((DependencyTelemetry)span).Target = clear ? null : "changed-target";
+                mutations["Data"] = (span, clear) => ((DependencyTelemetry)span).Data = clear ? null : "changed-data";
+            }
+            else
+            {
+                mutations["ResponseCode"] = (span, clear) => ((RequestTelemetry)span).ResponseCode = clear ? null : "500";
+                mutations["Url"] = (span, clear) => ((RequestTelemetry)span).Url = clear ? null : new Uri("https://example.test/changed");
+                mutations["Source"] = (span, clear) => ((RequestTelemetry)span).Source = clear ? null : "changed-source";
+            }
+
+            foreach (var mutation in mutations)
+            {
+                foreach (bool clear in new[] { false, true })
+                {
+                    OperationTelemetry span = isDependency
+                        ? new DependencyTelemetry { ResultCode = "201", Type = "queue", Target = "orders", Data = "enqueue" }
+                        : new RequestTelemetry { ResponseCode = "201", Url = new Uri("https://example.test/orders"), Source = "caller" };
+                    span.Id = "1111111111111111";
+                    span.Context.Operation.Id = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+                    span.Context.Operation.ParentId = "bbbbbbbbbbbbbbbb";
+                    span.Timestamp = new DateTimeOffset(2026, 1, 2, 3, 4, 5, TimeSpan.Zero);
+                    span.Duration = TimeSpan.FromMilliseconds(123);
+                    span.Name = "activity:Hello";
+                    span.Success = true;
+                    object before = CaptureRawSpan(span);
+
+                    new HostMetadataInitializer().Initialize(span);
+                    Assert.Equal(before, CaptureRawSpan(span));
+                    mutation.Value(span, clear);
+
+                    this.output.WriteLine($"Changed {mutation.Key} (clear: {clear})");
+                    Assert.NotEqual(before, CaptureRawSpan(span));
                 }
             }
         }
@@ -357,7 +439,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 inspectTelemetryActivator: telemetryActivator => activator = telemetryActivator,
                 captureThroughHostChannel: true);
 
-            // The activator must come from production DI with the host-aware constructor selected,
+            // The activator must come from the production factory with the registered host configuration,
             // otherwise this test would silently degrade to the standalone credential path.
             Assert.NotNull(activator);
             FieldInfo hostConfigurationField = typeof(TelemetryActivator).GetField(
@@ -783,10 +865,83 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return converted;
         }
 
+        private static void AssertRawV2Topology(OperationTelemetry[] spans)
+        {
+            var scenarios = new[]
+            {
+                (nameof(TestOrchestrations.SayHelloWithActivity), new[] { "activity:Hello" }),
+                (nameof(TestOrchestrations.ThrowOrchestrator), new[] { "activity:ThrowActivity" }),
+                (nameof(TestOrchestrations.EntityId_CallAndDeleteStringStore), new[] { "entity:stringstore2:set", "entity:stringstore2:delete" }),
+            };
+            foreach (var (orchestrationName, childNames) in scenarios)
+            {
+                RequestTelemetry orchestration = Assert.Single(
+                    spans.OfType<RequestTelemetry>(), span => span.Name == $"orchestration:{orchestrationName}");
+                DependencyTelemetry create = Assert.Single(
+                    spans.OfType<DependencyTelemetry>(), span => span.Name == $"create_orchestration:{orchestrationName}");
+                RequestTelemetry start = Assert.Single(
+                    spans.OfType<RequestTelemetry>(), span => span.Name == "StartFunction" &&
+                        span.Context.Operation.Id == orchestration.Context.Operation.Id);
+                Assert.True(string.IsNullOrEmpty(start.Context.Operation.ParentId));
+                AssertSpanParent(create, start);
+                AssertSpanParent(orchestration, create);
+                foreach (string childName in childNames)
+                {
+                    DependencyTelemetry schedule = Assert.Single(
+                        spans.OfType<DependencyTelemetry>(), span => span.Name == childName);
+                    RequestTelemetry execution = Assert.Single(
+                        spans.OfType<RequestTelemetry>(), span => span.Name == childName);
+                    AssertSpanParent(schedule, orchestration);
+                    AssertSpanParent(execution, schedule);
+                }
+            }
+        }
+
+        private static void AssertSpanParent(OperationTelemetry child, OperationTelemetry parent)
+        {
+            Assert.False(string.IsNullOrEmpty(child.Context.Operation.ParentId));
+            Assert.Equal(parent.Id, child.Context.Operation.ParentId);
+            Assert.Equal(parent.Context.Operation.Id, child.Context.Operation.Id);
+        }
+
+        private static object CaptureRawSpan(OperationTelemetry telemetry)
+        {
+            var request = telemetry as RequestTelemetry;
+            var dependency = telemetry as DependencyTelemetry;
+            return new
+            {
+                TelemetryType = telemetry.GetType(),
+                telemetry.Id,
+                OperationId = telemetry.Context.Operation.Id,
+                ParentId = telemetry.Context.Operation.ParentId,
+                telemetry.Timestamp,
+                telemetry.Duration,
+                telemetry.Name,
+                telemetry.Success,
+                ResponseCode = request?.ResponseCode,
+                RequestUrl = request?.Url?.OriginalString,
+                RequestSource = request?.Source,
+                ResultCode = dependency?.ResultCode,
+                DependencyType = dependency?.Type,
+                DependencyTarget = dependency?.Target,
+                DependencyData = dependency?.Data,
+            };
+        }
+
         private sealed class HostMetadataInitializer : ITelemetryInitializer
         {
+            public ConcurrentDictionary<OperationTelemetry, object> BeforeEnrichment { get; } =
+                new ConcurrentDictionary<OperationTelemetry, object>(ReferenceEqualityComparer.Instance);
+
             public void Initialize(ITelemetry telemetry)
             {
+                if (telemetry is OperationTelemetry span)
+                {
+                    // The host SDK can initialize a request at both start and completion.
+                    // Preserve the latest pre-enrichment values, when producer fields are final.
+                    this.BeforeEnrichment[span] = CaptureRawSpan(span);
+                }
+
                 telemetry.Context.Cloud.RoleName = "orders-functions";
                 if (telemetry is ISupportProperties properties)
                 {

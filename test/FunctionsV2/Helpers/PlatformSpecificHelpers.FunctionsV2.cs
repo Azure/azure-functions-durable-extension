@@ -93,8 +93,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                         if (hostTelemetryConfiguration != null)
                         {
-                            // Mirrors the Application Insights configuration the Functions host registers,
-                            // so DI can select the host-aware TelemetryActivator constructor.
+                            // Mirrors the host's Application Insights registration so the
+                            // TelemetryActivator.Create factory receives the host configuration.
                             serviceCollection.AddSingleton(hostTelemetryConfiguration);
                         }
 
@@ -102,8 +102,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         {
                             serviceCollection.AddSingleton<ITelemetryActivator>(serviceProvider =>
                             {
-                                // Let the container pick the constructor exactly as the production
-                                // AddSingleton<ITelemetryActivator, TelemetryActivator>() registration does.
+                                // Use the same factory as production's
+                                // AddSingleton<ITelemetryActivator>(TelemetryActivator.Create) registration.
                                 var telemetryActivator = TelemetryActivator.Create(serviceProvider);
                                 telemetryActivator.OnSend = onSend;
                                 return telemetryActivator;

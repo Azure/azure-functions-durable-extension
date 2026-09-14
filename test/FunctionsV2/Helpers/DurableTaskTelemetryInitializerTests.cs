@@ -276,6 +276,69 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Null(activator.WebJobsTelemetryModule);
         }
 
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Initialize_CachesPartialFactoryFailureAcrossRepeatedAndConcurrentAttempts(bool returnNull)
+        {
+            var expected = new InvalidOperationException("registration failed");
+            int firstCalls = 0;
+            int failingCalls = 0;
+            int downstreamCalls = 0;
+            IServiceProvider factoryProvider = null;
+            using IHost host = BuildHost(
+                V2Options(),
+                builder =>
+                {
+                    builder.Services.AddDurableTaskTelemetryInitializer(services =>
+                    {
+                        factoryProvider = services;
+                        Interlocked.Increment(ref firstCalls);
+                        return new CallbackInitializer(_ => { });
+                    });
+                    builder.Services.AddDurableTaskTelemetryInitializer(_ =>
+                    {
+                        Interlocked.Increment(ref failingCalls);
+                        return returnNull ? null : throw expected;
+                    });
+                    builder.Services.AddDurableTaskTelemetryInitializer(_ =>
+                    {
+                        Interlocked.Increment(ref downstreamCalls);
+                        return new CallbackInitializer(_ => { });
+                    });
+                });
+            var activator = Assert.IsType<TelemetryActivator>(
+                host.Services.GetRequiredService<ITelemetryActivator>());
+            var failures = new ConcurrentQueue<InvalidOperationException>();
+
+            System.Threading.Tasks.Parallel.For(0, 8, _ =>
+                failures.Enqueue(Assert.Throws<InvalidOperationException>(
+                    () => activator.Initialize(NullLogger.Instance))));
+            InvalidOperationException repeated = Assert.Throws<InvalidOperationException>(
+                () => activator.Initialize(NullLogger.Instance));
+
+            Assert.Equal(1, firstCalls);
+            Assert.Equal(1, failingCalls);
+            Assert.Equal(0, downstreamCalls);
+            Assert.Same(host.Services.GetRequiredService<IServiceProvider>(), factoryProvider);
+            Assert.Equal(8, failures.Count);
+            Assert.All(failures, failure => Assert.Same(repeated, failure));
+            if (returnNull)
+            {
+                Assert.Contains("factory at index 1 returned null", repeated.Message);
+            }
+            else
+            {
+                Assert.Same(expected, repeated);
+            }
+
+            Assert.Null(activator.OnSend);
+            Assert.Null(activator.TelemetryConfiguration);
+            Assert.Null(activator.TelemetryModule);
+            Assert.Null(activator.WebJobsTelemetryModule);
+        }
+
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void Track_InitializerFailureUsesSdkContinuationBehavior()

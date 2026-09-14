@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Authentication;
+using System.Threading;
 using System.Threading.Tasks;
 using Azure.Identity;
 using DurableTask.ApplicationInsights;
@@ -31,8 +32,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         private readonly TelemetryConfiguration hostTelemetryConfiguration;
         private readonly IServiceProvider serviceProvider;
         private readonly IReadOnlyList<DurableTaskTelemetryInitializerRegistration> initializerRegistrations;
-        private readonly object initializerLock = new object();
-        private IReadOnlyList<ITelemetryInitializer> durableTelemetryInitializers;
+        private readonly Lazy<IReadOnlyList<ITelemetryInitializer>> durableTelemetryInitializers;
         private EndToEndTraceHelper endToEndTraceHelper;
         private TelemetryClient telemetryClient;
 
@@ -83,6 +83,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             this.serviceProvider = serviceProvider;
             this.initializerRegistrations = initializerRegistrations ??
                 throw new ArgumentNullException(nameof(initializerRegistrations));
+            this.durableTelemetryInitializers = new Lazy<IReadOnlyList<ITelemetryInitializer>>(
+                this.ResolveDurableTelemetryInitializers,
+                LazyThreadSafetyMode.ExecutionAndPublication);
         }
 
         /// <summary>
@@ -252,7 +255,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         {
             IReadOnlyList<ITelemetryInitializer> durableInitializers =
                 this.options.Tracing.Version == Options.DurableDistributedTracingVersion.V2
-                    ? this.GetDurableTelemetryInitializers()
+                    ? this.durableTelemetryInitializers.Value
                     : Array.Empty<ITelemetryInitializer>();
 
             TelemetryConfiguration config = TelemetryConfiguration.CreateDefault();
@@ -366,31 +369,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             return config;
         }
 
-        private IReadOnlyList<ITelemetryInitializer> GetDurableTelemetryInitializers()
+        private IReadOnlyList<ITelemetryInitializer> ResolveDurableTelemetryInitializers()
         {
-            lock (this.initializerLock)
+            var initializers = new ITelemetryInitializer[this.initializerRegistrations.Count];
+            for (int i = 0; i < this.initializerRegistrations.Count; i++)
             {
-                if (this.durableTelemetryInitializers != null)
+                ITelemetryInitializer initializer = this.initializerRegistrations[i].Factory(this.serviceProvider);
+                if (initializer == null)
                 {
-                    return this.durableTelemetryInitializers;
+                    throw new InvalidOperationException(
+                        $"The Durable telemetry initializer factory at index {i} returned null.");
                 }
 
-                var initializers = new ITelemetryInitializer[this.initializerRegistrations.Count];
-                for (int i = 0; i < this.initializerRegistrations.Count; i++)
-                {
-                    ITelemetryInitializer initializer = this.initializerRegistrations[i].Factory(this.serviceProvider);
-                    if (initializer == null)
-                    {
-                        throw new InvalidOperationException(
-                            $"The Durable telemetry initializer factory at index {i} returned null.");
-                    }
-
-                    initializers[i] = initializer;
-                }
-
-                this.durableTelemetryInitializers = initializers;
-                return initializers;
+                initializers[i] = initializer;
             }
+
+            return initializers;
         }
 
         /// <summary>
