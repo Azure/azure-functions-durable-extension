@@ -229,6 +229,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// This setting can affect serialization overhead: if true, the entity state is serialized
         /// after each individual operation. If false, the entity state is serialized
         /// only after an entire batch of operations completes.
+        /// <para>
+        /// Rolling back an operation does not requeue its input or retry it. An unhandled application
+        /// exception completes the operation as a failure. Applications that require retries must
+        /// implement them explicitly, accounting for external effects that are not rolled back.
+        /// </para>
         /// </remarks>
         public bool RollbackEntityOperationsOnExceptions { get; set; } = true;
 
