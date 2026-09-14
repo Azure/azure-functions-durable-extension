@@ -7,6 +7,7 @@ internal class NodeTestLanguageLocalizer : ITestLanguageLocalizer
     private readonly Dictionary<string, string> nodeLocalizedStrings = new Dictionary<string, string>
     {
         { "CaughtActivityException.ErrorMessage", "Caught exception: Error: Activity function 'raise_exception' failed:" },
+        { "CaughtActivityException.MSSQLErrorMessage", "Caught exception: TaskFailedError: Error: Activity function 'raise_exception' failed:" },
         { "RethrownActivityException.ErrorMessage", "Orchestrator function 'RethrowActivityException' failed: Activity function 'raise_exception' failed: " },
         // Bug: https://github.com/Azure/azure-functions-durable-js/issues/642
         { "CaughtEntityException.ErrorMessage", "Error: [object Object]" },
