@@ -5,7 +5,6 @@
 using System;
 using System.Linq;
 using System.Net;
-using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
@@ -130,13 +129,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc
 
         private async Task StartInternalAsync(CancellationToken cancellationToken)
         {
-            int port = GetFreeTcpPort();
             IHost newHost = new HostBuilder().ConfigureWebHost(
                 builder =>
                 {
+                    // Bind to port 0 and let the OS pick a free port as part of the bind itself.
+                    // Probing for a free port in a separate socket and then binding it here leaves a
+                    // window where the port can be taken (or become unbindable) in between, which
+                    // surfaces as an unrecoverable SocketException. The port that was actually bound
+                    // is read back from IServerAddressesFeature below.
                     builder.UseKestrel(o => o.Listen(
                         IPAddress.Parse(HostName),
-                        port,
+                        0,
                         listenOptions => listenOptions.Protocols = HttpProtocols.Http2));
 
                     builder.ConfigureServices(services =>
@@ -177,14 +180,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc
             IServerAddressesFeature? addressFeature = server?.Features.Get<IServerAddressesFeature>();
             this.ListenAddress = addressFeature?.Addresses.SingleOrDefault();
 
-            var expected = new Uri($"http://{HostName}:{port}");
-            if (!Uri.TryCreate(this.ListenAddress, UriKind.Absolute, out Uri? uri) || expected != uri)
+            if (!Uri.TryCreate(this.ListenAddress, UriKind.Absolute, out Uri? uri) || uri.Port == 0)
             {
                 this.extension.TraceHelper.ExtensionWarningEvent(
                     this.extension.Options.HubName,
                     instanceId: string.Empty,
                     functionName: string.Empty,
-                    message: $"Configured Uri ({expected}) does not match actual Uri ({uri}).");
+                    message: $"Unexpected listen address reported by the server: {this.ListenAddress ?? "null"}.");
             }
 
             this.extension.TraceHelper.ExtensionInformationalEvent(
@@ -265,20 +267,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc
                 this.host = null;
                 this.ListenAddress = null;
                 this.addressReady = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
-            }
-        }
-
-        private static int GetFreeTcpPort()
-        {
-            var listener = new TcpListener(IPAddress.Loopback, 0);
-            try
-            {
-                listener.Start();
-                return ((IPEndPoint)listener.LocalEndpoint).Port;
-            }
-            finally
-            {
-                listener.Stop();
             }
         }
     }
