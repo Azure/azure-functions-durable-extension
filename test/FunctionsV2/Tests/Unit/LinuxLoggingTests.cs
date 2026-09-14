@@ -49,10 +49,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             var settings = new Dictionary<string, string>
             {
-                { "KUBERNETES_SERVICE_HOST", kubernetesServiceHost },
-                { "POD_NAMESPACE", podNamespace },
-                { "MANAGED_ENVIRONMENT", managedEnvironment },
-                { "CONTAINER_NAME", containerName },
+                { "KUBERNETES_SERVICE_HOST", kubernetesServiceHost ?? string.Empty },
+                { "POD_NAMESPACE", podNamespace ?? string.Empty },
+                { "MANAGED_ENVIRONMENT", managedEnvironment ?? string.Empty },
+                { "CONTAINER_NAME", containerName ?? string.Empty }
                 { "FUNCTIONS_WORKER_RUNTIME", "dotnet" },
             };
             string instanceId = Guid.NewGuid().ToString();
