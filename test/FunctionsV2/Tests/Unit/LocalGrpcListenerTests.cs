@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -385,6 +386,83 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     It.IsAny<OrchestrationStatus[]>(),
                     It.IsAny<CancellationToken>()),
                 Times.Once);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task TestGrpcListener_CreateInstancePersistsProducerTraceContext()
+        {
+            const string InstanceId = "trace-context-instance";
+            const string TraceParent = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01";
+            const string TraceState = "congo=t61rcWkgMzE";
+
+            ExecutionStartedEvent capturedEvent = null;
+            ActivityTraceId producerTraceId = default;
+            ActivitySpanId producerSpanId = default;
+            ActivitySpanId producerParentSpanId = default;
+            string producerOperationName = null;
+            string producerTraceState = null;
+
+            using var activityListener = new ActivityListener
+            {
+                ShouldListenTo = source => source.Name == "WebJobs.Extensions.DurableTask",
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+                ActivityStopped = activity =>
+                {
+                    if (activity.Kind == ActivityKind.Producer &&
+                        activity.GetTagItem("durabletask.task.instance_id")?.ToString() == InstanceId)
+                    {
+                        producerTraceId = activity.TraceId;
+                        producerSpanId = activity.SpanId;
+                        producerParentSpanId = activity.ParentSpanId;
+                        producerOperationName = activity.OperationName;
+                        producerTraceState = activity.TraceStateString;
+                    }
+                },
+            };
+            ActivitySource.AddActivityListener(activityListener);
+
+            Mock<DurabilityProvider> durabilityProvider = CreateDurabilityProviderMock(
+                new Mock<IOrchestrationService>().Object,
+                new Mock<IOrchestrationServiceClient>().Object);
+            durabilityProvider
+                .Setup(provider => provider.CreateTaskOrchestrationAsync(
+                    It.IsAny<TaskMessage>(),
+                    It.IsAny<OrchestrationStatus[]>(),
+                    It.IsAny<CancellationToken>()))
+                .Callback<TaskMessage, OrchestrationStatus[], CancellationToken>((message, _, _) =>
+                {
+                    capturedEvent = message.Event as ExecutionStartedEvent;
+                })
+                .Returns(Task.CompletedTask);
+
+            await this.InvokeRpcAsync(
+                durabilityProvider.Object,
+                async client => await client.StartInstanceAsync(
+                    new P.CreateInstanceRequest
+                    {
+                        InstanceId = InstanceId,
+                        Name = "TestOrchestration",
+                        ParentTraceContext = new P.TraceContext
+                        {
+                            TraceParent = TraceParent,
+                            TraceState = TraceState,
+                        },
+                    }).ResponseAsync);
+
+            Assert.NotNull(capturedEvent);
+            Assert.NotNull(capturedEvent.ParentTraceContext);
+            Assert.True(ActivityContext.TryParse(
+                capturedEvent.ParentTraceContext.TraceParent,
+                capturedEvent.ParentTraceContext.TraceState,
+                out ActivityContext persistedContext));
+            Assert.Equal(ActivityTraceId.CreateFromString("4bf92f3577b34da6a3ce929d0e0e4736"), persistedContext.TraceId);
+            Assert.Equal(producerTraceId, persistedContext.TraceId);
+            Assert.Equal(producerSpanId, persistedContext.SpanId);
+            Assert.Equal(ActivitySpanId.CreateFromString("00f067aa0ba902b7"), producerParentSpanId);
+            Assert.Equal("create_orchestration:TestOrchestration", producerOperationName);
+            Assert.Equal(TraceState, producerTraceState);
+            Assert.Equal(TraceState, capturedEvent.ParentTraceContext.TraceState);
         }
 
         [Fact]
