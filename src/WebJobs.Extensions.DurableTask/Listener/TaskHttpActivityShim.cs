@@ -44,23 +44,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             HttpResponseMessage response;
             try
             {
-                if (durableHttpRequest.Timeout == null)
+                using (CancellationTokenSource cts = new CancellationTokenSource())
                 {
-                    response = await this.httpClient.SendAsync(requestMessage);
-                }
-                else
-                {
+                    cts.CancelAfter(durableHttpRequest.Timeout ?? TimeSpan.FromSeconds(240));
                     try
                     {
-                        using (CancellationTokenSource cts = new CancellationTokenSource())
-                        {
-                            cts.CancelAfter(durableHttpRequest.Timeout.Value);
-                            response = await this.httpClient.SendAsync(requestMessage, cts.Token);
-                        }
+                        response = await this.httpClient.SendAsync(requestMessage, cts.Token);
                     }
-                    catch (OperationCanceledException ex)
+                    catch (OperationCanceledException ex) when (durableHttpRequest.Timeout.HasValue && cts.IsCancellationRequested)
                     {
-                        TimeoutException e = new TimeoutException(ex.Message + $" Reached user specified timeout: {durableHttpRequest.Timeout.Value}.");
+                        TimeoutException e = new TimeoutException(ex.Message + $" Reached user specified timeout: {durableHttpRequest.Timeout.Value}.", ex);
 
                         string details = Utils.SerializeCause(e, this.config.ErrorDataConverter);
                         throw new TaskFailureException(e.Message, e, details);
