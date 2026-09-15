@@ -38,6 +38,14 @@ Azure Storage is the default backend for Durable Functions. The `DurabilityProvi
 
 The `Scale/` folder provides **runtime scaling support**, integrated via `DurableTaskListener`.
 
+## Platform Diagnostic Logs
+
+In Kubernetes managed hosting (`KUBERNETES_SERVICE_HOST` and `POD_NAMESPACE` are nonempty, and `MANAGED_ENVIRONMENT` is absent or empty), Durable EventSource diagnostics are emitted as single-line JSON to standard output. Each record contains `"EventType":"MS_DURABLE_FUNCTION_EVENTS_LOGS"` instead of a text prefix, so log collectors can parse the entire line as JSON.
+
+Provider payload fields named `EventType` (for example, `ExecutionStarted`) are preserved as `TaskEventType` in Kubernetes JSON, avoiding a collision with the routing field. Other payload and correlation fields are unchanged, and `tracing.allowVerboseLinuxTelemetry` continues to control verbose DurableTask-Core events.
+
+Linux Consumption and Managed App environments retain their prefixed console logs. Linux Dedicated retains file logging. Their payload field names are unchanged.
+
 ## Extension Bundle Compatibility
 
 This extension is distributed as part of [Azure Functions extension bundles](https://learn.microsoft.com/azure/azure-functions/functions-bindings-register#extension-bundles), which are used by non-.NET language SDKs. Changes to public APIs and package dependencies must remain compatible with the extension bundle dependency graph. Breaking changes to package references can cause runtime failures for all non-.NET Durable Functions users.

@@ -381,11 +381,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="context">Extension context provided by WebJobs.</param>
         void IExtensionConfigProvider.Initialize(ExtensionConfigContext context)
         {
-            // Functions V1 is not supported in linux, so this is conditionally compiled
+            // Match the Functions host's Kubernetes managed-hosting detection without changing IPlatformInformation.
+            bool isKubernetesManagedHosting =
+                !string.IsNullOrEmpty(this.nameResolver.Resolve("KUBERNETES_SERVICE_HOST")) &&
+                !string.IsNullOrEmpty(this.nameResolver.Resolve("POD_NAMESPACE")) &&
+                !this.PlatformInformationService.IsManagedAppEnvironment();
+
             // We initialize linux logging early on in case any initialization steps below were to trigger a log event.
-            if (this.PlatformInformationService.GetOperatingSystem() == OperatingSystem.Linux)
+            if (this.PlatformInformationService.GetOperatingSystem() == OperatingSystem.Linux || isKubernetesManagedHosting)
             {
-                this.InitializeLinuxLogging();
+                this.InitializeLinuxLogging(isKubernetesManagedHosting);
             }
 
             ConfigureLoaderHooks();
@@ -570,10 +575,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <summary>
-        /// Initializes the logging service for App Service if it detects that we are running in
-        /// the linux platform.
+        /// Initializes the logging service for Linux App Service and Kubernetes managed hosting.
         /// </summary>
-        private void InitializeLinuxLogging()
+        /// <param name="isKubernetesManagedHosting">Whether to emit unprefixed JSON console logs for Kubernetes.</param>
+        private void InitializeLinuxLogging(bool isKubernetesManagedHosting)
         {
             // Determine host platform
             bool inConsumption = this.PlatformInformationService.IsInConsumptionPlan();
@@ -583,9 +588,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string stampName = this.PlatformInformationService.GetLinuxStampName();
             string containerName = this.PlatformInformationService.GetContainerName();
 
-            // in linux consumption, logs are emitted to the console.
+            // In Linux Consumption, Managed App environments, and Kubernetes, logs are emitted to the console.
             // In other linux plans, they are emitted to a logfile.
-            var linuxLogger = new LinuxAppServiceLogger(writeToConsole: inConsumption || isManagedAppEnvironment, containerName, tenant, stampName);
+            var linuxLogger = new LinuxAppServiceLogger(
+                writeToConsole: inConsumption || isManagedAppEnvironment || isKubernetesManagedHosting,
+                containerName,
+                tenant,
+                stampName,
+                isKubernetesManagedHosting);
 
             // The logging service for linux works by capturing EventSource messages,
             // which our linux platform does not recognize, and logging them via a

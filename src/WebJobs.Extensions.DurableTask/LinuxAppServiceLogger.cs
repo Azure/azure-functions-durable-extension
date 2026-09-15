@@ -12,8 +12,9 @@ using Newtonsoft.Json.Linq;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     /// <summary>
-    /// In charge of logging services for our linux App Service offerings: Consumption and Dedicated.
+    /// In charge of logging services for Linux App Service and Kubernetes managed hosting.
     /// In Consumption, we log to the console and identify our log by a prefix.
+    /// In Kubernetes managed hosting, we log JSON to the console and identify our log by an EventType field.
     /// In Dedicated, we log asynchronously to a pre-defined logging path.
     /// This class is utilized by <c>EventSourceListener</c> to write logs corresponding to
     /// specific EventSource providers.
@@ -33,26 +34,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly string stamp;
         private readonly string primaryStamp;
 
-        // if true, we write to console (linux consumption), else to a file (linux dedicated).
+        // If true, we write to console; otherwise, to a file (Linux Dedicated).
         private readonly bool writeToConsole;
+        private readonly bool isKubernetesManagedHosting;
 
         private readonly LinuxAppServiceFileLogger fileLogger;
 
         /// <summary>
         /// Create a LinuxAppServiceLogger instance.
         /// </summary>
-        /// <param name="writeToConsole">If true, write to console (linux consumption) else to a file (dedicated).</param>
+        /// <param name="writeToConsole">If true, write to console; otherwise, to a file (Dedicated).</param>
         /// <param name="containerName">The app's container name.</param>
         /// <param name="tenant">The app's tenant.</param>
         /// <param name="stampName">The app's stamp.</param>
+        /// <param name="isKubernetesManagedHosting">Whether to use an EventType field instead of a console prefix.</param>
         public LinuxAppServiceLogger(
             bool writeToConsole,
             string containerName,
             string tenant,
-            string stampName)
+            string stampName,
+            bool isKubernetesManagedHosting = false)
         {
             // Initializing fixed logging metadata
             this.writeToConsole = writeToConsole;
+            this.isKubernetesManagedHosting = isKubernetesManagedHosting;
 
             // Since the values below are obtained via a NameResolver, they might be null.
             // Attempting to serialize a null value results in exceptions, or even worse, wrong logs,
@@ -115,6 +120,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 { "ExtensionGUID", extensionGuid },
             };
 
+            if (this.isKubernetesManagedHosting)
+            {
+                json.Add("EventType", ConsolePrefix);
+            }
+
             if (!string.IsNullOrEmpty(this.stamp) && !string.IsNullOrEmpty(this.primaryStamp))
             {
                 json.Add("EventStampName", this.stamp);
@@ -134,7 +144,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Add payload elements
             for (int i = 0; i < values.Count; i++)
             {
-                json.Add(keys[i], JToken.FromObject(values[i]));
+                // DTFx events also use EventType; retain it without overwriting the Kubernetes routing field.
+                string key = this.isKubernetesManagedHosting && keys[i] == "EventType" ? "TaskEventType" : keys[i];
+                json.Add(key, JToken.FromObject(values[i]));
             }
 
             // Add ActivityId and RelatedActivityId, if non-null
@@ -166,11 +178,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // Generate JSON string to log based on the EventSource message
             string jsonString = this.GenerateLogStr(eventData, extensionGuid);
 
-            // We write to console in Linux Consumption
+            // Kubernetes log collectors require the entire line to be valid JSON.
             if (this.writeToConsole)
             {
                 // We're ignoring exceptions in the unobserved Task
-                string consoleLine = ConsolePrefix + " " + jsonString;
+                string consoleLine = this.isKubernetesManagedHosting ? jsonString : ConsolePrefix + " " + jsonString;
                 _ = Console.Out.WriteLineAsync(consoleLine);
             }
             else
