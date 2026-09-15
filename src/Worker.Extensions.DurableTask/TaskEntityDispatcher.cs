@@ -16,6 +16,16 @@ namespace Microsoft.Azure.Functions.Worker;
 /// </summary>
 /// <remarks>
 /// This type is used to aid in dispatching a <see cref="EntityTriggerAttribute"/> to the operation receiver object.
+/// <para>
+/// An unhandled application exception fails the individual entity operation; it does not automatically
+/// retry the operation or requeue its input. For an entity call, the failure is propagated to the calling
+/// orchestrator as an <see cref="EntityOperationFailedException"/>. A signal is one-way and does not
+/// return the failure to its sender.
+/// </para>
+/// <para>
+/// Applications that require retries must implement them explicitly. Entity-state rollback does not
+/// undo external effects, such as HTTP requests or database writes, which a retry might repeat.
+/// </para>
 /// </remarks>
 public sealed class TaskEntityDispatcher
 {
