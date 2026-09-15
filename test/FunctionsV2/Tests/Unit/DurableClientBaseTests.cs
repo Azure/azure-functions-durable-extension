@@ -263,6 +263,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Theory]
         [InlineData("2.0", "2.0")]
+        [InlineData("", "")] // An explicit empty version represents a non-versioned orchestration.
         [InlineData(null, "default-version")]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task RestartWithOptionsAsync_UsesRequestedInstanceIdAndVersion(
@@ -322,6 +323,37 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(expectedVersion, capturedEvent.Version);
             Assert.True(JToken.DeepEquals(JToken.Parse(Input), JToken.Parse(capturedEvent.Input)));
             Assert.Equal(tags, capturedEvent.Tags);
+        }
+
+        public static IEnumerable<object[]> InvalidRestartTargetInstanceIds()
+        {
+            yield return new object[] { null };
+            yield return new object[] { string.Empty };
+            yield return new object[] { "@invalid" };
+            yield return new object[] { "/invalid" };
+            yield return new object[] { "invalid\\" };
+            yield return new object[] { "invalid#" };
+            yield return new object[] { "invalid?" };
+            yield return new object[] { "invalid\t" };
+            yield return new object[] { "invalid\n" };
+            yield return new object[] { new string('a', 257) };
+        }
+
+        [Theory]
+        [MemberData(nameof(InvalidRestartTargetInstanceIds))]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task RestartWithOptionsAsync_InvalidNewInstanceId_ThrowsArgumentException(string newInstanceId)
+        {
+            const string SourceInstanceId = "source-instance";
+            (DurableClient client, Mock<IOrchestrationServiceClient> serviceClient, _) = CreateClient();
+
+            ArgumentException exception = await Assert.ThrowsAsync<ArgumentException>(
+                () => client.RestartWithOptionsAsync(SourceInstanceId, newInstanceId, version: null));
+
+            Assert.Equal("newInstanceId", exception.ParamName);
+            serviceClient.Verify(
+                x => x.GetOrchestrationStateAsync(It.IsAny<string>(), It.IsAny<bool>()),
+                Times.Never());
         }
 
         [Theory]

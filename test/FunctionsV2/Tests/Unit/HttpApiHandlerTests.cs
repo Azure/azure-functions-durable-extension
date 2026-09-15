@@ -1350,6 +1350,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Theory]
         [InlineData("2.0", "2.0")]
+        [InlineData("", "")] // An explicit empty version represents a non-versioned orchestration.
         [InlineData(null, "default-version")]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task RestartInstanceWithOptions_Is_Success(string version, string expectedVersion)
@@ -1419,6 +1420,62 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(expectedVersion, capturedEvent.Version);
             Assert.True(JToken.DeepEquals(JToken.Parse(Input), JToken.Parse(capturedEvent.Input)));
             Assert.Equal(tags, capturedEvent.Tags);
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task RestartInstanceWithOptions_Returns_HTTP_400_On_Missing_Or_Empty_NewInstanceId(string newInstanceId)
+        {
+            const string SourceInstanceId = "source-instance";
+            var requestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+            requestUriBuilder.Path += $"/Instances/{SourceInstanceId}/restartWithOptions";
+            if (newInstanceId != null)
+            {
+                requestUriBuilder.Query =
+                    $"newInstanceId={Uri.EscapeDataString(newInstanceId)}&{requestUriBuilder.Query.TrimStart('?')}";
+            }
+
+            var clientMock = new Mock<IDurableClient>(MockBehavior.Strict);
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+
+            HttpResponseMessage response = await httpApiHandler.HandleRequestAsync(
+                new HttpRequestMessage(HttpMethod.Post, requestUriBuilder.Uri),
+                CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            string content = await response.Content.ReadAsStringAsync();
+            var error = JsonConvert.DeserializeObject<JObject>(content);
+            Assert.Equal("A new orchestration instance ID must be provided.", error["Message"].ToString());
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task RestartInstanceWithOptions_Returns_HTTP_400_On_Invalid_NewInstanceId()
+        {
+            const string SourceInstanceId = "source-instance";
+            const string NewInstanceId = "@invalid";
+            var requestUri = new Uri(
+                $"http://localhost/runtime/webhooks/durabletask/instances/{SourceInstanceId}/restartWithOptions?newInstanceId={Uri.EscapeDataString(NewInstanceId)}");
+            var options = new DurableTaskOptions
+            {
+                WebhookUriProviderOverride = () => new Uri("http://localhost/runtime/webhooks/durabletask"),
+                HubName = TestConstants.TaskHub,
+            };
+            var extension = TestDurableTaskExtension.CreateWithMockProvider(options);
+            var httpApiHandler = new HttpApiHandler(extension, NullLogger.Instance);
+
+            HttpResponseMessage response = await httpApiHandler.HandleRequestAsync(
+                new HttpRequestMessage(HttpMethod.Post, requestUri),
+                CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            string content = await response.Content.ReadAsStringAsync();
+            var error = JsonConvert.DeserializeObject<JObject>(content);
+            Assert.StartsWith(
+                "Orchestration instance IDs must not start with @.",
+                error["Message"].ToString());
         }
 
         [Fact]
