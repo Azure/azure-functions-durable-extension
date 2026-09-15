@@ -1425,8 +1425,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("")]
+        [InlineData("  ")]
+        [InlineData("\u00A0")]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task RestartInstanceWithOptions_Returns_HTTP_400_On_Missing_Or_Empty_NewInstanceId(string newInstanceId)
+        public async Task RestartInstanceWithOptions_Returns_HTTP_400_On_Missing_Empty_Or_Whitespace_NewInstanceId(string newInstanceId)
         {
             const string SourceInstanceId = "source-instance";
             var requestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);

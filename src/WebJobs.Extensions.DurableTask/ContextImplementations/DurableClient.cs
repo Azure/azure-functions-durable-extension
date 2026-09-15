@@ -1310,7 +1310,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private static void ValidateRestartTargetInstanceId(string newInstanceId)
         {
-            if (string.IsNullOrEmpty(newInstanceId))
+            if (string.IsNullOrWhiteSpace(newInstanceId))
             {
                 throw new ArgumentException("A new orchestration instance ID must be provided.", nameof(newInstanceId));
             }

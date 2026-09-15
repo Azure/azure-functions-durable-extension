@@ -329,6 +329,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             yield return new object[] { null };
             yield return new object[] { string.Empty };
+            yield return new object[] { "  " };
+            yield return new object[] { "\u00A0" };
             yield return new object[] { "@invalid" };
             yield return new object[] { "/invalid" };
             yield return new object[] { "invalid\\" };
@@ -353,6 +355,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal("newInstanceId", exception.ParamName);
             serviceClient.Verify(
                 x => x.GetOrchestrationStateAsync(It.IsAny<string>(), It.IsAny<bool>()),
+                Times.Never());
+            serviceClient.Verify(
+                x => x.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()),
                 Times.Never());
         }
 

@@ -1094,7 +1094,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 if (useOptions)
                 {
                     string requestedInstanceId = queryNameValuePairs[NewInstanceIdParameter];
-                    if (string.IsNullOrEmpty(requestedInstanceId))
+                    if (string.IsNullOrWhiteSpace(requestedInstanceId))
                     {
                         return request.CreateErrorResponse(HttpStatusCode.BadRequest, "A new orchestration instance ID must be provided.");
                     }
