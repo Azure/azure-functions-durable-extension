@@ -103,9 +103,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 { "FUNCTIONS_WORKER_RUNTIME", "dotnet" },
                 { "WEBSITE_STAMP_DEPLOYMENT_ID", "tenant" },
                 { "WEBSITE_HOME_STAMPNAME", "stamp01a" },
-                { "KUBERNETES_SERVICE_HOST", kubernetes ? "host" : null },
-                { "POD_NAMESPACE", kubernetes ? "namespace" : null },
-            };
+                { "KUBERNETES_SERVICE_HOST", kubernetes ? "host" : string.Empty },
+                { "POD_NAMESPACE", kubernetes ? "namespace" : string.Empty },
+                { "MANAGED_ENVIRONMENT", string.Empty },
             string instanceId = Guid.NewGuid().ToString();
             string logDirectory = Path.Combine(Path.GetTempPath(), "DurableLoggingTests", instanceId);
             string logPath = Path.Combine(logDirectory, "events.log");
