@@ -22,6 +22,9 @@ public class LargeOutputOrchestratorTests
 
     [Theory]
     [InlineData(30_000)] // 30,720,000 bytes exceeds Kestrel's default 30,000,000-byte request body limit.
+    // DTS requires payloadStorageEnabled for this input size. Enabling it affects other tests,
+    // so DTS coverage would require a separate function host with scoped configuration.
+    [Trait("DTS", "Skip")]
     [Trait("Java", "Skip")]
     [Trait("Node", "Skip")]
     [Trait("Python", "Skip")]
