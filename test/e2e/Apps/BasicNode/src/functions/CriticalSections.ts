@@ -6,12 +6,6 @@
 // These orchestrations exercise `context.df.lock(...)` and the locking-rule
 // enforcement that the durable-functions JS worker layers on top of OOProc
 // schema V4 (added in the JS worker PR that pairs with this extension change).
-//
-// All paired tests in CriticalSectionsTests.cs are currently skipped because
-// the JS worker change has not been released. The `@ts-expect-error` markers
-// below silence compile errors against the published `durable-functions`
-// package — they will start erroring once the package exposes `lock` /
-// `DurableLock`, forcing a cleanup pass alongside the dependency bump.
 
 import * as df from "durable-functions";
 import {
@@ -63,11 +57,14 @@ const lockedTransfer: OrchestrationHandler = function* (context: OrchestrationCo
     const src = new df.EntityId(accountEntityName, fromKey);
     const dst = new df.EntityId(accountEntityName, toKey);
 
-    // Seed balances. Signals do not need to be inside the critical section.
-    context.df.signalEntity(src, "set", 100);
-    context.df.signalEntity(dst, "set", 0);
+    // Seed balances synchronously so all backends observe the initial state
+    // before the lock request is processed.
+    yield context.df.callEntity(src, "set", 100);
+    yield context.df.callEntity(dst, "set", 0);
 
     const lock = yield context.df.lock(src, dst);
+    let finalFrom: number;
+    let finalTo: number;
     try {
         const fromBalance: number = yield context.df.callEntity(src, "get");
         if (fromBalance < amount) {
@@ -75,14 +72,12 @@ const lockedTransfer: OrchestrationHandler = function* (context: OrchestrationCo
         }
         yield context.df.callEntity(src, "add", -amount);
         yield context.df.callEntity(dst, "add", amount);
+        finalFrom = yield context.df.callEntity(src, "get");
+        finalTo = yield context.df.callEntity(dst, "get");
     } finally {
         lock.release();
     }
 
-    // Re-read the balances *outside* the section so the assertion reflects
-    // the committed state visible after release.
-    const finalFrom: number = yield context.df.callEntity(src, "get");
-    const finalTo: number = yield context.df.callEntity(dst, "get");
     return `from=${finalFrom};to=${finalTo}`;
 };
 df.app.orchestration("CriticalSectionLockedTransfer", lockedTransfer);
