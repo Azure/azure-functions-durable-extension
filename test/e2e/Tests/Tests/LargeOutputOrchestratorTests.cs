@@ -22,7 +22,6 @@ public class LargeOutputOrchestratorTests
 
     [Theory]
     [InlineData(30_000)] // 30,720,000 bytes exceeds Kestrel's default 30,000,000-byte request body limit.
-    [Trait("DTS", "Skip")]
     [Trait("Java", "Skip")]
     [Trait("Node", "Skip")]
     [Trait("Python", "Skip")]
