@@ -21,6 +21,26 @@ public class LargeOutputOrchestratorTests
     }
 
     [Theory]
+    [InlineData(30_000)] // 30,720,000 bytes exceeds Kestrel's default 30,000,000-byte request body limit.
+    [Trait("DTS", "Skip")]
+    [Trait("Java", "Skip")]
+    [Trait("Node", "Skip")]
+    [Trait("Python", "Skip")]
+    [Trait("PowerShell", "Skip")]
+    public async Task ScheduleOrchestrationWithLargeInputTests(int sizeInKB)
+    {
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTriggerWithBody(
+            "LargeInputOrchestrator_HttpStart", sizeInKB.ToString(), "application/json");
+
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
+
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 60);
+        var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
+        Assert.Equal((sizeInKB * 1024).ToString(), orchestrationDetails.Output);
+    }
+
+    [Theory]
     [InlineData(65)] // Provide a value slightly exceeding the 64 KB Azure Queue Storage limit to trigger use of blob storage instead at Azure Storage backend.
     public async Task LargeOutputStatusQueryTests(int sizeInKB)
     {
@@ -40,7 +60,7 @@ public class LargeOutputOrchestratorTests
     }
 
     [Theory]
-    [InlineData(4608)]// This value exceeds the default 4 MB, as the test sets the threshold to 6 MB.
+    [InlineData(4608)] // This value exceeds the default 4 MB; the E2E fixture sets MaxGrpcMessageSizeInBytes to int.MaxValue.
     [Trait("DTS", "Skip")]
     [Trait("Java", "Skip")] // Bug: Needs investigation, Exception: StatusRuntimeException: RESOURCE_EXHAUSTED: gRPC message exceeds maximum size 4194304: 4718735
     public async Task DurableTaskClientWriteOutputTests(int sizeInKB)
