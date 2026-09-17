@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>Microsoft.Azure.Durable.Tests.E2E</RootNamespace>
+    <CentralPackageTransitivePinningEnabled>false</CentralPackageTransitivePinningEnabled>
   </PropertyGroup>
   <Target Name="PreBuild" BeforeTargets="Build;BeforeResolveReferences">
     <!-- Build and pack the source project -->
@@ -23,7 +24,8 @@
     <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.ApplicationInsights" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.DurableTask.SqlServer" />
-    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.DurableTask.AzureManaged" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.DurableTask.AzureManaged" VersionOverride="1.10.0" />
+    <PackageReference Include="Microsoft.DurableTask.AzureManagedBackend" VersionOverride="1.10.0" />
     <PackageReference Include="System.Drawing.Common" VersionOverride="6.0.0" />
   </ItemGroup>
 
