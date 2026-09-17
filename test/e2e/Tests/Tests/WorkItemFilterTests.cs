@@ -16,7 +16,6 @@ namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 [Collection(WorkItemFilterCollection.Name)]
 [Trait("AzureStorage", "Skip")] // Work item filtering is a DTS-only feature
 [Trait("MSSQL", "Skip")] // Work item filtering is a DTS-only feature
-[Trait("DTS", "Skip")] // TODO: Remove once AzureManaged backend package with work item filter support is available
 public class WorkItemFilterTests
 {
     private readonly WorkItemFilterFixture fixture;
@@ -80,19 +79,39 @@ public class WorkItemFilterTests
 
         string knownStatusUri = await DurableHelpers.ParseStatusQueryGetUriAsync(knownResponse);
         string unknownStatusUri = await DurableHelpers.ParseStatusQueryGetUriAsync(unknownResponse);
+        string unknownInstanceId = await DurableHelpers.ParseInstanceIdAsync(unknownResponse);
 
-        // Wait for the known orchestration to complete — this proves the worker
-        // is running and dispatching work items.
-        await DurableHelpers.WaitForOrchestrationStateAsync(knownStatusUri, "Completed", 30);
+        try
+        {
+            // Wait for the known orchestration to complete — this proves the worker
+            // is running and dispatching work items.
+            await DurableHelpers.WaitForOrchestrationStateAsync(knownStatusUri, "Completed", 30);
 
-        // Now assert the unknown orchestration is still Pending.
-        // With filtering enabled: Pending (DTS holds it — no matching worker)
-        // Without filtering: would be Failed ("function doesn't exist")
-        var details = await DurableHelpers.GetRunningOrchestrationDetailsAsync(unknownStatusUri);
-        Assert.Equal("Pending", details.RuntimeStatus);
+            // Now assert the unknown orchestration is still Pending.
+            // With filtering enabled: Pending (DTS holds it — no matching worker)
+            // Without filtering: would be Failed ("function doesn't exist")
+            var details = await DurableHelpers.GetRunningOrchestrationDetailsAsync(unknownStatusUri);
+            Assert.Equal("Pending", details.RuntimeStatus);
 
-        this.output.WriteLine(
-            $"Unknown orchestration '{unknownName}' stayed Pending as expected (filter isolation working)");
+            this.output.WriteLine(
+                $"Unknown orchestration '{unknownName}' stayed Pending as expected (filter isolation working)");
+        }
+        finally
+        {
+            using HttpResponseMessage terminateResponse = await HttpHelpers.InvokeHttpTrigger(
+                "TerminateInstance",
+                $"?instanceId={unknownInstanceId}");
+
+            if (terminateResponse.IsSuccessStatusCode)
+            {
+                await DurableHelpers.WaitForOrchestrationStateAsync(unknownStatusUri, "Terminated", 30);
+            }
+            else
+            {
+                this.output.WriteLine(
+                    $"TerminateInstance cleanup returned status {terminateResponse.StatusCode} for unknown orchestration");
+            }
+        }
     }
 
     /// <summary>

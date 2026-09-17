@@ -30,7 +30,6 @@ public class VersioningTests
                                   // testing framework to implement host.json modifications and host restarts
                                   // mid-test.
     [Trait("Python", "Skip")] // The above applies to Python as well
-    [Trait("Node", "Skip")] // The above applies to Node as well
     [Trait("Java", "Skip")] // The above applies to Java as well
     public async Task TestVersionedOrchestration_OKWithMatchingVersion(string? version)
     {
@@ -43,15 +42,13 @@ public class VersioningTests
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
 
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
-        if (version != null)
+        string expectedVersion = version ?? "2.0";
+        if (version == string.Empty && this._fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.Node)
         {
-            Assert.Equal($"Version: '{version}'", orchestrationDetails.Output);
+            expectedVersion = "2.0";
         }
-        else
-        {
-            // The default version (2.0) from the host.json file should've been used here.
-            Assert.Equal("Version: '2.0'", orchestrationDetails.Output);
-        }
+
+        Assert.Equal($"Version: '{expectedVersion}'", orchestrationDetails.Output);
     }
 
     [Fact]
