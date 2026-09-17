@@ -82,9 +82,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             unchecked
             {
-                return
-                    this.TaskHub?.GetHashCode() ?? 0 +
-                    this.ConnectionName?.GetHashCode() ?? 0;
+                int hashCode = 17;
+                hashCode = (hashCode * 31) + (this.TaskHub == null
+                    ? 0
+                    : StringComparer.OrdinalIgnoreCase.GetHashCode(this.TaskHub));
+                hashCode = (hashCode * 31) + (this.ConnectionName == null
+                    ? 0
+                    : StringComparer.OrdinalIgnoreCase.GetHashCode(this.ConnectionName));
+                return hashCode;
             }
         }
 

@@ -50,6 +50,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
     public class LocalGrpcListenerTests
     {
+        private const string ConnectionNameMetadataKey = "Durable-ConnectionName";
         private const string TaskHubMetadataKey = "Durable-TaskHub";
 
         // Host's configured hub for the task hub attribution test. Must be a constant so it can be
@@ -315,7 +316,64 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task TestGrpcListener_CaseVariantTaskHub_DoesNotRejectLocallyDisabledFunction()
+        public async Task TestGrpcListener_DifferentConnection_DoesNotRejectLocallyDisabledFunction()
+        {
+            const string FunctionName = "DisabledOrchestrator";
+            const string HubName = "CurrentHub";
+            const string TargetConnectionName = "TargetConnection";
+            Mock<DurabilityProvider> targetProvider = CreateDurabilityProviderMock(
+                new Mock<IOrchestrationService>().Object,
+                new Mock<IOrchestrationServiceClient>().Object,
+                TargetConnectionName);
+            targetProvider
+                .Setup(provider => provider.CreateTaskOrchestrationAsync(
+                    It.IsAny<TaskMessage>(),
+                    It.IsAny<OrchestrationStatus[]>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+            DurabilityProvider defaultProvider = CreateDurabilityProvider(
+                new Mock<IOrchestrationService>().Object,
+                new Mock<IOrchestrationServiceClient>().Object);
+            using DurableTaskExtension extension = this.CreateExtension(
+                HubName,
+                targetProvider.Object,
+                defaultProvider);
+            extension.RegisterOrchestrator(new FunctionName(FunctionName), orchestratorInfo: null);
+            ILocalGrpcListener listener = LocalGrpcListener.Create(
+                extension,
+                LocalGrpcListenerMode.AspNetCore);
+
+            try
+            {
+                await listener.StartAsync(default);
+                using GrpcChannel channel = GrpcChannel.ForAddress(listener.ListenAddress);
+                var client = new P.TaskHubSidecarService.TaskHubSidecarServiceClient(channel);
+                var headers = new Metadata
+                {
+                    { TaskHubMetadataKey, HubName },
+                    { ConnectionNameMetadataKey, TargetConnectionName },
+                };
+
+                await client.StartInstanceAsync(
+                    new P.CreateInstanceRequest { Name = FunctionName },
+                    headers).ResponseAsync;
+            }
+            finally
+            {
+                await listener.StopAsync(default);
+            }
+
+            targetProvider.Verify(
+                provider => provider.CreateTaskOrchestrationAsync(
+                    It.IsAny<TaskMessage>(),
+                    It.IsAny<OrchestrationStatus[]>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task TestGrpcListener_ExactCaseProviderCaseVariantTaskHub_DoesNotRejectLocallyDisabledFunction()
         {
             const string FunctionName = "RemoteOrchestrator";
             Mock<DurabilityProvider> durabilityProvider = CreateDurabilityProviderMock(

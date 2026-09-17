@@ -15,13 +15,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations
     /// </summary>
     public class DurableClientFactory : IDurableClientFactory, IDisposable
     {
-        // Creating client objects is expensive, so we cache them when the attributes match.
-        // Note that DurableClientAttribute defines a custom equality comparer.
-        private readonly ConcurrentDictionary<DurableClientAttribute, DurableClient> cachedClients =
-            new ConcurrentDictionary<DurableClientAttribute, DurableClient>();
+        // Creating client objects is expensive, so we cache them when their semantic configuration matches.
+        private readonly ConcurrentDictionary<DurableClientCacheKey, DurableClient> cachedClients =
+            new ConcurrentDictionary<DurableClientCacheKey, DurableClient>();
 
-        private readonly ConcurrentDictionary<DurableClientAttribute, HttpApiHandler> cachedHttpListeners =
-            new ConcurrentDictionary<DurableClientAttribute, HttpApiHandler>();
+        private readonly ConcurrentDictionary<DurableClientCacheKey, HttpApiHandler> cachedHttpListeners =
+            new ConcurrentDictionary<DurableClientCacheKey, HttpApiHandler>();
 
         private readonly DurableClientOptions defaultDurableClientOptions;
         private readonly DurableTaskOptions durableTaskOptions;
@@ -76,9 +75,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations
 
             DurableClientAttribute attribute = new DurableClientAttribute(durableClientOptions);
 
+            var cacheKey = new DurableClientCacheKey(attribute);
             DurableClient client = this.cachedClients.GetOrAdd(
-                attribute,
-                attr =>
+                cacheKey,
+                _ =>
                 {
                     DurabilityProvider innerClient = this.durabilityProviderFactory.GetDurabilityProvider(attribute);
                     return new DurableClient(innerClient, null, attribute, this.MessageDataConverter, this.TraceHelper, this.durableTaskOptions, this);
