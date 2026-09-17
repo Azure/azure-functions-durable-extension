@@ -2,7 +2,10 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Security.Authentication;
+using System.Threading;
 using System.Threading.Tasks;
 using Azure.Identity;
 using DurableTask.ApplicationInsights;
@@ -12,6 +15,7 @@ using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.Channel;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Azure.WebJobs.Logging.ApplicationInsights;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ApplicationInsightsTokenCredentialOptions = Microsoft.Azure.WebJobs.Logging.ApplicationInsights.TokenCredentialOptions;
@@ -26,6 +30,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         private readonly DurableTaskOptions options;
         private readonly INameResolver nameResolver;
         private readonly TelemetryConfiguration hostTelemetryConfiguration;
+        private readonly IServiceProvider serviceProvider;
+        private readonly IReadOnlyList<DurableTaskTelemetryInitializerRegistration> initializerRegistrations;
+        private readonly Lazy<IReadOnlyList<ITelemetryInitializer>> durableTelemetryInitializers;
         private EndToEndTraceHelper endToEndTraceHelper;
         private TelemetryClient telemetryClient;
 
@@ -35,7 +42,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         /// <param name="options">DurableTask options.</param>
         /// <param name="nameResolver">Name resolver used for environment variables.</param>
         public TelemetryActivator(IOptions<DurableTaskOptions> options, INameResolver nameResolver)
-            : this(options, nameResolver, hostTelemetryConfiguration: null)
+            : this(
+                options,
+                nameResolver,
+                hostTelemetryConfiguration: null,
+                serviceProvider: null,
+                initializerRegistrations: Array.Empty<DurableTaskTelemetryInitializerRegistration>())
         {
         }
 
@@ -49,10 +61,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             IOptions<DurableTaskOptions> options,
             INameResolver nameResolver,
             TelemetryConfiguration hostTelemetryConfiguration)
+            : this(
+                options,
+                nameResolver,
+                hostTelemetryConfiguration,
+                serviceProvider: null,
+                initializerRegistrations: Array.Empty<DurableTaskTelemetryInitializerRegistration>())
+        {
+        }
+
+        internal TelemetryActivator(
+            IOptions<DurableTaskOptions> options,
+            INameResolver nameResolver,
+            TelemetryConfiguration hostTelemetryConfiguration,
+            IServiceProvider serviceProvider,
+            IReadOnlyList<DurableTaskTelemetryInitializerRegistration> initializerRegistrations)
         {
             this.options = options.Value;
             this.nameResolver = nameResolver;
             this.hostTelemetryConfiguration = hostTelemetryConfiguration;
+            this.serviceProvider = serviceProvider;
+            this.initializerRegistrations = initializerRegistrations ??
+                throw new ArgumentNullException(nameof(initializerRegistrations));
+            this.durableTelemetryInitializers = new Lazy<IReadOnlyList<ITelemetryInitializer>>(
+                this.ResolveDurableTelemetryInitializers,
+                LazyThreadSafetyMode.ExecutionAndPublication);
         }
 
         /// <summary>
@@ -70,6 +103,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         /// assert which credential was applied without reaching into Application Insights internals.
         /// </summary>
         internal TelemetryConfiguration TelemetryConfiguration { get; private set; }
+
+        internal static TelemetryActivator Create(IServiceProvider serviceProvider)
+        {
+            if (serviceProvider == null)
+            {
+                throw new ArgumentNullException(nameof(serviceProvider));
+            }
+
+            return new TelemetryActivator(
+                serviceProvider.GetRequiredService<IOptions<DurableTaskOptions>>(),
+                serviceProvider.GetRequiredService<INameResolver>(),
+                serviceProvider.GetService<TelemetryConfiguration>(),
+                serviceProvider,
+                serviceProvider.GetServices<DurableTaskTelemetryInitializerRegistration>().ToArray());
+        }
 
         /// <inheritdoc/>
         public async ValueTask DisposeAsync()
@@ -205,10 +253,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 
         private TelemetryConfiguration SetupTelemetryConfiguration()
         {
+            IReadOnlyList<ITelemetryInitializer> durableInitializers =
+                this.options.Tracing.Version == Options.DurableDistributedTracingVersion.V2
+                    ? this.durableTelemetryInitializers.Value
+                    : Array.Empty<ITelemetryInitializer>();
+
             TelemetryConfiguration config = TelemetryConfiguration.CreateDefault();
             if (this.OnSend != null)
             {
                 config.TelemetryChannel = new NoOpTelemetryChannel { OnSend = this.OnSend };
+            }
+
+            foreach (ITelemetryInitializer initializer in durableInitializers)
+            {
+                config.TelemetryInitializers.Add(initializer);
             }
 
             config.TelemetryInitializers.Add(new DurableTaskInstanceIdTelemetryInitializer(this.options.Tracing.IncludeInstanceIdInOperationName));
@@ -309,6 +367,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             }
 
             return config;
+        }
+
+        private IReadOnlyList<ITelemetryInitializer> ResolveDurableTelemetryInitializers()
+        {
+            var initializers = new ITelemetryInitializer[this.initializerRegistrations.Count];
+            for (int i = 0; i < this.initializerRegistrations.Count; i++)
+            {
+                ITelemetryInitializer initializer = this.initializerRegistrations[i].Factory(this.serviceProvider);
+                if (initializer == null)
+                {
+                    throw new InvalidOperationException(
+                        $"The Durable telemetry initializer factory at index {i} returned null.");
+                }
+
+                initializers[i] = initializer;
+            }
+
+            return initializers;
         }
 
         /// <summary>
