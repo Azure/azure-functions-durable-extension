@@ -4,6 +4,7 @@
 using Xunit.Abstractions;
 using Xunit;
 using System.Diagnostics;
+using System.Text.Json.Nodes;
 
 namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 
@@ -35,7 +36,7 @@ public class DistributedTracingTests
     [Trait("DTS", "Skip")] // Distributed tracing is currently not working in DTS
     [Trait("PowerShell", "Skip")] // Distributed tracing is currently not implemented in PowerShell
     [Trait("Python", "Skip")] // Distributed tracing is not currently implemented in Python
-    [Trait("Node", "Skip")] // Distributed tracing is not currently implemented in Node
+    [Trait("Node", "Skip")] // Remove after durable-functions releases native invocation-context propagation
     [Trait("Java", "Skip")] // Distributed tracing is not currently implemented in Java
     public async Task DistributedTracingTest()
     {
@@ -44,6 +45,8 @@ public class DistributedTracingTests
         using Activity? activity = activitySource.StartActivity("HttpTriggerTests");
 
         Assert.NotNull(activity);
+        const string TraceState = "congo=t61rcWkgMzE";
+        activity.TraceStateString = TraceState;
 
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=DistributedTracing");
 
@@ -51,8 +54,39 @@ public class DistributedTracingTests
         await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
         var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
         string output = orchestrationDetails.Output;
-        ActivityContext.TryParse(output, null, out ActivityContext activityContext);
 
-        Assert.Equal(activity?.TraceId.ToString(), activityContext.TraceId.ToString());
+        if (this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.Node)
+        {
+            JsonNode? invocationTraceContext = JsonNode.Parse(output);
+            Assert.NotNull(invocationTraceContext);
+            AssertActiveInvocationContext(invocationTraceContext["orchestration"], activity.TraceId, TraceState);
+            AssertActiveInvocationContext(invocationTraceContext["activity"], activity.TraceId, TraceState);
+        }
+        else
+        {
+            Assert.True(ActivityContext.TryParse(output, null, out ActivityContext activityContext));
+            Assert.Equal(activity.TraceId, activityContext.TraceId);
+        }
+    }
+
+    private static void AssertActiveInvocationContext(
+        JsonNode? invocationTraceContext,
+        ActivityTraceId expectedTraceId,
+        string expectedTraceState)
+    {
+        Assert.NotNull(invocationTraceContext);
+        string? traceParent = invocationTraceContext["traceParent"]?.GetValue<string>();
+        string? traceState = invocationTraceContext["traceState"]?.GetValue<string>();
+        string? activeTraceId = invocationTraceContext["activeTraceId"]?.GetValue<string>();
+        string? activeSpanId = invocationTraceContext["activeSpanId"]?.GetValue<string>();
+
+        Assert.False(string.IsNullOrEmpty(traceParent));
+        Assert.True(ActivityContext.TryParse(traceParent, traceState, out ActivityContext activityContext));
+        Assert.Equal(expectedTraceId, activityContext.TraceId);
+        Assert.NotEqual(default, activityContext.SpanId);
+        Assert.Equal(ActivityTraceFlags.Recorded, activityContext.TraceFlags);
+        Assert.Equal(expectedTraceState, traceState);
+        Assert.Equal(activityContext.TraceId.ToString(), activeTraceId);
+        Assert.Equal(activityContext.SpanId.ToString(), activeSpanId);
     }
 }

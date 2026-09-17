@@ -2229,6 +2229,95 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task StartNewInstance_Persists_CreateOrchestration_TraceContext()
+        {
+            const string FunctionName = "TestOrchestrator";
+            const string TraceParent = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01";
+            const string TraceState = "congo=t61rcWkgMzE";
+            var instanceId = Guid.NewGuid().ToString("N");
+            var requestUri = new Uri(
+                $"http://localhost/runtime/webhooks/durabletask/orchestrators/{FunctionName}/{instanceId}");
+
+            ExecutionStartedEvent capturedEvent = null;
+            ActivityTraceId producerTraceId = default;
+            ActivitySpanId producerSpanId = default;
+            ActivitySpanId producerParentSpanId = default;
+            string producerOperationName = null;
+            string producerTraceState = null;
+
+            using var activityListener = new ActivityListener
+            {
+                ShouldListenTo = source => source.Name == "WebJobs.Extensions.DurableTask",
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+                ActivityStopped = activity =>
+                {
+                    if (activity.Kind == ActivityKind.Producer &&
+                        activity.GetTagItem("durabletask.task.instance_id")?.ToString() == instanceId)
+                    {
+                        producerTraceId = activity.TraceId;
+                        producerSpanId = activity.SpanId;
+                        producerParentSpanId = activity.ParentSpanId;
+                        producerOperationName = activity.OperationName;
+                        producerTraceState = activity.TraceStateString;
+                    }
+                },
+            };
+            ActivitySource.AddActivityListener(activityListener);
+
+            var orchestrationServiceMock = new Mock<IOrchestrationService>(MockBehavior.Strict);
+            var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
+            orchestrationServiceClientMock
+                .Setup(p => p.CreateTaskOrchestrationAsync(
+                    It.IsAny<TaskMessage>(),
+                    It.IsAny<OrchestrationStatus[]>()))
+                .Callback<TaskMessage, OrchestrationStatus[]>((msg, _) =>
+                {
+                    capturedEvent = msg.Event as ExecutionStartedEvent;
+                })
+                .Returns(Task.CompletedTask);
+            orchestrationServiceClientMock
+                .Setup(p => p.GetOrchestrationStateAsync(instanceId, false))
+                .ReturnsAsync(new List<OrchestrationState>());
+
+            var durabilityProvider = new DurabilityProvider(
+                "storageProviderName",
+                orchestrationServiceMock.Object,
+                orchestrationServiceClientMock.Object,
+                TestConstants.ConnectionName);
+            var options = new DurableTaskOptions
+            {
+                WebhookUriProviderOverride = () => new Uri("http://localhost/runtime/webhooks/durabletask"),
+                HubName = TestConstants.TaskHub,
+            };
+            var customExtension = TestDurableTaskExtension.CreateWithProvider(options, durabilityProvider);
+            customExtension.RegisterOrchestrator(
+                new FunctionName(FunctionName),
+                new RegisteredFunctionInfo(executor: null, isOutOfProc: true));
+            var handler = new HttpApiHandler(customExtension, NullLogger.Instance);
+            var request = new HttpRequestMessage(HttpMethod.Post, requestUri);
+            request.Headers.Add("traceparent", TraceParent);
+            request.Headers.Add("tracestate", TraceState);
+
+            HttpResponseMessage response = await handler.HandleRequestAsync(request, CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+            Assert.NotNull(capturedEvent);
+            Assert.NotNull(capturedEvent.ParentTraceContext);
+            Assert.True(ActivityContext.TryParse(
+                capturedEvent.ParentTraceContext.TraceParent,
+                capturedEvent.ParentTraceContext.TraceState,
+                out ActivityContext persistedContext));
+            Assert.Equal(ActivityTraceId.CreateFromString("4bf92f3577b34da6a3ce929d0e0e4736"), persistedContext.TraceId);
+            Assert.Equal(producerTraceId, persistedContext.TraceId);
+            Assert.Equal(producerSpanId, persistedContext.SpanId);
+            Assert.Equal(ActivitySpanId.CreateFromString("00f067aa0ba902b7"), producerParentSpanId);
+            Assert.Equal("create_orchestration:TestOrchestrator", producerOperationName);
+            Assert.Equal(TraceState, producerTraceState);
+            Assert.Equal(TraceState, capturedEvent.ParentTraceContext.TraceState);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task StartNewInstance_Returns_HTTP_400_On_Disabled_Function()
         {
             const string FunctionName = "DisabledOrchestrator";

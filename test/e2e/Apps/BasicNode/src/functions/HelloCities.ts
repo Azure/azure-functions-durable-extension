@@ -1,7 +1,9 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
+import '../telemetry';
 import { app, HttpHandler, HttpRequest, HttpResponse, InvocationContext } from '@azure/functions';
+import { context as otelContext, trace } from '@opentelemetry/api';
 import * as df from 'durable-functions';
 import { ActivityHandler, OrchestrationContext, OrchestrationHandler } from 'durable-functions';
 
@@ -28,6 +30,43 @@ const HelloCitiesActivity: ActivityHandler = (input: string): string => {
 };
 df.app.activity(activityName, { handler: HelloCitiesActivity });
 
+const distributedTracingActivityName = 'GetDistributedTraceContext';
+
+const DistributedTracing: OrchestrationHandler = function* (context: OrchestrationContext) {
+    const activityTraceContext = yield context.df.callActivity(distributedTracingActivityName);
+    const traceParent = context.traceContext?.traceParent;
+    const activeSpanContext = trace.getSpanContext(otelContext.active());
+    if (!traceParent || !activeSpanContext) {
+        throw new Error('The Durable orchestrator invocation trace context was not activated.');
+    }
+
+    return {
+        orchestration: {
+            traceParent,
+            traceState: context.traceContext?.traceState,
+            activeTraceId: activeSpanContext.traceId,
+            activeSpanId: activeSpanContext.spanId,
+        },
+        activity: activityTraceContext,
+    };
+};
+df.app.orchestration('DistributedTracing', DistributedTracing);
+
+const GetDistributedTraceContext: ActivityHandler = (_input: unknown, context: InvocationContext) => {
+    const traceParent = context.traceContext?.traceParent;
+    const activeSpanContext = trace.getSpanContext(otelContext.active());
+    if (!traceParent || !activeSpanContext) {
+        throw new Error('The Durable activity invocation trace context was not activated.');
+    }
+
+    return {
+        traceParent,
+        traceState: context.traceContext?.traceState,
+        activeTraceId: activeSpanContext.traceId,
+        activeSpanId: activeSpanContext.spanId,
+    };
+};
+df.app.activity(distributedTracingActivityName, { handler: GetDistributedTraceContext });
 
 const HelloCitiesHttpStartScheduled: HttpHandler = async (request: HttpRequest, context: InvocationContext): Promise<HttpResponse> => {
     const client = df.getClient(context);
