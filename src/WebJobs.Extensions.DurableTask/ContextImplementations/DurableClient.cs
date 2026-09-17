@@ -624,11 +624,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
-        Task<OrchestrationStatusQueryResult> IDurableOrchestrationClient.ListInstancesAsync(
+        async Task<OrchestrationStatusQueryResult> IDurableOrchestrationClient.ListInstancesAsync(
             OrchestrationStatusQueryCondition condition,
             CancellationToken cancellationToken)
         {
-            return this.DurabilityProvider.GetOrchestrationStateWithPagination(condition, cancellationToken);
+            OrchestrationStatusQueryResult result = await this.DurabilityProvider.GetOrchestrationStateWithPagination(condition, cancellationToken);
+            if (!condition.ExcludeEntities)
+            {
+                return result;
+            }
+
+            // Enforce filtering for providers that do not support it, without changing pagination.
+            return new OrchestrationStatusQueryResult
+            {
+                DurableOrchestrationState = result.DurableOrchestrationState
+                    .Where(state => !state.InstanceId.StartsWith("@", StringComparison.Ordinal))
+                    .ToList(),
+                ContinuationToken = result.ContinuationToken,
+            };
         }
 
         private static EntityQueryResult ConvertToEntityQueryResult(IEnumerable<DurableEntityStatus> entities, string continuationToken)

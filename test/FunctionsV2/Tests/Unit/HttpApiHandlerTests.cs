@@ -561,6 +561,58 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Null(((JObject)responsePayload[2]).Property("version"));
         }
 
+        [Theory]
+        [InlineData(null, 2)]
+        [InlineData("false", 2)]
+        [InlineData("true", 1)]
+        [InlineData("TRUE", 1)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task GetAllStatus_ExcludeEntities(string excludeEntities, int expectedCount)
+        {
+            var provider = new Mock<DurabilityProvider>(
+                "test",
+                new Mock<IOrchestrationService>().Object,
+                new Mock<IOrchestrationServiceClient>().Object,
+                TestConstants.ConnectionName);
+            provider
+                .Setup(x => x.GetOrchestrationStateWithPagination(It.IsAny<OrchestrationStatusQueryCondition>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new OrchestrationStatusQueryResult
+                {
+                    DurableOrchestrationState = new[]
+                    {
+                        new DurableOrchestrationStatus { Name = "Orchestration", InstanceId = "01" },
+                        new DurableOrchestrationStatus { Name = "@counter", InstanceId = "@counter@02" },
+                    },
+                    ContinuationToken = "next-page",
+                });
+            var options = new DurableTaskOptions
+            {
+                HubName = TestConstants.TaskHub,
+                WebhookUriProviderOverride = () => new Uri(TestConstants.NotificationUrl),
+            };
+            var extension = TestDurableTaskExtension.CreateWithProvider(options, provider.Object);
+            using var handler = new HttpApiHandler(extension, NullLogger.Instance);
+            var uri = new UriBuilder(TestConstants.NotificationUrl);
+            uri.Path += "/instances/";
+            if (excludeEntities != null)
+            {
+                uri.Query = $"excludeEntities={excludeEntities}";
+            }
+
+            using var request = new HttpRequestMessage(HttpMethod.Get, uri.Uri);
+            using HttpResponseMessage response = await handler.HandleRequestAsync(request, CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal("next-page", response.Headers.GetValues("x-ms-continuation-token").Single());
+            var instances = JsonConvert.DeserializeObject<IList<StatusResponsePayload>>(await response.Content.ReadAsStringAsync());
+            Assert.Equal(expectedCount, instances.Count);
+            Assert.Equal("01", instances[0].InstanceId);
+            if (expectedCount == 2)
+            {
+                Assert.Equal("@counter@02", instances[1].InstanceId);
+            }
+        }
+
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task GetAllStatus_IncludesParentInstanceId()
