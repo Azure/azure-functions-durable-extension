@@ -481,7 +481,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     {
                         // This happens when the customer is using a durability provider/provider factory that does not yet support SetUseSeparateQueueForEntityWorkItems.
                         // It only represents a real problem when the customer is also using a language config that requires configuring gRPC during function indexing,
-                        // like for the gRPC-based Python SDK. Eventually, this method will be implemented on all durability provider SDKs and should never appear.
+                        // like the newer Python and JavaScript SDKs. Eventually, this method will be implemented on all durability provider SDKs and should never appear.
                         this.TraceHelper.ExtensionWarningEvent(this.Options.HubName, string.Empty, string.Empty, $"Could not set UseSeparateQueueForEntityWorkItems: {ex}");
                     }
                 }
@@ -495,6 +495,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 if (this.OutOfProcProtocol != OutOfProcOrchestrationProtocol.MiddlewarePassthrough)
                 {
                     this.OutOfProcProtocol = OutOfProcOrchestrationProtocol.MiddlewarePassthrough;
+
+                    if (this.PlatformInformationService.GetWorkerRuntimeType() == WorkerRuntimeType.Node)
+                    {
+                        this.TraceHelper.SdkUsageDetected(
+                            this.Options.HubName,
+                            sdkName: "durable-functions",
+                            sdkVersion: "4.x");
+                    }
+
                     if (this.localGrpcListener is null)
                     {
                         this.localGrpcListener = LocalGrpcListener.Create(this, this.Options.GrpcListenerMode);
@@ -513,7 +522,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     {
                         // This happens when the customer is using a durability provider/provider factory that does not yet support SetUseSeparateQueueForEntityWorkItems.
                         // It only represents a real problem when the customer is also using a language config that requires configuring gRPC during function indexing,
-                        // like for the gRPC-based Python SDK. Eventually, this method will be implemented on all durability provider SDKs and should never appear.
+                        // like the newer Python and JavaScript SDKs. Eventually, this method will be implemented on all durability provider SDKs and should never appear.
                         this.TraceHelper.ExtensionWarningEvent(this.Options.HubName, string.Empty, string.Empty, $"Could not set UseSeparateQueueForEntityWorkItems: {ex}");
                     }
                 }

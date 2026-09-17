@@ -152,6 +152,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.logger.LogWarning(message);
         }
 
+        public void SdkUsageDetected(string hubName, string sdkName, string sdkVersion)
+        {
+            EtwEventSource.Instance.SdkUsageDetected(
+                hubName,
+                LocalAppName,
+                LocalSlotName,
+                sdkName,
+                sdkVersion,
+                ExtensionVersion);
+        }
+
         public void ClientOperationReceived(
             string hubName,
             string operationType,
