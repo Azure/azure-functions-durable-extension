@@ -30,9 +30,11 @@ Next, you'll need to copy the connection string or instrumentation key for that 
 
 If the Application Insights resource has local authentication disabled, also configure `APPLICATIONINSIGHTS_AUTHENTICATION_STRING`. Use `Authorization=AAD` for the function app's system-assigned managed identity, or `Authorization=AAD;ClientId=<USER_ASSIGNED_CLIENT_ID>` for a user-assigned managed identity. The selected identity needs the `Monitoring Metrics Publisher` role on the Application Insights resource. Microsoft Entra authentication for Application Insights isn't supported by the Functions host during local development.
 
-### Optional Durable telemetry enrichment
+### Optional Durable telemetry enrichment (.NET In-Process Only)
 
-An in-process app can explicitly register Application Insights initializers for Durable distributed tracing V2. Host Application Insights registrations are not inherited automatically.
+A **.NET In-Process** app can explicitly register Application Insights initializers for Durable distributed tracing V2. Host Application Insights registrations are not inherited automatically.
+
+> **Note:** `AddDurableTaskTelemetryInitializer` will be available starting with the upcoming **3.16.0** release of the `Microsoft.Azure.WebJobs.Extensions.DurableTask` package. It is not available in **3.15.0 or earlier**.
 
 ```csharp
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
