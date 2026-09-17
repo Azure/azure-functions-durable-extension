@@ -42,9 +42,9 @@ df.app.entity(accountEntityName, accountEntity);
 // ----------------------------------------------------------------------------
 // CriticalSectionLockedTransfer
 //
-// Seeds two accounts via signals, acquires both locks, debits one, credits
-// the other, releases the locks, and returns the final balances as
-// "from=<n>;to=<n>". Tests assert the exact output string.
+// Seeds two accounts with awaited entity calls, acquires both locks, debits
+// one, credits the other, releases the locks, and returns the final balances
+// as "from=<n>;to=<n>". Tests assert the exact output string.
 //
 // Hardcoded keys (no input) so the existing StartOrchestration handler
 // (which doesn't forward query input to the orchestration) can drive it.
