@@ -71,7 +71,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             bool addDurableClientFactory = false,
             Action<ScaleOptions> configureScaleOptions = null,
             Type[] types = null,
-            TelemetryConfiguration hostTelemetryConfiguration = null)
+            TelemetryConfiguration hostTelemetryConfiguration = null,
+            Action<ILoggingBuilder> configureLogging = null)
         {
             switch (storageProviderType)
             {
@@ -172,7 +173,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 types: types,
                 configureScaleOptions: configureScaleOptions,
                 durabilityProviderFactoryType: durabilityProviderFactoryType,
-                hostTelemetryConfiguration: hostTelemetryConfiguration);
+                hostTelemetryConfiguration: hostTelemetryConfiguration,
+                configureLogging: configureLogging);
         }
 
         public static ITestHost GetJobHostWithOptions(
@@ -188,7 +190,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             bool addDurableClientFactory = false,
             Action<ScaleOptions> configureScaleOptions = null,
             Type[] types = null,
-            TelemetryConfiguration hostTelemetryConfiguration = null)
+            TelemetryConfiguration hostTelemetryConfiguration = null,
+            Action<ILoggingBuilder> configureLogging = null)
         {
             if (serializerSettings == null)
             {
@@ -217,7 +220,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 lifeCycleNotificationHelper: lifeCycleNotificationHelper,
                 serializerSettingsFactory: serializerSettings,
                 onSend: onSend,
-                hostTelemetryConfiguration: hostTelemetryConfiguration);
+                hostTelemetryConfiguration: hostTelemetryConfiguration,
+                configureLogging: configureLogging);
         }
 
         public static IHost GetJobHostExternalEnvironment(IStorageServiceClientProviderFactory clientProviderFactory = null)
