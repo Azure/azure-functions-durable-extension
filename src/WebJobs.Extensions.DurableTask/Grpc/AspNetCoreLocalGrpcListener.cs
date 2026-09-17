@@ -134,10 +134,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc
             IHost newHost = new HostBuilder().ConfigureWebHost(
                 builder =>
                 {
-                    builder.UseKestrel(o => o.Listen(
-                        IPAddress.Parse(HostName),
-                        port,
-                        listenOptions => listenOptions.Protocols = HttpProtocols.Http2));
+                    builder.UseKestrel(o =>
+                    {
+                        o.Limits.MaxRequestBodySize = null;
+                        o.Listen(
+                            IPAddress.Parse(HostName),
+                            port,
+                            listenOptions => listenOptions.Protocols = HttpProtocols.Http2);
+                    });
 
                     builder.ConfigureServices(services =>
                     {
