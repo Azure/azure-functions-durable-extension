@@ -21,6 +21,12 @@ The extension implements `IExtensionConfigProvider` to integrate with the Azure 
 
 `HttpApiHandler` exposes REST endpoints for starting orchestrations, querying instance status, raising events, managing instance lifecycle (terminate, suspend, resume, etc.), and interacting with entities. The Azure Functions host routes webhook traffic into `DurableTaskExtension`, which delegates to `HttpApiHandler.HandleRequestAsync`.
 
+### Excluding entities from instance queries
+
+`IDurableOrchestrationClient.ListInstancesAsync` and the HTTP instance-list endpoint include durable entity instances by default for backward compatibility. To request orchestration instances only, set `OrchestrationStatusQueryCondition.ExcludeEntities = true` or add `excludeEntities=true` to `GET /runtime/webhooks/durabletask/instances`. Omitting the option or setting it to `false` preserves existing behavior. Entity-listing and purge APIs are unchanged; the .NET isolated `DurableTaskClient.GetAllInstancesAsync` path already requests entity exclusion.
+
+Entity exclusion also applies when `InstanceIdPrefix` (HTTP `instanceIdPrefix`) is supplied. Azure Storage receives the filter directly, and the client filters returned pages as well so the option works with providers that do not implement it. Filtering can yield fewer results than the requested page size, including an empty page. Continue querying with the returned continuation token (the HTTP `x-ms-continuation-token` header) until it is empty; do not stop just because a page has no instances. Non-.NET SDKs need to expose the option in their own query APIs to opt in without calling the HTTP endpoint directly.
+
 ## Relationship with DurableTask.Core (DTFx)
 
 This extension is a **hosting layer on top of the [Durable Task Framework](https://github.com/Azure/durabletask)** (DTFx, `Microsoft.Azure.DurableTask.Core`). DTFx owns the orchestration state machine, replay engine, and work-item scheduling. This extension builds on top of it to provide the Azure Functions binding model, HTTP management API, gRPC sidecar for out-of-process workers, entity programming model, and telemetry integration.
