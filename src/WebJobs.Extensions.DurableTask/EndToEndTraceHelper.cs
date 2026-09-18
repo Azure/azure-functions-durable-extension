@@ -152,6 +152,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.logger.LogWarning(message);
         }
 
+        // ETW-only signal used for structured telemetry; intentionally not written to user logs to avoid noise.
         public void SdkUsageDetected(string hubName, string sdkName, string sdkVersion)
         {
             EtwEventSource.Instance.SdkUsageDetected(
