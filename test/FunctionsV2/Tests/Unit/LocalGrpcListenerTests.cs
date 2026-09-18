@@ -1169,6 +1169,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void TestHttpConfiguration_DoesNotReportDurableFunctionsV4ForNode()
+        {
+            string hubName = $"SdkUsage{Guid.NewGuid():N}";
+            using var events = new SdkUsageEventListener(hubName);
+            using DurableTaskExtension extension = this.CreateExtension(hubName, WorkerRuntimeType.Node);
+
+            extension.ConfigureForHttpProtocol();
+
+            Assert.Empty(events.Events);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void TestGrpcConfiguration_ReportsSdkUsageOnceWhenConfiguredConcurrently()
+        {
+            string hubName = $"SdkUsage{Guid.NewGuid():N}";
+            using var events = new SdkUsageEventListener(hubName);
+            using DurableTaskExtension extension = this.CreateExtension(hubName, WorkerRuntimeType.Node);
+
+            Parallel.For(0, 10, _ => extension.ConfigureForGrpcProtocol());
+
+            Assert.Single(events.Events);
+        }
+
         private DurableTaskExtension CreateExtension(string hubName)
         {
             return this.CreateExtension(hubName, WorkerRuntimeType.DotNetIsolated);
