@@ -17,6 +17,8 @@ public class WorkItemFilterFixture : FunctionAppFixture
     {
         this.functionAppProcess.AdditionalEnvironmentVariables = new Dictionary<string, string>
         {
+            // A separate emulator prevents filtered-worker state from stalling unfiltered workers.
+            ["DURABLE_TASK_SCHEDULER_CONNECTION_STRING"] = "Endpoint=http://localhost:8083;Authentication=None",
             ["AzureFunctionsJobHost__extensions__durableTask__storageProvider__workItemFilteringEnabled"] = "true",
         };
     }

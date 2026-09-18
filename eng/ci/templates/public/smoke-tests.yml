@@ -207,8 +207,8 @@ jobs:
           & $script -HttpStartPath api/StartHelloCitiesTyped
           & $script -HttpStartPath api/StartHelloCitiesUntyped
           & $script -HttpStartPath api/StartHelloCitiesUntyped -TestWithCustomInstanceId
-          & $script -HttpStartPath api/durable_HttpStartProcessExitOrchestrator
-          & $script -HttpStartPath api/durable_HttpStartTimeoutOrchestrator
-          & $script -HttpStartPath api/durable_HttpStartOOMOrchestrator
+          & $script -HttpStartPath api/durable_HttpStartProcessExitOrchestrator -TriggerFault
+          & $script -HttpStartPath api/durable_HttpStartTimeoutOrchestrator -TriggerFault
+          & $script -HttpStartPath api/durable_HttpStartOOMOrchestrator -TriggerFault
           & $script -HttpStartPath api/StartEntityOrchestration
         displayName: Run .NET isolated smoke tests
