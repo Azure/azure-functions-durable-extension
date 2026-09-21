@@ -1,3 +1,4 @@
+#Requires -Version 7.0
 # This is a simple test runner to validate the .NET isolated smoke tests.
 # It supercedes the usual e2e-tests.ps1 script for the .NET isolated scenario because building the snmoke test app
 # on the docker image is unreliable. For more details, see: https://github.com/Azure/azure-functions-host/issues/7995
@@ -6,6 +7,7 @@
 # timeouts, OOMs, etc. For that reason, it is careful to check that the Functions Host is running and healthy at regular
 # intervals. This makes these tests run more slowly than other test categories.
 # Fault orchestrations require -TriggerFault, which signals StartFault only after the instance status URL is saved.
+# Build the selected framework first, then pass its bin/Release/<framework> output as -AppDirectory.
 
 param(
 	[Parameter(Mandatory=$true)]
@@ -13,7 +15,8 @@ param(
     [switch]$TestWithCustomInstanceId = $false,
     [switch]$TriggerFault = $false,
     [ValidateRange(1, 65535)]
-    [int]$Port = 7071
+    [int]$Port = 7071,
+    [string]$AppDirectory = (Join-Path $PSScriptRoot "bin" "Release" "net8.0")
 )
 
 $ErrorActionPreference = "Stop"
@@ -22,20 +25,39 @@ $statusUrl = $null;
 $success = $false;
 $haveManuallyRestartedHost = $false;
 $funcProcess = $null;
+$testError = $null
 $hostUri = "http://localhost:$Port"
 $funcLogId = [guid]::NewGuid().ToString("N")
 $funcStandardOutput = Join-Path ([IO.Path]::GetTempPath()) "func-$funcLogId.stdout.log"
 $funcStandardError = Join-Path ([IO.Path]::GetTempPath()) "func-$funcLogId.stderr.log"
 
-# Get the directory where this script is located (the DotNetIsolated folder)
-$scriptDir = $PSScriptRoot
-if ([string]::IsNullOrEmpty($scriptDir)) {
-    $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$appPath = (Resolve-Path -LiteralPath $AppDirectory).Path
+foreach ($requiredFile in @("host.json", "worker.config.json", "functions.metadata", "DotNetIsolated.runtimeconfig.json")) {
+    if (-not (Test-Path -LiteralPath (Join-Path $appPath $requiredFile) -PathType Leaf)) {
+        throw "Missing '$requiredFile' in '$appPath'. Build the selected target framework before running smoke tests."
+    }
 }
-if ([string]::IsNullOrEmpty($scriptDir)) {
-    $scriptDir = "./test/SmokeTests/OOProcSmokeTests/DotNetIsolated"
+Write-Host "Application directory: $appPath" -ForegroundColor Cyan
+
+function Stop-FunctionsHost([System.Diagnostics.Process] $process) {
+    if ($null -eq $process) {
+        return
+    }
+
+    try {
+        Write-Host "Stopping Functions host process tree rooted at PID $($process.Id)..." -ForegroundColor Yellow
+        if (-not $process.HasExited) {
+            $process.Kill($true)
+        }
+
+        # The infinite overload also drains redirected pipes, which surviving descendants can hold open on Linux.
+        if (-not $process.WaitForExit(10000)) {
+            throw "Functions host PID $($process.Id) did not exit within 10 seconds. See $funcStandardOutput and $funcStandardError."
+        }
+    } finally {
+        $process.Dispose()
+    }
 }
-Write-Host "Script directory: $scriptDir" -ForegroundColor Cyan
 
 try {
     Do {
@@ -50,12 +72,12 @@ try {
                     $funcProcess = $null
                 }
                 Write-Host "Starting the Functions host..." -ForegroundColor Yellow
-                Write-Host "Working directory: $scriptDir" -ForegroundColor Cyan
+                Write-Host "Working directory: $appPath" -ForegroundColor Cyan
 
                 $funcProcess = Start-Process `
                     -FilePath "func" `
-                    -ArgumentList "host", "start", "--port", "$Port" `
-                    -WorkingDirectory $scriptDir `
+                    -ArgumentList "host", "start", "--no-build", "--port", "$Port" `
+                    -WorkingDirectory $appPath `
                     -RedirectStandardOutput $funcStandardOutput `
                     -RedirectStandardError $funcStandardError `
                     -PassThru
@@ -150,6 +172,7 @@ try {
             $retryCount = $retryCount + 1
 
         } catch {
+            $requestError = $_
             # we expect to enter this 'catch' block if any of our HTTP requests to the host fail.
             # Some failures observed during development include:
             # - The host is not running/was restarting/was killed
@@ -166,16 +189,18 @@ try {
 
                 # We stop the host process and wait for a bit before checking if it is running again.
                 Write-Host "Restarting the Functions host..." -ForegroundColor Yellow
-                if ($null -ne $funcProcess -and -not $funcProcess.HasExited) {
-                    Stop-Process -Id $funcProcess.Id -Force
-                    $funcProcess.WaitForExit()
+                try {
+                    Stop-FunctionsHost $funcProcess
+                } catch {
+                    Write-Warning "Host cleanup also failed: $_"
+                    throw $requestError
+                } finally {
+                    $funcProcess = $null
                 }
 
                 Start-Sleep -Seconds 5
 
-                # Log whether the process kill succeeded
                 $haveManuallyRestartedHost = $true
-                Write-Host "Host process killed: $($funcProcess.HasExited)" -ForegroundColor Yellow
 
                 # the beginning of the loop will restart the host
                 continue
@@ -191,13 +216,18 @@ try {
         throw "Orchestration failed or did not compete in time! :("
     }
 
-    Write-Host "Success!" -ForegroundColor Green
+} catch {
+    $testError = $_
+    throw
 } finally {
-    if ($null -ne $funcProcess) {
-        if (-not $funcProcess.HasExited) {
-            Stop-Process -Id $funcProcess.Id -Force
-            $funcProcess.WaitForExit()
+    try {
+        Stop-FunctionsHost $funcProcess
+    } catch {
+        if ($null -eq $testError) {
+            throw
         }
-        $funcProcess.Dispose()
+        Write-Warning "Host cleanup also failed: $_"
     }
 }
+
+Write-Host "Success!" -ForegroundColor Green

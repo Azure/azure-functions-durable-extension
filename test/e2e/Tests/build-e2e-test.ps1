@@ -303,7 +303,8 @@ function StartDTSContainer([string] $containerName, [int] $port) {
 
   # Start the DTS Server docker container with the specified edition
   Write-Host "Starting DTS docker container $containerName on port $port" -ForegroundColor DarkYellow
-  docker run -i --name $containerName --rm -p "${port}:8080" -p "$($port + 1):8081" -p "$($port + 2):8082" -d mcr.microsoft.com/dts/dts-emulator:latest
+  # Tests only need gRPC. Publishing the dashboard/health ports conflicts with CI agent services.
+  docker run -i --name $containerName --rm -p "${port}:8080" -d mcr.microsoft.com/dts/dts-emulator:latest
 
   if ($LASTEXITCODE -ne 0) {
       exit $LASTEXITCODE
