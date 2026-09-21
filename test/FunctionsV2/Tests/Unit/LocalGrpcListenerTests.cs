@@ -1137,7 +1137,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             using DurableTaskExtension extension = this.CreateExtension(hubName, WorkerRuntimeType.Node);
 
             // Call twice to verify that repeated configuration does not emit duplicate telemetry.
-            extension.ConfigureForGrpcProtocol("durable-functions", "4.0.0");
+            extension.ConfigureForGrpcProtocol(" durable-functions ", " 4.0.0 ");
             extension.ConfigureForGrpcProtocol("durable-functions", "4.0.0");
 
             EventWrittenEventArgs captured = Assert.Single(events.Events);

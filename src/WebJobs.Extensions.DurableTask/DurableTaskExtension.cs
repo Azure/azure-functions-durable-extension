@@ -498,14 +498,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.OutOfProcProtocol = OutOfProcOrchestrationProtocol.MiddlewarePassthrough;
 
                     string normalizedSdkName = durableSdkName?.Trim();
+                    string normalizedSdkVersion = durableSdkVersion?.Trim();
                     if (!string.IsNullOrEmpty(normalizedSdkName) &&
-                        !string.IsNullOrWhiteSpace(durableSdkVersion) &&
+                        !string.IsNullOrEmpty(normalizedSdkVersion) &&
                         this.reportedSdkNames.Add(normalizedSdkName))
                     {
                         this.TraceHelper.SdkUsageDetected(
                             this.Options.HubName,
-                            durableSdkName,
-                            durableSdkVersion);
+                            normalizedSdkName,
+                            normalizedSdkVersion);
                     }
 
                     if (this.localGrpcListener is null)
