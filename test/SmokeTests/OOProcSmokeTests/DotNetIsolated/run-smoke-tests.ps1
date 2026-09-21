@@ -213,7 +213,7 @@ try {
     } while (($testIsRunning -eq $true) -and ($retryCount -lt 65))
 
     if ($success -eq $false) {
-        throw "Orchestration failed or did not compete in time! :("
+        throw "Orchestration failed or did not complete in time! :("
     }
 
 } catch {

@@ -106,15 +106,8 @@ public class WorkItemFilterTests
                 "TerminateInstance",
                 $"?instanceId={unknownInstanceId}");
 
-            if (terminateResponse.IsSuccessStatusCode)
-            {
-                await DurableHelpers.WaitForOrchestrationStateAsync(unknownStatusUri, "Terminated", 30);
-            }
-            else
-            {
-                this.output.WriteLine(
-                    $"TerminateInstance cleanup returned status {terminateResponse.StatusCode} for unknown orchestration");
-            }
+            terminateResponse.EnsureSuccessStatusCode();
+            await DurableHelpers.WaitForOrchestrationStateAsync(unknownStatusUri, "Terminated", 30);
         }
     }
 

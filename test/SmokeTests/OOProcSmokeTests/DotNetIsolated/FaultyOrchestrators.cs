@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.DurableTask;
@@ -10,6 +12,14 @@ namespace FaultOrchestrators
     {
         private const string StartFaultEventName = "StartFault";
 
+        private static string GetReplayEvidenceFilePath(string instanceId)
+        {
+            // Hash the full ID to avoid path separators, basename collisions, and filename-length limits.
+            string instanceIdHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(instanceId)));
+            string baseDirectory = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", ".."));
+            return Path.Combine(baseDirectory, $"replayEvidence-{instanceIdHash}");
+        }
+
         [Function(nameof(OOMOrchestrator))]
         public static async Task OOMOrchestrator(
             [OrchestrationTrigger] TaskOrchestrationContext context)
@@ -20,11 +30,7 @@ namespace FaultOrchestrators
             // this orchestrator is not deterministic, on purpose.
             // we use the non-determinism to force an OOM exception on only the first replay
             
-            // Keep replay evidence per instance so concurrent or retried tests cannot consume each other's marker.
-            // From experience, this code runs in `<sourceCodePath>/bin/output/`, so we store the file two directories above.
-            // We do this because the /bin/output/ directory gets overridden during the build process, which happens automatically
-            // when `func host start` is re-invoked.
-            string evidenceFile = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", $"replayEvidence-{context.InstanceId}");
+            string evidenceFile = GetReplayEvidenceFilePath(context.InstanceId);
             bool isTheFirstReplay = !File.Exists(evidenceFile);
             if (isTheFirstReplay)
             {
@@ -68,11 +74,7 @@ namespace FaultOrchestrators
             // this orchestrator is not deterministic, on purpose.
             // we use the non-determinism to force a sudden process exit on only the first replay
             
-            // Keep replay evidence per instance so concurrent or retried tests cannot consume each other's marker.
-            // From experience, this code runs in `<sourceCodePath>/bin/output/`, so we store the file two directories above.
-            // We do this because the /bin/output/ directory gets overridden during the build process, which happens automatically
-            // when `func host start` is re-invoked.
-            string evidenceFile = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", $"replayEvidence-{context.InstanceId}");
+            string evidenceFile = GetReplayEvidenceFilePath(context.InstanceId);
             bool isTheFirstReplay = !File.Exists(evidenceFile);
             if (isTheFirstReplay)
             {
@@ -98,11 +100,7 @@ namespace FaultOrchestrators
             // this orchestrator is not deterministic, on purpose.
             // we use the non-determinism to force a timeout on only the first replay
             
-            // Keep replay evidence per instance so concurrent or retried tests cannot consume each other's marker.
-            // From experience, this code runs in `<sourceCodePath>/bin/output/`, so we store the file two directories above.
-            // We do this because the /bin/output/ directory gets overridden during the build process, which happens automatically
-            // when `func host start` is re-invoked.
-            string evidenceFile = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", $"replayEvidence-{context.InstanceId}");
+            string evidenceFile = GetReplayEvidenceFilePath(context.InstanceId);
             bool isTheFirstReplay = !File.Exists(evidenceFile);
 
             if (isTheFirstReplay)
