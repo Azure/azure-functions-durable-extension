@@ -1128,16 +1128,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.NotEqual(OutOfProcOrchestrationProtocol.OrchestratorShim, extension.OutOfProcProtocol);
         }
 
-        [Theory]
-        [InlineData(WorkerRuntimeType.Node)]
-        [InlineData(WorkerRuntimeType.Python)]
-        [InlineData(WorkerRuntimeType.DotNetIsolated)]
+        [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void TestGrpcConfiguration_ReportsProvidedSdkMetadata(WorkerRuntimeType runtimeType)
+        public void TestGrpcConfiguration_ReportsProvidedSdkMetadataOnNodeTransition()
         {
             string hubName = $"SdkUsage{Guid.NewGuid():N}";
             using var events = new SdkUsageEventListener(hubName);
-            using DurableTaskExtension extension = this.CreateExtension(hubName, runtimeType);
+            using DurableTaskExtension extension = this.CreateExtension(hubName, WorkerRuntimeType.Node);
 
             // Call twice to verify that repeated configuration does not emit duplicate telemetry.
             extension.ConfigureForGrpcProtocol("durable-functions", "4.0.0");
@@ -1157,6 +1154,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.False(string.IsNullOrEmpty(captured.Payload[5]?.ToString()));
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void TestGrpcConfiguration_DoesNotReportSdkMetadataWithoutTransition()
+        {
+            string hubName = $"SdkUsage{Guid.NewGuid():N}";
+            using var events = new SdkUsageEventListener(hubName);
+            using DurableTaskExtension extension = this.CreateExtension(hubName, WorkerRuntimeType.DotNetIsolated);
+
+            extension.ConfigureForGrpcProtocol("durable-functions", "4.0.0");
+
+            Assert.Empty(events.Events);
+        }
+
         [Theory]
         [InlineData(null, "4.0.0")]
         [InlineData("durable-functions", null)]
@@ -1172,8 +1182,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             using DurableTaskExtension extension = this.CreateExtension(hubName, WorkerRuntimeType.Node);
 
             extension.ConfigureForGrpcProtocol(sdkName, sdkVersion);
+            extension.ConfigureForGrpcProtocol("durable-functions", "4.0.0");
 
             Assert.Empty(events.Events);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void TestGrpcConfiguration_DeduplicatesNormalizedSdkNameAcrossTransitions()
+        {
+            string hubName = $"SdkUsage{Guid.NewGuid():N}";
+            using var events = new SdkUsageEventListener(hubName);
+            using DurableTaskExtension extension = this.CreateExtension(hubName, WorkerRuntimeType.Node);
+
+            extension.ConfigureForGrpcProtocol("durable-functions", "4.0.0");
+            extension.ConfigureForHttpProtocol();
+            extension.ConfigureForGrpcProtocol(" DURABLE-FUNCTIONS ", "4.0.1");
+
+            EventWrittenEventArgs captured = Assert.Single(events.Events);
+            Assert.Equal("durable-functions", captured.Payload![3]);
+            Assert.Equal("4.0.0", captured.Payload[4]);
         }
 
         [Fact]

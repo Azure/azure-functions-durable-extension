@@ -101,9 +101,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task GrpcBindingMetadata_ReportsExactSdkIdentity(string bindingType, string methodName)
         {
-            const string HubName = "SdkMetadataHub";
-            using var events = new SdkUsageEventListener(HubName);
-            using DurableTaskExtension extension = CreateExtension(HubName);
+            string hubName = $"SdkMetadataHub{Guid.NewGuid():N}";
+            using var events = new SdkUsageEventListener(hubName);
+            using DurableTaskExtension extension = CreateExtension(hubName, WorkerRuntimeType.Node);
             ITriggerBindingProvider provider = bindingType switch
             {
                 "orchestration" => new OrchestrationTriggerAttributeBindingProvider(
@@ -166,16 +166,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         private static DurableTaskExtension CreateExtension()
         {
-            return CreateExtension("TestHub");
+            return CreateExtension("TestHub", WorkerRuntimeType.Unknown);
         }
 
-        private static DurableTaskExtension CreateExtension(string hubName)
+        private static DurableTaskExtension CreateExtension(string hubName, WorkerRuntimeType runtimeType)
         {
             var options = new DurableTaskOptions
             {
                 HubName = hubName,
                 WebhookUriProviderOverride = () => new Uri("https://localhost"),
             };
+            var platformInformation = TestHelpers.GetMockPlatformInformationService(language: runtimeType);
 
             return new DurableTaskExtension(
                 new OptionsWrapper<DurableTaskOptions>(options),
@@ -187,11 +188,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         new TestStorageServiceClientProviderFactory(),
                         TestHelpers.GetTestNameResolver(),
                         NullLoggerFactory.Instance,
-                        TestHelpers.GetMockPlatformInformationService()),
+                        platformInformation),
                 ],
                 new TestHostShutdownNotificationService(),
                 new DurableHttpMessageHandlerFactory(),
-                platformInformationService: TestHelpers.GetMockPlatformInformationService());
+                platformInformationService: platformInformation);
         }
 
         private static void TestOrchestrator(

@@ -64,7 +64,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly AsyncLock taskHubLock = new AsyncLock();
         private readonly object protocolLockObject = new ();
         private readonly object taskHubWorkerInitLock = new ();
-        private readonly HashSet<(string Name, string Version)> reportedSdkIdentities = new ();
+        private readonly HashSet<string> reportedSdkNames = new (StringComparer.OrdinalIgnoreCase);
 #pragma warning disable CS0169
         private readonly ITelemetryActivator telemetryActivator;
 #pragma warning restore CS0169
@@ -493,19 +493,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             lock (this.protocolLockObject)
             {
-                if (!string.IsNullOrWhiteSpace(durableSdkName) &&
-                    !string.IsNullOrWhiteSpace(durableSdkVersion) &&
-                    this.reportedSdkIdentities.Add((durableSdkName, durableSdkVersion)))
-                {
-                    this.TraceHelper.SdkUsageDetected(
-                        this.Options.HubName,
-                        durableSdkName,
-                        durableSdkVersion);
-                }
-
                 if (this.OutOfProcProtocol != OutOfProcOrchestrationProtocol.MiddlewarePassthrough)
                 {
                     this.OutOfProcProtocol = OutOfProcOrchestrationProtocol.MiddlewarePassthrough;
+
+                    string normalizedSdkName = durableSdkName?.Trim();
+                    if (!string.IsNullOrEmpty(normalizedSdkName) &&
+                        !string.IsNullOrWhiteSpace(durableSdkVersion) &&
+                        this.reportedSdkNames.Add(normalizedSdkName))
+                    {
+                        this.TraceHelper.SdkUsageDetected(
+                            this.Options.HubName,
+                            durableSdkName,
+                            durableSdkVersion);
+                    }
 
                     if (this.localGrpcListener is null)
                     {
