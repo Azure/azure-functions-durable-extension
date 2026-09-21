@@ -64,6 +64,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly AsyncLock taskHubLock = new AsyncLock();
         private readonly object protocolLockObject = new ();
         private readonly object taskHubWorkerInitLock = new ();
+        private readonly HashSet<(string Name, string Version)> reportedSdkIdentities = new ();
 #pragma warning disable CS0169
         private readonly ITelemetryActivator telemetryActivator;
 #pragma warning restore CS0169
@@ -488,21 +489,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        internal void ConfigureForGrpcProtocol()
+        internal void ConfigureForGrpcProtocol(string durableSdkName = null, string durableSdkVersion = null)
         {
             lock (this.protocolLockObject)
             {
+                if (!string.IsNullOrWhiteSpace(durableSdkName) &&
+                    !string.IsNullOrWhiteSpace(durableSdkVersion) &&
+                    this.reportedSdkIdentities.Add((durableSdkName, durableSdkVersion)))
+                {
+                    this.TraceHelper.SdkUsageDetected(
+                        this.Options.HubName,
+                        durableSdkName,
+                        durableSdkVersion);
+                }
+
                 if (this.OutOfProcProtocol != OutOfProcOrchestrationProtocol.MiddlewarePassthrough)
                 {
                     this.OutOfProcProtocol = OutOfProcOrchestrationProtocol.MiddlewarePassthrough;
-
-                    if (this.PlatformInformationService.GetWorkerRuntimeType() == WorkerRuntimeType.Node)
-                    {
-                        this.TraceHelper.SdkUsageDetected(
-                            this.Options.HubName,
-                            sdkName: "durable-functions",
-                            sdkVersion: "4.x");
-                    }
 
                     if (this.localGrpcListener is null)
                     {
@@ -1382,7 +1385,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // this normally needs to be done before the listeners start. Thankfully, even though DurableClient doesn't have
                 // an equivalent to the AttributeBindingProviders used by the trigger types for this, the durable client only case
                 // does not start the listeners, so we can defer initializing the task hub until first execution.
-                this.ConfigureForGrpcProtocol();
+                this.ConfigureForGrpcProtocol(attribute.DurableSdkName, attribute.DurableSdkVersion);
             }
 
             // We must ensure the TaskHubWorker exists so that we know we have started the appropriate server.

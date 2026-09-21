@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Linq;
@@ -1130,54 +1129,49 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
-        [InlineData(WorkerRuntimeType.Node, true)]
-        [InlineData(WorkerRuntimeType.Python, false)]
-        [InlineData(WorkerRuntimeType.PowerShell, false)]
-        [InlineData(WorkerRuntimeType.DotNetIsolated, false)]
-        [InlineData(WorkerRuntimeType.Java, false)]
+        [InlineData(WorkerRuntimeType.Node)]
+        [InlineData(WorkerRuntimeType.Python)]
+        [InlineData(WorkerRuntimeType.DotNetIsolated)]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void TestGrpcConfiguration_ReportsDurableFunctionsV4ForNodeOnly(
-            WorkerRuntimeType runtimeType,
-            bool expectSdkUsage)
+        public void TestGrpcConfiguration_ReportsProvidedSdkMetadata(WorkerRuntimeType runtimeType)
         {
             string hubName = $"SdkUsage{Guid.NewGuid():N}";
             using var events = new SdkUsageEventListener(hubName);
             using DurableTaskExtension extension = this.CreateExtension(hubName, runtimeType);
 
             // Call twice to verify that repeated configuration does not emit duplicate telemetry.
-            extension.ConfigureForGrpcProtocol();
-            extension.ConfigureForGrpcProtocol();
+            extension.ConfigureForGrpcProtocol("durable-functions", "4.0.0");
+            extension.ConfigureForGrpcProtocol("durable-functions", "4.0.0");
 
-            if (expectSdkUsage)
-            {
-                EventWrittenEventArgs captured = Assert.Single(events.Events);
-                Assert.Equal(236, captured.EventId);
-                Assert.Equal(EventLevel.Informational, captured.Level);
-                Assert.Equal(
-                    new[] { "TaskHub", "AppName", "SlotName", "SdkName", "SdkVersion", "ExtensionVersion" },
-                    captured.PayloadNames);
-                Assert.Equal(hubName, captured.Payload[0]);
-                Assert.Equal(EndToEndTraceHelper.LocalAppName, captured.Payload[1]);
-                Assert.Equal(EndToEndTraceHelper.LocalSlotName, captured.Payload[2]);
-                Assert.Equal("durable-functions", captured.Payload[3]);
-                Assert.Equal("4.x", captured.Payload[4]);
-                Assert.False(string.IsNullOrEmpty(captured.Payload[5]?.ToString()));
-            }
-            else
-            {
-                Assert.Empty(events.Events);
-            }
+            EventWrittenEventArgs captured = Assert.Single(events.Events);
+            Assert.Equal(236, captured.EventId);
+            Assert.Equal(EventLevel.Informational, captured.Level);
+            Assert.Equal(
+                new[] { "TaskHub", "AppName", "SlotName", "SdkName", "SdkVersion", "ExtensionVersion" },
+                captured.PayloadNames);
+            Assert.Equal(hubName, captured.Payload[0]);
+            Assert.Equal(EndToEndTraceHelper.LocalAppName, captured.Payload[1]);
+            Assert.Equal(EndToEndTraceHelper.LocalSlotName, captured.Payload[2]);
+            Assert.Equal("durable-functions", captured.Payload[3]);
+            Assert.Equal("4.0.0", captured.Payload[4]);
+            Assert.False(string.IsNullOrEmpty(captured.Payload[5]?.ToString()));
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(null, "4.0.0")]
+        [InlineData("durable-functions", null)]
+        [InlineData("", "4.0.0")]
+        [InlineData("durable-functions", "")]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void TestHttpConfiguration_DoesNotReportDurableFunctionsV4ForNode()
+        public void TestGrpcConfiguration_DoesNotReportIncompleteSdkMetadata(
+            string sdkName,
+            string sdkVersion)
         {
             string hubName = $"SdkUsage{Guid.NewGuid():N}";
             using var events = new SdkUsageEventListener(hubName);
             using DurableTaskExtension extension = this.CreateExtension(hubName, WorkerRuntimeType.Node);
 
-            extension.ConfigureForHttpProtocol();
+            extension.ConfigureForGrpcProtocol(sdkName, sdkVersion);
 
             Assert.Empty(events.Events);
         }
@@ -1190,9 +1184,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             using var events = new SdkUsageEventListener(hubName);
             using DurableTaskExtension extension = this.CreateExtension(hubName, WorkerRuntimeType.Node);
 
-            Parallel.For(0, 10, _ => extension.ConfigureForGrpcProtocol());
+            Parallel.For(
+                0,
+                10,
+                _ => extension.ConfigureForGrpcProtocol("durable-functions", "4.0.0"));
 
             Assert.Single(events.Events);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void TestDurableClientMetadata_ReportsExactSdkIdentity()
+        {
+            string hubName = $"SdkUsage{Guid.NewGuid():N}";
+            using var events = new SdkUsageEventListener(hubName);
+            using DurableTaskExtension extension = this.CreateExtension(hubName, WorkerRuntimeType.Node);
+
+            _ = extension.GetClient(new DurableClientAttribute
+            {
+                DurableRequiresGrpc = true,
+                DurableSdkName = "durable-functions",
+                DurableSdkVersion = "4.0.0",
+            });
+
+            EventWrittenEventArgs captured = Assert.Single(events.Events);
+            Assert.Equal("durable-functions", captured.Payload![3]);
+            Assert.Equal("4.0.0", captured.Payload[4]);
         }
 
         private DurableTaskExtension CreateExtension(string hubName)
@@ -1505,36 +1522,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             finally
             {
                 tcpListener.Stop();
-            }
-        }
-
-        private sealed class SdkUsageEventListener : EventListener
-        {
-            private readonly string hubName;
-
-            public SdkUsageEventListener(string hubName)
-            {
-                this.hubName = hubName;
-            }
-
-            public ConcurrentQueue<EventWrittenEventArgs> Events { get; } = new ConcurrentQueue<EventWrittenEventArgs>();
-
-            protected override void OnEventSourceCreated(EventSource eventSource)
-            {
-                if (eventSource.Name == "WebJobs-Extensions-DurableTask")
-                {
-                    this.EnableEvents(eventSource, EventLevel.LogAlways);
-                }
-            }
-
-            protected override void OnEventWritten(EventWrittenEventArgs eventData)
-            {
-                if (eventData.EventId == 236 &&
-                    eventData.Payload?.Count == 6 &&
-                    Equals(eventData.Payload[0], this.hubName))
-                {
-                    this.Events.Enqueue(eventData);
-                }
             }
         }
     }
