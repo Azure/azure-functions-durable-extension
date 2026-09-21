@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -1125,6 +1126,118 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             Assert.Equal(OutOfProcOrchestrationProtocol.MiddlewarePassthrough, extension.OutOfProcProtocol);
             Assert.NotEqual(OutOfProcOrchestrationProtocol.OrchestratorShim, extension.OutOfProcProtocol);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void TestGrpcConfiguration_ReportsProvidedSdkMetadataOnNodeTransition()
+        {
+            string hubName = $"SdkUsage{Guid.NewGuid():N}";
+            using var events = new SdkUsageEventListener(hubName);
+            using DurableTaskExtension extension = this.CreateExtension(hubName, WorkerRuntimeType.Node);
+
+            // Call twice to verify that repeated configuration does not emit duplicate telemetry.
+            extension.ConfigureForGrpcProtocol(" durable-functions ", " 4.0.0 ");
+            extension.ConfigureForGrpcProtocol("durable-functions", "4.0.0");
+
+            EventWrittenEventArgs captured = Assert.Single(events.Events);
+            Assert.Equal(236, captured.EventId);
+            Assert.Equal(EventLevel.Informational, captured.Level);
+            Assert.Equal(
+                new[] { "TaskHub", "AppName", "SlotName", "SdkName", "SdkVersion", "ExtensionVersion" },
+                captured.PayloadNames);
+            Assert.Equal(hubName, captured.Payload[0]);
+            Assert.Equal(EndToEndTraceHelper.LocalAppName, captured.Payload[1]);
+            Assert.Equal(EndToEndTraceHelper.LocalSlotName, captured.Payload[2]);
+            Assert.Equal("durable-functions", captured.Payload[3]);
+            Assert.Equal("4.0.0", captured.Payload[4]);
+            Assert.False(string.IsNullOrEmpty(captured.Payload[5]?.ToString()));
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void TestGrpcConfiguration_DoesNotReportSdkMetadataWithoutTransition()
+        {
+            string hubName = $"SdkUsage{Guid.NewGuid():N}";
+            using var events = new SdkUsageEventListener(hubName);
+            using DurableTaskExtension extension = this.CreateExtension(hubName, WorkerRuntimeType.DotNetIsolated);
+
+            extension.ConfigureForGrpcProtocol("durable-functions", "4.0.0");
+
+            Assert.Empty(events.Events);
+        }
+
+        [Theory]
+        [InlineData(null, "4.0.0")]
+        [InlineData("durable-functions", null)]
+        [InlineData("", "4.0.0")]
+        [InlineData("durable-functions", "")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void TestGrpcConfiguration_DoesNotReportIncompleteSdkMetadata(
+            string sdkName,
+            string sdkVersion)
+        {
+            string hubName = $"SdkUsage{Guid.NewGuid():N}";
+            using var events = new SdkUsageEventListener(hubName);
+            using DurableTaskExtension extension = this.CreateExtension(hubName, WorkerRuntimeType.Node);
+
+            extension.ConfigureForGrpcProtocol(sdkName, sdkVersion);
+            extension.ConfigureForGrpcProtocol("durable-functions", "4.0.0");
+
+            Assert.Empty(events.Events);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void TestGrpcConfiguration_DeduplicatesNormalizedSdkNameAcrossTransitions()
+        {
+            string hubName = $"SdkUsage{Guid.NewGuid():N}";
+            using var events = new SdkUsageEventListener(hubName);
+            using DurableTaskExtension extension = this.CreateExtension(hubName, WorkerRuntimeType.Node);
+
+            extension.ConfigureForGrpcProtocol("durable-functions", "4.0.0");
+            extension.ConfigureForHttpProtocol();
+            extension.ConfigureForGrpcProtocol(" DURABLE-FUNCTIONS ", "4.0.1");
+
+            EventWrittenEventArgs captured = Assert.Single(events.Events);
+            Assert.Equal("durable-functions", captured.Payload![3]);
+            Assert.Equal("4.0.0", captured.Payload[4]);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void TestGrpcConfiguration_ReportsSdkUsageOnceWhenConfiguredConcurrently()
+        {
+            string hubName = $"SdkUsage{Guid.NewGuid():N}";
+            using var events = new SdkUsageEventListener(hubName);
+            using DurableTaskExtension extension = this.CreateExtension(hubName, WorkerRuntimeType.Node);
+
+            Parallel.For(
+                0,
+                10,
+                _ => extension.ConfigureForGrpcProtocol("durable-functions", "4.0.0"));
+
+            Assert.Single(events.Events);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void TestDurableClientMetadata_ReportsExactSdkIdentity()
+        {
+            string hubName = $"SdkUsage{Guid.NewGuid():N}";
+            using var events = new SdkUsageEventListener(hubName);
+            using DurableTaskExtension extension = this.CreateExtension(hubName, WorkerRuntimeType.Node);
+
+            _ = extension.GetClient(new DurableClientAttribute
+            {
+                DurableRequiresGrpc = true,
+                DurableSdkName = "durable-functions",
+                DurableSdkVersion = "4.0.0",
+            });
+
+            EventWrittenEventArgs captured = Assert.Single(events.Events);
+            Assert.Equal("durable-functions", captured.Payload![3]);
+            Assert.Equal("4.0.0", captured.Payload[4]);
         }
 
         private DurableTaskExtension CreateExtension(string hubName)

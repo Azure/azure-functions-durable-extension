@@ -567,6 +567,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.WriteEvent(235, TaskHub, AppName, SlotName, OperationType, InstanceId, FunctionInvocationId, ExtensionVersion);
         }
 
+        [Event(236, Level = EventLevel.Informational, Version = 1)]
+        public void SdkUsageDetected(
+            string TaskHub,
+            string AppName,
+            string SlotName,
+            string SdkName,
+            string SdkVersion,
+            string ExtensionVersion)
+        {
+            this.WriteEvent(236, TaskHub, AppName, SlotName, SdkName, SdkVersion, ExtensionVersion);
+        }
+
 #pragma warning restore SA1313 // Parameter names should begin with lower-case letter
     }
 }

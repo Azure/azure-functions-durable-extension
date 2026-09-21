@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Tracing;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -93,6 +94,41 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal("value", exception.ParamName);
         }
 
+        [Theory]
+        [InlineData("orchestration", nameof(TestGrpcOrchestrator))]
+        [InlineData("activity", nameof(TestGrpcActivity))]
+        [InlineData("entity", nameof(TestGrpcEntity))]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task GrpcBindingMetadata_ReportsExactSdkIdentity(string bindingType, string methodName)
+        {
+            string hubName = $"SdkMetadataHub{Guid.NewGuid():N}";
+            using var events = new SdkUsageEventListener(hubName);
+            using DurableTaskExtension extension = CreateExtension(hubName, WorkerRuntimeType.Node);
+            ITriggerBindingProvider provider = bindingType switch
+            {
+                "orchestration" => new OrchestrationTriggerAttributeBindingProvider(
+                    extension,
+                    connectionName: "AzureWebJobsStorage",
+                    TestHelpers.GetMockPlatformInformationService()),
+                "activity" => new ActivityTriggerAttributeBindingProvider(
+                    extension,
+                    connectionName: "AzureWebJobsStorage"),
+                "entity" => new EntityTriggerAttributeBindingProvider(
+                    extension,
+                    connectionName: "AzureWebJobsStorage"),
+                _ => throw new ArgumentOutOfRangeException(nameof(bindingType)),
+            };
+            var context = new TriggerBindingProviderContext(
+                GetTriggerParameter(methodName),
+                CancellationToken.None);
+
+            Assert.NotNull(await provider.TryCreateAsync(context));
+
+            EventWrittenEventArgs captured = Assert.Single(events.Events);
+            Assert.Equal("durable-functions", captured.Payload![3]);
+            Assert.Equal("4.0.0", captured.Payload[4]);
+        }
+
         private static async Task<ITriggerBinding> CreateOrchestrationBindingAsync()
         {
             DurableTaskExtension extension = CreateExtension();
@@ -130,11 +166,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         private static DurableTaskExtension CreateExtension()
         {
+            return CreateExtension("TestHub", WorkerRuntimeType.Unknown);
+        }
+
+        private static DurableTaskExtension CreateExtension(string hubName, WorkerRuntimeType runtimeType)
+        {
             var options = new DurableTaskOptions
             {
-                HubName = "TestHub",
+                HubName = hubName,
                 WebhookUriProviderOverride = () => new Uri("https://localhost"),
             };
+            var platformInformation = TestHelpers.GetMockPlatformInformationService(language: runtimeType);
 
             return new DurableTaskExtension(
                 new OptionsWrapper<DurableTaskOptions>(options),
@@ -146,11 +188,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         new TestStorageServiceClientProviderFactory(),
                         TestHelpers.GetTestNameResolver(),
                         NullLoggerFactory.Instance,
-                        TestHelpers.GetMockPlatformInformationService()),
+                        platformInformation),
                 ],
                 new TestHostShutdownNotificationService(),
                 new DurableHttpMessageHandlerFactory(),
-                platformInformationService: TestHelpers.GetMockPlatformInformationService());
+                platformInformationService: platformInformation);
         }
 
         private static void TestOrchestrator(
@@ -160,6 +202,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         private static void TestEntity(
             [EntityTrigger] IDurableEntityContext context)
+        {
+        }
+
+        private static void TestGrpcOrchestrator(
+            [OrchestrationTrigger(
+                DurableRequiresGrpc = true,
+                DurableSdkName = "durable-functions",
+                DurableSdkVersion = "4.0.0")]
+            IDurableOrchestrationContext context)
+        {
+        }
+
+        private static void TestGrpcActivity(
+            [ActivityTrigger(
+                DurableRequiresGrpc = true,
+                DurableSdkName = "durable-functions",
+                DurableSdkVersion = "4.0.0")]
+            string input)
+        {
+        }
+
+        private static void TestGrpcEntity(
+            [EntityTrigger(
+                DurableRequiresGrpc = true,
+                DurableSdkName = "durable-functions",
+                DurableSdkVersion = "4.0.0")]
+            IDurableEntityContext context)
         {
         }
     }
