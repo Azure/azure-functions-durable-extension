@@ -9,6 +9,7 @@
 
 ### Bug Fixes
 
+- Removed the raw 202/Location polling URL log. Polling attempts now carry optional metadata for sanitized host-side HTTP diagnostics; use a host extension containing the matching logging feature. (#2074)
 - Check if function invocation already has an executor before registering durable executor. (#3265)
 - Improved .NET isolated activity input deserialization diagnostics for both function-style and class-based activities. Failures now identify the activity and target type and preserve the original serializer error as the inner failure. (#3531)
 
@@ -22,6 +23,7 @@
 
 ### New Features
 
+- Added structured Durable HTTP send diagnostics with the endpoint, query parameter names (not values), orchestration instance, and polling attempt. Initial requests, polls, retries, and failed send attempts are covered without logging headers or bodies. (#2074)
 - Allow overriding orchestration version when starting orchestrations via APIs in PowerShell, Python, and Node.js (https://github.com/Azure/azure-functions-durable-extension/pull/3213)
 - Added `IServiceCollection.AddDurableTaskTelemetryInitializer` overloads for explicitly enriching distributed tracing V2 requests and dependencies with Application Insights telemetry initializers or service-provider factories. Host initializers and processors are not inherited automatically. (#1792)
 - Added `ClientOperationReceived` trace event to `DurableFunctionsEvents` for correlating out-of-process worker invocations with orchestration events. The event includes `FunctionInvocationId`, `OperationType`, and `InstanceId` fields for cross-log correlation. (#3317)

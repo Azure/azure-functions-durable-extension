@@ -1,6 +1,7 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
+using System.Net;
 using System.Net.Http;
 using System.Text.Json;
 using Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
@@ -13,11 +14,86 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using Moq;
+using Moq.Protected;
 
 namespace Microsoft.Azure.Functions.Worker.Tests;
 
 public class TaskOrchestrationContextExtensionMethodsTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CallHttpAsync_PollingAttemptsAreDeterministicAndPerCall(bool replay)
+    {
+        var logger = new Mock<ILogger>();
+        var loggerFactory = new Mock<ILoggerFactory>();
+        loggerFactory.Setup(factory => factory.CreateLogger(It.IsAny<string>())).Returns(logger.Object);
+        var context = new Mock<TaskOrchestrationContext> { CallBase = true };
+        context.Protected().SetupGet<ILoggerFactory>("LoggerFactory").Returns(loggerFactory.Object);
+        context.SetupGet(c => c.IsReplaying).Returns(replay);
+        context.SetupGet(c => c.CurrentUtcDateTime).Returns(new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+        context.Setup(c => c.CreateTimer(It.IsAny<DateTime>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        var inputs = new List<JsonElement>();
+        context.Setup(c => c.CallActivityAsync<DurableHttpResponse>(
+                It.Is<TaskName>(name => name.Name == "BuiltIn::HttpActivity"), It.IsAny<object>(), It.IsAny<TaskOptions>()))
+            .Returns((TaskName name, object input, TaskOptions options) =>
+            {
+                inputs.Add(JsonSerializer.SerializeToElement(Assert.IsType<DurableHttpRequest>(input)));
+                return Task.FromResult(new DurableHttpResponse(inputs.Count % 3 == 0 ? HttpStatusCode.OK : HttpStatusCode.Accepted)
+                {
+                    Headers = new Dictionary<string, StringValues> { ["Location"] = "/status?code=secret", ["Retry-After"] = "0" },
+                });
+            });
+        var request = new DurableHttpRequest(HttpMethod.Post, new Uri("https://example.com/start"))
+        {
+            AsynchronousPatternEnabled = true,
+        };
+
+        for (int call = 0; call < 2; call++)
+        {
+            DurableHttpResponse response = await context.Object.CallHttpAsync(request);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        Assert.Equal(new[] { 0, 1, 2, 0, 1, 2 }, inputs.Select(input =>
+            input.TryGetProperty("pollingAttempt", out JsonElement attempt) ? attempt.GetInt32() : 0));
+        Assert.Equal("https://example.com/status?code=secret", inputs[1].GetProperty("uri").GetString());
+        Assert.False(JsonSerializer.SerializeToElement(request).TryGetProperty("pollingAttempt", out _));
+        context.Verify(c => c.CreateTimer(It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Exactly(4));
+    }
+
+    [Fact]
+    public async Task CallHttpAsync_DoesNotLogRawLocation()
+    {
+        var logger = new Mock<ILogger>();
+        var loggerFactory = new Mock<ILoggerFactory>();
+        loggerFactory.Setup(factory => factory.CreateLogger(It.IsAny<string>())).Returns(logger.Object);
+        var context = new Mock<TaskOrchestrationContext> { CallBase = true };
+        context.Protected().SetupGet<ILoggerFactory>("LoggerFactory").Returns(loggerFactory.Object);
+        context.Setup(c => c.CreateTimer(It.IsAny<DateTime>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        context.SetupSequence(c => c.CallActivityAsync<DurableHttpResponse>(
+                It.IsAny<TaskName>(), It.IsAny<object>(), It.IsAny<TaskOptions>()))
+            .ReturnsAsync(new DurableHttpResponse(HttpStatusCode.Accepted)
+            {
+                Headers = new Dictionary<string, StringValues>
+                {
+                    ["Location"] = "https://example.com/status?code=secret",
+                    ["Retry-After"] = "0",
+                },
+            })
+            .ReturnsAsync(new DurableHttpResponse(HttpStatusCode.OK));
+
+        await context.Object.CallHttpAsync(new DurableHttpRequest(HttpMethod.Get, new Uri("https://example.com/start"))
+        {
+            AsynchronousPatternEnabled = true,
+        });
+
+        logger.Verify(log => log.Log(
+            It.IsAny<LogLevel>(), It.IsAny<EventId>(),
+            It.Is<It.IsAnyType>((state, type) => state.ToString()!.Contains("secret")),
+            It.IsAny<Exception?>(), It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Never);
+    }
+
     [Fact]
     public void GetFunctionContext_WithNullContext_ShouldThrowArgumentNullException()
     {

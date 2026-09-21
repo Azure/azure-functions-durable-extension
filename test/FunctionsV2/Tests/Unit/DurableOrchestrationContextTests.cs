@@ -5,6 +5,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
@@ -12,7 +15,9 @@ using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Primitives;
 using Moq;
+using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -25,6 +30,53 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public DurableOrchestrationContextTests(ITestOutputHelper output)
         {
             this.output = output;
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CallHttpAsync_PollingAttemptsAreDeterministicAndPerCall(bool replay)
+        {
+            DurableOrchestrationContext context = CreateContext(NullLoggerFactory.Instance, out DurableTaskExtension extension);
+            using (extension)
+            {
+                var inner = new Mock<OrchestrationContext>();
+                inner.Setup(c => c.CreateTimer(It.IsAny<DateTime>(), true, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+                var inputs = new List<JObject>();
+                inner.Setup(c => c.ScheduleTask<DurableHttpResponse>(
+                        "BuiltIn::HttpActivity", It.IsAny<string>(), It.IsAny<object[]>()))
+                    .Returns((string name, string version, object[] args) =>
+                    {
+                        inputs.Add(JObject.FromObject(Assert.Single(args)));
+                        return Task.FromResult(new DurableHttpResponse(
+                            inputs.Count % 3 == 0 ? HttpStatusCode.OK : HttpStatusCode.Accepted,
+                            new Dictionary<string, StringValues> { ["Location"] = "/status?code=secret", ["Retry-After"] = "0" }));
+                    });
+                context.InnerContext = inner.Object;
+                context.IsReplaying = replay;
+                context.InstanceId = "test-instance";
+                var request = new DurableHttpRequest(HttpMethod.Post, new Uri("https://example.com/start"));
+                bool originalThreadFlag = OrchestrationContext.IsOrchestratorThread;
+                OrchestrationContext.IsOrchestratorThread = true;
+                try
+                {
+                    for (int call = 0; call < 2; call++)
+                    {
+                        DurableHttpResponse response = await ((IDurableOrchestrationContext)context).CallHttpAsync(request);
+                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    }
+                }
+                finally
+                {
+                    OrchestrationContext.IsOrchestratorThread = originalThreadFlag;
+                }
+
+                Assert.Equal(new[] { 0, 1, 2, 0, 1, 2 }, inputs.Select(input => (int?)input["pollingAttempt"] ?? 0));
+                Assert.Equal("https://example.com/status?code=secret", (string?)inputs[1]["uri"]);
+                Assert.Null(JObject.FromObject(request)["pollingAttempt"]);
+                inner.Verify(c => c.CreateTimer(It.IsAny<DateTime>(), true, It.IsAny<CancellationToken>()), Times.Exactly(4));
+            }
         }
 
         /// <summary>

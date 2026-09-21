@@ -55,6 +55,29 @@ func extensions install -p Microsoft.Azure.WebJobs.Extensions.DurableTask -v <la
 
 Durable Functions is also available in supported [extension bundles](https://docs.microsoft.com/azure/azure-functions/functions-bindings-register#extension-bundles). Note that extension bundles are only supported for non-.NET languages.
 
+## Durable HTTP diagnostics
+
+`CallHttpAsync` emits an Information-level `Sending HTTP request` log in the host's
+`Host.Triggers.DurableTask` category before each built-in HTTP activity send attempt.
+The structured fields include `instanceId`, `hubName`, `httpMethod`, `requestUri`
+(scheme, host, port, and path), `queryParameterNames`, and `pollingAttempt`.
+Query values, URI user information, fragments, headers, and bodies are not included
+in this diagnostic, even when `traceInputsAndOutputs` is enabled. Paths and query
+parameter names are retained in escaped form and can still contain application data.
+
+`pollingAttempt` is `0` for the initial request and `1`, `2`, etc. for subsequent
+202/Location polls within that call. Retries and activity redeliveries retain the
+same polling attempt and produce another send log; orchestration replay alone does
+not send requests or produce these logs. Requests persisted by older versions
+without polling metadata also report `0`.
+
+For .NET isolated apps, use host and worker extensions that both include this
+feature to obtain polling counts. The worker's former `Polling HTTP status at
+location` message is removed in favor of the sanitized host diagnostic; update
+queries that relied on that message or its worker log category. Older hosts ignore
+the new optional metadata but do not emit the new diagnostic. These logs do not
+change HTTP payloads or the redaction policies of other telemetry collectors.
+
 ## Contributing
 
 Many features of Durable Functions have been voluntarily contributed by the community, and we always welcome such contributions. If you are interested in contributing, please take a look at our [CONTRIBUTING](./CONTRIBUTING.md) guide.

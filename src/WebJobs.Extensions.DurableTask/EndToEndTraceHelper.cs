@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
 using DurableTask.Core.Common;
@@ -150,6 +151,41 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public void ExtensionWarningAnnouncement(string message)
         {
             this.logger.LogWarning(message);
+        }
+
+        public void HttpRequestSending(string hubName, string instanceId, string httpMethod, Uri? uri, int pollingAttempt)
+        {
+            // Never fall back to the original URI: it can contain credentials or query values.
+            string requestUri = "(relative or missing URI)";
+            var queryNames = new List<string>();
+            if (uri?.IsAbsoluteUri == true)
+            {
+                requestUri = uri.GetComponents(UriComponents.SchemeAndServer | UriComponents.Path, UriFormat.UriEscaped);
+                string query = uri.GetComponents(UriComponents.Query, UriFormat.UriEscaped);
+                foreach (string parameter in query.Split('&'))
+                {
+                    int separator = parameter.IndexOf('=');
+                    string name = separator < 0 ? parameter : parameter.Substring(0, separator);
+                    if (name.Length > 0)
+                    {
+                        // Keep names escaped so encoded separators and control characters stay inert.
+                        queryNames.Add(name);
+                    }
+                }
+            }
+
+            string queryParameterNames = string.Join(", ", queryNames);
+            this.ExtensionInformationalEvent(
+                hubName,
+                instanceId,
+                HttpOptions.HttpTaskActivityReservedName,
+                $"Sending HTTP request: {httpMethod} {requestUri}. QueryParameterNames: {queryParameterNames}. PollingAttempt: {pollingAttempt}.",
+                writeToUserLogs: false);
+
+            this.logger.LogInformation(
+                "{instanceId}: Sending HTTP request: {httpMethod} {requestUri}. QueryParameterNames: {queryParameterNames}. PollingAttempt: {pollingAttempt}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}.",
+                instanceId, httpMethod, requestUri, queryParameterNames, pollingAttempt, hubName,
+                LocalAppName, LocalSlotName, ExtensionVersion, this.sequenceNumber++);
         }
 
         public void ClientOperationReceived(
