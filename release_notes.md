@@ -9,7 +9,7 @@
 
 ### Bug Fixes
 
-- Removed the raw 202/Location polling URL log. Polling attempts now carry optional metadata for sanitized host-side HTTP diagnostics; use a host extension containing the matching logging feature. (#2074)
+- Sanitized the isolated worker's 202/Location polling log while retaining its `Polling HTTP status at location: ` prefix, existing category, Information level, and replay suppression. It logs the resolved escaped endpoint without query, user information, or fragment; full-URL/query-value parser compatibility is not preserved. The worker scheduling log remains available with older hosts, while new host send diagnostics and polling counts require the corresponding host/worker features. Updating only the host does not sanitize an older worker's raw log. With both diagnostics enabled, a poll can produce a worker scheduling record and a host send-attempt record, increasing log volume. (#2074)
 - Check if function invocation already has an executor before registering durable executor. (#3265)
 - Improved .NET isolated activity input deserialization diagnostics for both function-style and class-based activities. Failures now identify the activity and target type and preserve the original serializer error as the inner failure. (#3531)
 

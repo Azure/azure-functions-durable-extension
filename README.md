@@ -71,12 +71,25 @@ same polling attempt and produce another send log; orchestration replay alone do
 not send requests or produce these logs. Requests persisted by older versions
 without polling metadata also report `0`.
 
-For .NET isolated apps, use host and worker extensions that both include this
-feature to obtain polling counts. The worker's former `Polling HTTP status at
-location` message is removed in favor of the sanitized host diagnostic; update
-queries that relied on that message or its worker log category. Older hosts ignore
-the new optional metadata but do not emit the new diagnostic. These logs do not
-change HTTP payloads or the redaction policies of other telemetry collectors.
+The .NET isolated worker retains its replay-safe Information-level log with the
+exact prefix `Polling HTTP status at location: ` and category
+`Microsoft.Azure.Functions.Worker.Extensions.DurableTask.CallHttp`. The logged URL
+is the resolved polling endpoint's escaped scheme, host, port, and path, without
+the entire query, URI user information, or fragment. Prefix/category-based queries
+do not require migration; parsers relying on the original full URL or query values
+are not preserved.
+
+The worker log means a poll is about to be scheduled, not that a network request
+was sent. The host diagnostic describes an activity send attempt. When both are
+enabled, a poll can produce both records, increasing log volume; they must not be
+counted as two HTTP sends.
+
+A newer worker with an older host still emits the sanitized worker polling log.
+New host send diagnostics require a host extension containing this feature, and
+isolated-worker polling counts additionally require a worker containing the
+metadata change. Older hosts ignore the optional metadata. Updating only the host
+cannot sanitize the raw polling log emitted by an older worker. These diagnostics
+do not change HTTP payloads or the redaction policies of other telemetry collectors.
 
 ## Contributing
 

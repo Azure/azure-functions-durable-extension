@@ -59,7 +59,22 @@ public class HttpFeatureTests
             .Where(l => l.Contains(orchestrationDetails.InstanceId) && l.Contains("Sending HTTP request")).ToArray();
         Assert.Contains(requestLogs, l => l.Contains("QueryParameterNames: diagnostic."));
         Assert.All(requestLogs, l => Assert.DoesNotContain(queryValue, l));
-        Assert.DoesNotContain(this.fixture.TestLogs.CoreToolsLogs, l => l.Contains("Polling HTTP status at location"));
+
+        const string pollingPrefix = "Polling HTTP status at location: ";
+        await this.fixture.TestLogs.AssertLogExistsAsync(
+            l => l.Contains(pollingPrefix),
+            "Expected compatible worker polling diagnostic was not found.");
+        string[] pollingLogs = this.fixture.TestLogs.CoreToolsLogs.Where(l => l.Contains(pollingPrefix)).ToArray();
+        Assert.All(pollingLogs, line =>
+        {
+            string endpoint = line.Substring(line.IndexOf(pollingPrefix, StringComparison.Ordinal) + pollingPrefix.Length).Trim();
+            Assert.True(Uri.TryCreate(endpoint, UriKind.Absolute, out Uri? uri));
+            Assert.NotNull(uri);
+            Assert.Empty(uri.Query);
+            Assert.Empty(uri.UserInfo);
+            Assert.Empty(uri.Fragment);
+            Assert.DoesNotContain(queryValue, line);
+        });
     }
 
     [Fact]

@@ -60,38 +60,92 @@ public class TaskOrchestrationContextExtensionMethodsTests
         Assert.Equal("https://example.com/status?code=secret", inputs[1].GetProperty("uri").GetString());
         Assert.False(JsonSerializer.SerializeToElement(request).TryGetProperty("pollingAttempt", out _));
         context.Verify(c => c.CreateTimer(It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Exactly(4));
+        logger.Verify(log => log.Log(
+            LogLevel.Information, It.IsAny<EventId>(),
+            It.Is<It.IsAnyType>((state, type) => state.ToString() == "Polling HTTP status at location: https://example.com/status"),
+            It.IsAny<Exception?>(), It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Exactly(replay ? 0 : 4));
     }
 
-    [Fact]
-    public async Task CallHttpAsync_DoesNotLogRawLocation()
+    [Theory]
+    [InlineData("https://username:password@poll.example.com:9443/status/a%20b?code=secret&sig=signature#fragment", "https://poll.example.com:9443/status/a%20b")]
+    [InlineData("/status/a%20b?code=secret#fragment", "https://example.com:8443/status/a%20b")]
+    [InlineData("../status/a%2Fb?code=secret#fragment", "https://example.com:8443/status/a%2Fb")]
+    [InlineData("https://[::1]:9443/status%20name?code=secret#fragment", "https://[::1]:9443/status%20name")]
+    public async Task CallHttpAsync_DoesNotLogRawLocation(string location, string expectedEndpoint)
     {
         var logger = new Mock<ILogger>();
         var loggerFactory = new Mock<ILoggerFactory>();
         loggerFactory.Setup(factory => factory.CreateLogger(It.IsAny<string>())).Returns(logger.Object);
         var context = new Mock<TaskOrchestrationContext> { CallBase = true };
         context.Protected().SetupGet<ILoggerFactory>("LoggerFactory").Returns(loggerFactory.Object);
-        context.Setup(c => c.CreateTimer(It.IsAny<DateTime>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        context.Setup(c => c.CreateTimer(It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .Returns(() =>
+            {
+                Assert.Empty(logger.Invocations);
+                return Task.CompletedTask;
+            });
         context.SetupSequence(c => c.CallActivityAsync<DurableHttpResponse>(
                 It.IsAny<TaskName>(), It.IsAny<object>(), It.IsAny<TaskOptions>()))
             .ReturnsAsync(new DurableHttpResponse(HttpStatusCode.Accepted)
             {
                 Headers = new Dictionary<string, StringValues>
                 {
-                    ["Location"] = "https://example.com/status?code=secret",
+                    ["Location"] = location,
                     ["Retry-After"] = "0",
                 },
             })
-            .ReturnsAsync(new DurableHttpResponse(HttpStatusCode.OK));
+            .Returns(() =>
+            {
+                // The worker log describes scheduling, before the poll has produced a response.
+                var log = Assert.Single(logger.Invocations, invocation => invocation.Method.Name == nameof(ILogger.Log));
+                Assert.Equal(LogLevel.Information, log.Arguments[0]);
+                Assert.Equal("Polling HTTP status at location: " + expectedEndpoint, log.Arguments[2].ToString());
+                var state = Assert.IsAssignableFrom<IEnumerable<KeyValuePair<string, object>>>(log.Arguments[2]);
+                foreach (string sensitive in new[] { "username", "password", "secret", "signature", "fragment", "?" })
+                {
+                    Assert.DoesNotContain(sensitive, JsonSerializer.Serialize(state));
+                }
 
-        await context.Object.CallHttpAsync(new DurableHttpRequest(HttpMethod.Get, new Uri("https://example.com/start"))
+                return Task.FromResult(new DurableHttpResponse(HttpStatusCode.OK));
+            });
+
+        await context.Object.CallHttpAsync(new DurableHttpRequest(HttpMethod.Get, new Uri("https://example.com:8443/start"))
         {
             AsynchronousPatternEnabled = true,
         });
 
+        loggerFactory.Verify(factory => factory.CreateLogger("Microsoft.Azure.Functions.Worker.Extensions.DurableTask.CallHttp"), Times.Once);
         logger.Verify(log => log.Log(
             It.IsAny<LogLevel>(), It.IsAny<EventId>(),
             It.Is<It.IsAnyType>((state, type) => state.ToString()!.Contains("secret")),
             It.IsAny<Exception?>(), It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.OK, true)]
+    [InlineData(HttpStatusCode.Accepted, false)]
+    public async Task CallHttpAsync_WithoutPolling_DoesNotLogPolling(HttpStatusCode statusCode, bool asynchronousPatternEnabled)
+    {
+        var logger = new Mock<ILogger>();
+        var loggerFactory = new Mock<ILoggerFactory>();
+        loggerFactory.Setup(factory => factory.CreateLogger(It.IsAny<string>())).Returns(logger.Object);
+        var context = new Mock<TaskOrchestrationContext> { CallBase = true };
+        context.Protected().SetupGet<ILoggerFactory>("LoggerFactory").Returns(loggerFactory.Object);
+        context.Setup(c => c.CallActivityAsync<DurableHttpResponse>(
+                It.IsAny<TaskName>(), It.IsAny<object>(), It.IsAny<TaskOptions>()))
+            .ReturnsAsync(new DurableHttpResponse(statusCode));
+
+        DurableHttpResponse response = await context.Object.CallHttpAsync(
+            new DurableHttpRequest(HttpMethod.Get, new Uri("https://example.com/start?code=secret"))
+            {
+                AsynchronousPatternEnabled = asynchronousPatternEnabled,
+            });
+
+        Assert.Equal(statusCode, response.StatusCode);
+        Assert.Empty(logger.Invocations);
+        context.Verify(c => c.CallActivityAsync<DurableHttpResponse>(
+            It.IsAny<TaskName>(), It.IsAny<object>(), It.IsAny<TaskOptions>()), Times.Once);
+        context.Verify(c => c.CreateTimer(It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
