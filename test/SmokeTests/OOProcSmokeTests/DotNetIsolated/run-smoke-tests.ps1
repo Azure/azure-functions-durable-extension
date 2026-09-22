@@ -22,6 +22,8 @@ param(
 $ErrorActionPreference = "Stop"
 $retryCount = 0;
 $statusUrl = $null;
+$startFaultUri = $null;
+$faultSignaled = $false;
 $success = $false;
 $haveManuallyRestartedHost = $false;
 $funcProcess = $null;
@@ -62,6 +64,7 @@ function Stop-FunctionsHost([System.Diagnostics.Process] $process) {
 try {
     Do {
         $testIsRunning = $true;
+        $waitBeforePolling = $false;
 
         try {
             # Start the functions host if it's not running already.
@@ -139,10 +142,20 @@ try {
 
                 if ($TriggerFault) {
                     $startFaultUri = $result.sendEventPostUri.Replace("{eventName}", "StartFault")
-                    Write-Host "Triggering the fault after receiving the instance status URL..." -ForegroundColor Yellow
-                    Invoke-RestMethod -Method Post -Uri $startFaultUri -ContentType "application/json" -Body "null"
                 }
 
+                $waitBeforePolling = $true
+            }
+
+            # A failed event POST must be retried without creating another orchestration.
+            if ($TriggerFault -and -not $faultSignaled) {
+                Write-Host "Triggering the fault after receiving the instance status URL..." -ForegroundColor Yellow
+                Invoke-RestMethod -Method Post -Uri $startFaultUri -ContentType "application/json" -Body "null"
+                $faultSignaled = $true
+                $waitBeforePolling = $true
+            }
+
+            if ($waitBeforePolling) {
                 # sleep for a bit to give the orchestrator a chance to start,
                 # then loop once more in case the orchestrator ran quickly, made the host unhealthy,
                 # and the functions host needs to be restarted

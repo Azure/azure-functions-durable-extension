@@ -125,6 +125,8 @@ jobs:
     steps:
       - checkout: self
         clean: true
+      - pwsh: ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/test-smoke-runner.ps1
+        displayName: Test smoke runner recovery
       - template: cfs-authentication.yml
       - task: UseDotNet@2
         displayName: Install .NET 8 SDK
