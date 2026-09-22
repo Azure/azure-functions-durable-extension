@@ -1424,40 +1424,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.DoesNotContain(DurableClient.SourceInstanceIdTag, tags);
         }
 
-        [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task RestartInstanceWithOptions_ReturnsBadRequestWhenTargetMatchesSource()
-        {
-            const string InstanceId = "same-instance";
-            var requestUri = new Uri(
-                $"http://localhost/runtime/webhooks/durabletask/instances/{InstanceId}/restartWithOptions?newInstanceId={InstanceId}");
-            var orchestrationServiceClient = new Mock<IOrchestrationServiceClient>();
-            var durabilityProvider = new DurabilityProvider(
-                "storageProviderName",
-                new Mock<IOrchestrationService>().Object,
-                orchestrationServiceClient.Object,
-                TestConstants.ConnectionName);
-            var options = new DurableTaskOptions
-            {
-                WebhookUriProviderOverride = () => new Uri("http://localhost/runtime/webhooks/durabletask"),
-                HubName = TestConstants.TaskHub,
-            };
-            var extension = TestDurableTaskExtension.CreateWithProvider(options, durabilityProvider);
-            var httpApiHandler = new HttpApiHandler(extension, NullLogger.Instance);
-
-            HttpResponseMessage response = await httpApiHandler.HandleRequestAsync(
-                new HttpRequestMessage(HttpMethod.Post, requestUri),
-                CancellationToken.None);
-
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-            string content = await response.Content.ReadAsStringAsync();
-            var error = JsonConvert.DeserializeObject<JObject>(content);
-            Assert.Contains("must be different from the source instance ID", error["Message"].ToString());
-            orchestrationServiceClient.Verify(
-                client => client.GetOrchestrationStateAsync(It.IsAny<string>(), It.IsAny<bool>()),
-                Times.Never());
-        }
-
         [Theory]
         [InlineData(null)]
         [InlineData("")]

@@ -1289,13 +1289,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal Task<string> RestartWithOptionsAsync(string sourceInstanceId, string newInstanceId, string version)
         {
             ValidateRestartTargetInstanceId(newInstanceId);
-            if (string.Equals(sourceInstanceId, newInstanceId, StringComparison.Ordinal))
-            {
-                throw new ArgumentException(
-                    "The new orchestration instance ID must be different from the source instance ID.",
-                    nameof(newInstanceId));
-            }
-
             return this.RestartCoreAsync(sourceInstanceId, newInstanceId, version);
         }
 
