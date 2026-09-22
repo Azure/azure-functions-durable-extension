@@ -809,6 +809,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 context.ParentInstanceId = orchestrationRuntimeState.ParentInstance.OrchestrationInstance.InstanceId;
             }
+            context.SourceInstanceId = GetSourceInstanceId(orchestrationRuntimeState);
 
             context.InstanceId = orchestrationRuntimeState.OrchestrationInstance?.InstanceId;
             context.ExecutionId = orchestrationRuntimeState.OrchestrationInstance?.ExecutionId;
@@ -939,6 +940,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             await context.RunDeferredTasks();
+        }
+
+        internal static string GetSourceInstanceId(OrchestrationRuntimeState orchestrationRuntimeState)
+        {
+            if (orchestrationRuntimeState.ParentInstance != null)
+            {
+                return null;
+            }
+
+            if (orchestrationRuntimeState.ExecutionStartedEvent.Tags?.TryGetValue(
+                DurableClient.SourceInstanceIdTag,
+                out string sourceInstanceId) == true &&
+                !string.IsNullOrEmpty(sourceInstanceId))
+            {
+                return sourceInstanceId;
+            }
+
+            return null;
         }
 
         /// <summary>

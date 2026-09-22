@@ -274,7 +274,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             const string NewInstanceId = "new-instance";
             const string FunctionName = "RestartedOrchestrator";
             const string Input = "{\"value\":42}";
-            var tags = new Dictionary<string, string> { ["source"] = "restart-test" };
+            var tags = new Dictionary<string, string>
+            {
+                ["source"] = "restart-test",
+                [DurableClient.SourceInstanceIdTag] = "original-source-instance",
+            };
             ExecutionStartedEvent capturedEvent = null;
             var serviceClient = new Mock<IOrchestrationServiceClient>();
             serviceClient
@@ -322,7 +326,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(NewInstanceId, capturedEvent.OrchestrationInstance.InstanceId);
             Assert.Equal(expectedVersion, capturedEvent.Version);
             Assert.True(JToken.DeepEquals(JToken.Parse(Input), JToken.Parse(capturedEvent.Input)));
-            Assert.Equal(tags, capturedEvent.Tags);
+            Assert.Equal("restart-test", capturedEvent.Tags["source"]);
+            Assert.Equal(SourceInstanceId, capturedEvent.Tags[DurableClient.SourceInstanceIdTag]);
+            Assert.Equal("original-source-instance", tags[DurableClient.SourceInstanceIdTag]);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task RestartWithOptionsAsync_RejectsSourceInstanceIdAsTarget()
+        {
+            const string InstanceId = "same-instance";
+            (DurableClient client, Mock<IOrchestrationServiceClient> serviceClient, _) = CreateClient();
+
+            ArgumentException exception = await Assert.ThrowsAsync<ArgumentException>(
+                () => client.RestartWithOptionsAsync(InstanceId, InstanceId, version: null));
+
+            Assert.Equal("newInstanceId", exception.ParamName);
+            Assert.Contains("must be different from the source instance ID", exception.Message);
+            serviceClient.Verify(
+                x => x.GetOrchestrationStateAsync(It.IsAny<string>(), It.IsAny<bool>()),
+                Times.Never());
         }
 
         public static IEnumerable<object[]> InvalidRestartTargetInstanceIds()

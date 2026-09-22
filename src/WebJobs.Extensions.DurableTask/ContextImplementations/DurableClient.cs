@@ -29,6 +29,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         DurableOrchestrationClientBase // for v1 legacy compatibility.
 #pragma warning restore 618
     {
+        internal const string SourceInstanceIdTag = "MS_DurableFunctions_SourceInstanceId";
+
         private const int MaxInstanceIdLength = 256;
 
         private static readonly JValue NullJValue = JValue.CreateNull();
@@ -1287,6 +1289,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal Task<string> RestartWithOptionsAsync(string sourceInstanceId, string newInstanceId, string version)
         {
             ValidateRestartTargetInstanceId(newInstanceId);
+            if (string.Equals(sourceInstanceId, newInstanceId, StringComparison.Ordinal))
+            {
+                throw new ArgumentException(
+                    "The new orchestration instance ID must be different from the source instance ID.",
+                    nameof(newInstanceId));
+            }
+
             return this.RestartCoreAsync(sourceInstanceId, newInstanceId, version);
         }
 
@@ -1298,12 +1307,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.ThrowIfOrchestratorFunctionIsDisabled(state.Name);
 
             JToken input = ParseToJToken(state.Input);
+            IDictionary<string, string> tags = state.Tags;
+            if (!string.Equals(sourceInstanceId, newInstanceId, StringComparison.Ordinal))
+            {
+                tags = state.Tags == null
+                    ? new Dictionary<string, string>()
+                    : new Dictionary<string, string>(state.Tags);
+                tags[SourceInstanceIdTag] = sourceInstanceId;
+            }
 
             return await this.CreateOrchestrationInstanceAndTraceAsync(
                 orchestratorFunctionName: state.Name,
                 instanceId: newInstanceId,
                 input: input,
-                tags: state.Tags,
+                tags: tags,
                 reason: "RestartInstance",
                 version: version);
         }

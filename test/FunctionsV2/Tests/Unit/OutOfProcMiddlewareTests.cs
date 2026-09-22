@@ -28,6 +28,36 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private const string NoWorkerInitializedMessage = "Did not find any initialized language workers";
         private const string AssemblyNotLoadedMessage = "Could not load file or assembly";
 
+        [Theory]
+        [InlineData(false, "source-instance")]
+        [InlineData(true, null)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void GetSourceInstanceId_ReturnsSourceOnlyForTopLevelClone(
+            bool hasParent,
+            string expectedSourceInstanceId)
+        {
+            var startedEvent = new ExecutionStartedEvent(-1, null)
+            {
+                Name = "TestOrchestrator",
+                Tags = new Dictionary<string, string>
+                {
+                    [DurableClient.SourceInstanceIdTag] = "source-instance",
+                },
+                ParentInstance = hasParent
+                    ? new ParentInstance
+                    {
+                        OrchestrationInstance = new OrchestrationInstance
+                        {
+                            InstanceId = "parent-instance",
+                        },
+                    }
+                    : null,
+            };
+            var runtimeState = new OrchestrationRuntimeState([startedEvent]);
+
+            Assert.Equal(expectedSourceInstanceId, DurableTaskExtension.GetSourceInstanceId(runtimeState));
+        }
+
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task CallOrchestratorAsync_DifferentInvalidOperationException_DoesNotThrowSessionAbortedException()
