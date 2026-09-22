@@ -52,6 +52,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <exception cref="SessionAbortedException">Thrown if there is a recoverable error in the Functions runtime that's expected to be handled gracefully.</exception>
         public async Task CallOrchestratorAsync(DispatchMiddlewareContext dispatchContext, Func<Task> next)
         {
+            if (this.extension.IsProviderBuiltInTask(dispatchContext.GetProperty<TaskOrchestration>()))
+            {
+                await next();
+                return;
+            }
+
             OrchestrationRuntimeState? runtimeState = dispatchContext.GetProperty<OrchestrationRuntimeState>();
             if (runtimeState == null)
             {
@@ -533,7 +539,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new InvalidOperationException($"An activity was scheduled but no {nameof(TaskScheduledEvent)} was found!");
             }
 
-            if (scheduledEvent.Name?.StartsWith("BuiltIn::", StringComparison.OrdinalIgnoreCase) ?? false)
+            if (this.extension.IsProviderBuiltInTask(dispatchContext.GetProperty<TaskActivity>()) ||
+                string.Equals(scheduledEvent.Name, HttpOptions.HttpTaskActivityReservedName, StringComparison.Ordinal))
             {
                 await next();
                 return;

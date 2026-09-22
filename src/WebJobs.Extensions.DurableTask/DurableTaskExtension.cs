@@ -69,6 +69,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 #pragma warning restore CS0169
         private readonly bool isOptionsConfigured;
         private readonly Guid extensionGuid;
+        private readonly Lazy<BuiltInTaskRegistry> builtInTasks;
 
         private ILocalGrpcListener localGrpcListener;
 #pragma warning disable CS0612 // Type or member is obsolete
@@ -82,6 +83,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private DurabilityProvider defaultDurabilityProvider;
         private TaskHubWorker taskHubWorker;
         private bool isTaskHubWorkerStarted;
+        private CancellationTokenSource providerWorkerStopping;
+        private CancellationTokenRegistration providerHostStopping;
+        private Task providerWorkerTask;
         private HttpClient durableHttpClient;
         private EventSourceListener eventSourceListener;
 
@@ -133,6 +137,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.LifeCycleNotificationHelper = lifeCycleNotificationHelper ?? this.CreateLifeCycleNotificationHelper();
             this.durabilityProviderFactory = GetDurabilityProviderFactory(this.Options, logger, orchestrationServiceFactories);
             this.defaultDurabilityProvider = this.durabilityProviderFactory.GetDurabilityProvider();
+            this.builtInTasks = new Lazy<BuiltInTaskRegistry>(() =>
+            {
+                var registry = new BuiltInTaskRegistry(this.defaultDurabilityProvider);
+                foreach (FunctionName name in this.knownOrchestrators.Keys.Concat(this.knownActivities.Keys).Concat(this.knownEntities.Keys))
+                {
+                    registry.ValidateCustomerName(name.Name);
+                }
+
+                return registry;
+            });
             this.isOptionsConfigured = true;
 
             if (durableHttpMessageHandlerFactory == null)
@@ -218,12 +232,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private TaskHubWorker InitializeTaskHubWorker()
         {
-            var newTaskHubWorker = new TaskHubWorker(this.defaultDurabilityProvider, this, this, loggerFactory: this.loggerFactory, versioningSettings: new VersioningSettings
+            var versioningSettings = new VersioningSettings
             {
                 Version = this.Options.DefaultVersion, // A null (or empty) version is valid as it signifies non-versioned case.
                 MatchStrategy = this.Options.VersionMatchStrategy, // The default value for this is to no-op on versioning.
                 FailureStrategy = this.Options.VersionFailureStrategy, // The default value for this is to ignore work if there is a mismatch.
-            });
+            };
+            versioningSettings.ExcludedOrchestrationNames.UnionWith(this.builtInTasks.Value.UnversionedOrchestrationNames);
+            var newTaskHubWorker = new TaskHubWorker(this.defaultDurabilityProvider, this, this, loggerFactory: this.loggerFactory, versioningSettings: versioningSettings);
 
             // Add middleware to the DTFx dispatcher so that we can inject our own logic
             // into and customize the orchestration execution pipeline.
@@ -667,10 +683,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Called by the Durable Task Framework: Returns the specified <see cref="TaskOrchestration"/>.
         /// </summary>
         /// <param name="name">The name of the orchestration to return.</param>
-        /// <param name="version">Not used.</param>
-        /// <returns>An orchestration shim that delegates execution to an orchestrator function.</returns>
+        /// <param name="version">The exact version for provider built-in tasks; ignored for Functions shims.</param>
+        /// <returns>A provider built-in task or a shim that delegates execution to an orchestrator function.</returns>
         TaskOrchestration INameVersionObjectManager<TaskOrchestration>.GetObject(string name, string version)
         {
+            TaskOrchestration builtIn = this.builtInTasks.Value.GetOrchestration(name, version);
+            if (builtIn != null)
+            {
+                return builtIn;
+            }
+
             if (name.StartsWith("@"))
             {
                 return new TaskEntityShim(this, this.defaultDurabilityProvider, name);
@@ -694,10 +716,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Called by the Durable Task Framework: Returns the specified <see cref="TaskActivity"/>.
         /// </summary>
         /// <param name="name">The name of the activity to return.</param>
-        /// <param name="version">Not used.</param>
-        /// <returns>An activity shim that delegates execution to an activity function.</returns>
+        /// <param name="version">The exact version for provider built-in tasks; ignored for Functions shims.</param>
+        /// <returns>A provider built-in task or a shim that delegates execution to an activity function.</returns>
         TaskActivity INameVersionObjectManager<TaskActivity>.GetObject(string name, string version)
         {
+            TaskActivity builtIn = this.builtInTasks.Value.GetActivity(name, version);
+            if (builtIn != null)
+            {
+                return builtIn;
+            }
+
             if (IsDurableHttpTask(name))
             {
                 return new TaskHttpActivityShim(this, this.durableHttpClient);
@@ -1300,6 +1328,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return info;
         }
 
+        internal bool IsProviderBuiltInTask(object task)
+            => this.builtInTasks.IsValueCreated && this.builtInTasks.Value.IsResolvedTask(task);
+
         internal bool TryGetActivityInfo(FunctionName activityFunction, out RegisteredFunctionInfo info)
         {
             return this.knownActivities.TryGetValue(activityFunction, out info);
@@ -1392,6 +1423,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal void RegisterOrchestrator(FunctionName orchestratorFunction, RegisteredFunctionInfo orchestratorInfo)
         {
+            this.ValidateBuiltInTaskCollision(orchestratorFunction);
             if (orchestratorInfo != null)
             {
                 orchestratorInfo.IsDeregistered = false;
@@ -1430,6 +1462,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal void RegisterActivity(FunctionName activityFunction, ITriggeredFunctionExecutor executor)
         {
+            this.ValidateBuiltInTaskCollision(activityFunction);
             if (this.knownActivities.TryGetValue(activityFunction, out RegisteredFunctionInfo existing))
             {
                 existing.Executor = executor;
@@ -1466,6 +1499,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal void RegisterEntity(FunctionName entityFunction, RegisteredFunctionInfo entityInfo)
         {
+            this.ValidateBuiltInTaskCollision(entityFunction);
             if (entityInfo != null)
             {
                 entityInfo.IsDeregistered = false;
@@ -1603,6 +1637,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             writeToUserLogs: true);
 
                         Stopwatch sw = Stopwatch.StartNew();
+                        BuiltInTaskRegistry builtIns = this.builtInTasks.Value;
+                        foreach (FunctionName name in this.knownOrchestrators.Keys.Concat(this.knownActivities.Keys).Concat(this.knownEntities.Keys))
+                        {
+                            builtIns.ValidateCustomerName(name.Name);
+                        }
+
                         await this.defaultDurabilityProvider.CreateIfNotExistsAsync();
 
                         // Pass registered function names to the factory so backends that support
@@ -1610,8 +1650,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         // before the task hub worker opens its GetWorkItems stream.
                         var activeFunctions = this.GetActiveRegisteredFunctionNames();
                         this.durabilityProviderFactory.SetRegisteredFunctions(
-                            orchestratorNames: activeFunctions.orchestratorNames,
-                            activityNames: activeFunctions.activityNames,
+                            orchestratorNames: activeFunctions.orchestratorNames.Concat(builtIns.OrchestrationNames).ToArray(),
+                            activityNames: activeFunctions.activityNames.Concat(builtIns.ActivityNames).ToArray(),
                             entityNames: activeFunctions.entityNames);
 
                         await this.EnsureTaskHubWorker().StartAsync();
@@ -1648,6 +1688,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         }
 
                         this.isTaskHubWorkerStarted = true;
+                        var stoppingSource = new CancellationTokenSource();
+                        this.providerWorkerStopping = stoppingSource;
+                        this.providerHostStopping = this.HostLifetimeService.OnStopping.Register(() => this.CancelProviderWorker(stoppingSource));
+                        CancellationToken stoppingToken = stoppingSource.Token;
+                        this.providerWorkerTask = Task.Run(() => this.RunProviderWorkerAsync(stoppingToken));
                         return true;
                     }
                 }
@@ -1679,7 +1724,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         writeToUserLogs: true);
 
                     Stopwatch sw = Stopwatch.StartNew();
+                    this.CancelProviderWorker(this.providerWorkerStopping);
+                    await this.providerWorkerTask;
                     await this.taskHubWorker?.StopAsync(isForced: !isGracefulStop);
+                    this.providerHostStopping.Dispose();
+                    this.providerWorkerStopping.Dispose();
+                    this.providerWorkerStopping = null;
+                    this.providerWorkerTask = null;
                     this.isTaskHubWorkerStarted = false;
 
                     this.TraceHelper.ExtensionInformationalEvent(
@@ -1694,6 +1745,50 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return false;
+        }
+
+        private void ValidateBuiltInTaskCollision(FunctionName name)
+        {
+            if (this.builtInTasks.IsValueCreated)
+            {
+                this.builtInTasks.Value.ValidateCustomerName(name.Name);
+            }
+        }
+
+        private async Task RunProviderWorkerAsync(CancellationToken stoppingToken)
+        {
+            try
+            {
+                await this.defaultDurabilityProvider.OnTaskHubWorkerStartedAsync(stoppingToken);
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                // Cancellation ends provider work before the dispatchers stop.
+            }
+            catch (Exception exception)
+            {
+                this.TraceHelper.ExtensionWarningEvent(
+                    this.Options.HubName,
+                    functionName: string.Empty,
+                    instanceId: string.Empty,
+                    message: $"The durability provider's worker-lifetime callback failed: {exception}");
+            }
+        }
+
+        private void CancelProviderWorker(CancellationTokenSource stoppingSource)
+        {
+            try
+            {
+                stoppingSource.Cancel();
+            }
+            catch (AggregateException exception)
+            {
+                this.TraceHelper.ExtensionWarningEvent(
+                    this.Options.HubName,
+                    functionName: string.Empty,
+                    instanceId: string.Empty,
+                    message: $"The durability provider's worker cancellation callback failed: {exception}");
+            }
         }
 
         /// <inheritdoc/>
