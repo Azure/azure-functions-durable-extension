@@ -56,8 +56,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Passes the names of registered orchestrators, activities, and entities to the factory
         /// so that it can build work-item filters for backends that support selective dispatch (e.g., DTS).
         /// Called after function indexing completes but before the task hub worker starts.
-        /// Includes the validated built-in task names supplied by the worker's durability provider.
-        /// Providers must preserve these names when updating their work-item filters.
         /// The default implementation is a no-op.
         /// </summary>
         /// <param name="orchestratorNames">The names of registered orchestrator functions.</param>

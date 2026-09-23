@@ -140,47 +140,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         Task<TaskOrchestrationWorkItem> IEntityOrchestrationService.LockNextEntityWorkItemAsync(TimeSpan receiveTimeout, CancellationToken cancellationToken)
             => this.entityOrchestrationService.LockNextEntityWorkItemAsync(receiveTimeout, cancellationToken);
 
-        /// <summary>
-        /// Gets provider-owned orchestrations to execute directly in the host's task hub worker.
-        /// </summary>
-        /// <remarks>
-        /// Called before the worker starts. Registration must be side-effect-free and stable for the
-        /// lifetime of the host. Names and versions are matched ordinally; null and empty versions
-        /// both identify the default version. Names must not collide with indexed Functions,
-        /// including disabled functions, or reserved HTTP and entity names.
-        /// </remarks>
-        /// <returns>DTFx object creators, or an empty collection when not supported.</returns>
-        public virtual IEnumerable<ObjectCreator<TaskOrchestration>> GetBuiltInOrchestrations()
-            => Array.Empty<ObjectCreator<TaskOrchestration>>();
-
-        /// <summary>
-        /// Gets provider-owned activities to execute directly in the host's task hub worker.
-        /// </summary>
-        /// <remarks>
-        /// Has the same registration and name/version requirements as <see cref="GetBuiltInOrchestrations"/>.
-        /// Provider tasks retain their own DTFx serialization and failure handling; they do not invoke
-        /// indexed Functions or language workers.
-        /// </remarks>
-        /// <returns>DTFx object creators, or an empty collection when not supported.</returns>
-        public virtual IEnumerable<ObjectCreator<TaskActivity>> GetBuiltInActivities()
-            => Array.Empty<ObjectCreator<TaskActivity>>();
-
-        /// <summary>
-        /// Runs asynchronous provider work after the host's task hub dispatchers have started.
-        /// </summary>
-        /// <remarks>
-        /// The host observes this task without delaying worker startup. It may run for the worker's
-        /// lifetime and must finish promptly when <paramref name="stoppingToken"/> is canceled.
-        /// The host cancels and awaits it before stopping dispatchers. A restart invokes this method
-        /// again with a new token. Faults are logged, not retried by the host. Client bindings and
-        /// scaling do not invoke this callback; a host without active Durable trigger listeners does
-        /// not start a task hub worker. Election or bootstrap policy belongs to the provider.
-        /// </remarks>
-        /// <param name="stoppingToken">Canceled when the host or task hub worker is stopping.</param>
-        /// <returns>The provider's asynchronous worker-lifetime task.</returns>
-        public virtual Task OnTaskHubWorkerStartedAsync(CancellationToken stoppingToken)
-            => Task.CompletedTask;
-
         internal string GetBackendInfo()
         {
             return this.GetOrchestrationService().ToString();
