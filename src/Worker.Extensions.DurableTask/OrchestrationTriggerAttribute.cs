@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using Microsoft.Azure.Functions.Worker.Extensions.Abstractions;
 
@@ -25,4 +26,11 @@ public sealed class OrchestrationTriggerAttribute : TriggerBindingAttribute
     /// The name of the orchestrator function or <c>null</c> to use the function name.
     /// </value>
     public string? Orchestration { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value identifying the SDK-owned, unversioned payload purge orchestration.
+    /// </summary>
+    /// <remarks>Reserved for the exact .NET isolated SDK purge function; not a customer version-policy override.</remarks>
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public bool LargePayloadPurge { get; set; }
 }

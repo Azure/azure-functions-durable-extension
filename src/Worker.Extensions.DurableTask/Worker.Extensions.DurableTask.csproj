@@ -44,6 +44,7 @@
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Abstractions" />
     <PackageReference Include="Microsoft.DurableTask.Client.Grpc" />
     <PackageReference Include="Microsoft.DurableTask.Worker.Grpc" />
+    <PackageReference Include="Microsoft.DurableTask.Extensions.AzureBlobPayloads" />
     <PackageReference Include="Grpc.Net.Client" />
     <PackageReference Include="Microsoft.DurableTask.Analyzers" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" />

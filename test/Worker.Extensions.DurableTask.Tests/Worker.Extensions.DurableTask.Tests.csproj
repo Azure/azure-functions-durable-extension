@@ -19,6 +19,7 @@
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="Moq" />
     <ProjectReference Include="..\..\src\Worker.Extensions.DurableTask\Worker.Extensions.DurableTask.csproj" />
+    <ProjectReference Include="..\..\src\Worker.Extensions.DurableTask.AzureBlobPayloads\Worker.Extensions.DurableTask.AzureBlobPayloads.csproj" />
   </ItemGroup>
 
   <ItemGroup>
