@@ -11,9 +11,12 @@ using DurableTask.Core.Entities;
 using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Query;
+using DurableTask.LargePayloadPurge;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using LargePayloadPurgeResult = Microsoft.DurableTask.Client.LargePayloadPurgeResult;
+using LargePayloadTombstone = Microsoft.DurableTask.Client.LargePayloadTombstone;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -609,7 +612,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
-        Task<IReadOnlyList<LargePayloadPurgeTombstone>> IOrchestrationServiceLargePayloadPurgeClient.GetLargePayloadsToPurgeAsync(
+        Task<IReadOnlyList<LargePayloadTombstone>> IOrchestrationServiceLargePayloadPurgeClient.GetLargePayloadsToPurgeAsync(
             int limit, DateTime deadlineUtc, CancellationToken cancellationToken)
         {
             if (this.innerServiceClient is IOrchestrationServiceLargePayloadPurgeClient purgeClient)

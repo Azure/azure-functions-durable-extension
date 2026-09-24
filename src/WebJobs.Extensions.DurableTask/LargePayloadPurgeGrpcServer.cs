@@ -5,8 +5,9 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using DurableTask.Core;
+using DurableTask.LargePayloadPurge;
 using Grpc.Core;
+using Microsoft.DurableTask.Client;
 using LP = Microsoft.DurableTask.Protobuf.LargePayloads;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -39,7 +40,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public async override Task<LP.GetLargePayloadTombstonesResponse> GetLargePayloadTombstones(LP.GetLargePayloadTombstonesRequest request, ServerCallContext context)
         {
             var purgeClient = (IOrchestrationServiceLargePayloadPurgeClient)this.taskHubServer.GetDurabilityProvider(context);
-            IReadOnlyList<LargePayloadPurgeTombstone> tombstones;
+            IReadOnlyList<LargePayloadTombstone> tombstones;
             try
             {
                 tombstones = await purgeClient.GetLargePayloadsToPurgeAsync(request.Limit, context.Deadline, context.CancellationToken);
@@ -50,7 +51,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             var response = new LP.GetLargePayloadTombstonesResponse();
-            foreach (LargePayloadPurgeTombstone tombstone in tombstones)
+            foreach (LargePayloadTombstone tombstone in tombstones)
             {
                 response.Tombstones.Add(new LP.LargePayloadTombstone
                 {

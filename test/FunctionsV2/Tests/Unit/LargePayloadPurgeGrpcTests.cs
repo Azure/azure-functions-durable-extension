@@ -7,10 +7,12 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.LargePayloadPurge;
 using Grpc.Core;
 using Grpc.Net.Client;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
+using Microsoft.DurableTask.Client;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -53,7 +55,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 IReadOnlyList<LargePayloadPurgeResult> received = null;
                 provider.Setup(p => p.SetLargePayloadAutoPurgeAsync(enabled, deadline, cancellation.Token)).Returns(Task.CompletedTask);
                 provider.Setup(p => p.GetLargePayloadsToPurgeAsync(17, deadline, cancellation.Token))
-                    .ReturnsAsync(new[] { new LargePayloadPurgeTombstone(TombstoneToken, PayloadToken) });
+                    .ReturnsAsync(new[] { new LargePayloadTombstone(TombstoneToken, PayloadToken) });
                 provider.Setup(p => p.ReportLargePayloadPurgeResultsAsync(It.IsAny<IReadOnlyList<LargePayloadPurgeResult>>(), deadline, cancellation.Token))
                     .Callback<IReadOnlyList<LargePayloadPurgeResult>, DateTime, CancellationToken>((results, _, _) => received = results)
                     .Returns(Task.CompletedTask);
@@ -230,7 +232,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Mock<IOrchestrationServiceLargePayloadPurgeClient> provider = fixture.AddProvider("WireHub", "WireConnection");
             provider.Setup(p => p.SetLargePayloadAutoPurgeAsync(true, DateTime.MaxValue, It.IsAny<CancellationToken>())).Returns(Task.CompletedTask).Verifiable();
             provider.Setup(p => p.GetLargePayloadsToPurgeAsync(17, DateTime.MaxValue, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new[] { new LargePayloadPurgeTombstone(TombstoneToken, PayloadToken) }).Verifiable();
+                .ReturnsAsync(new[] { new LargePayloadTombstone(TombstoneToken, PayloadToken) }).Verifiable();
             provider.Setup(p => p.ReportLargePayloadPurgeResultsAsync(
                 It.Is<IReadOnlyList<LargePayloadPurgeResult>>(r => r.Count == 1 && r[0].TombstoneToken == TombstoneToken && r[0].Disposition == LargePayloadPurgeDisposition.Retry),
                 DateTime.MaxValue,
