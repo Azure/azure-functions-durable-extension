@@ -29,6 +29,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         IOrchestrationServiceClient,
         IOrchestrationServiceQueryClient,
         IOrchestrationServicePurgeClient,
+        IOrchestrationServiceLargePayloadPurgeClient,
         IEntityOrchestrationService
     {
         internal const string NoConnectionDetails = "default";
@@ -590,6 +591,48 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             else
             {
                 throw new NotSupportedException($"{this.innerServiceClient.GetType().Name} doesn't support purge operations.");
+            }
+        }
+
+        /// <inheritdoc />
+        Task IOrchestrationServiceLargePayloadPurgeClient.SetLargePayloadAutoPurgeAsync(
+            bool enabled, DateTime deadlineUtc, CancellationToken cancellationToken)
+        {
+            if (this.innerServiceClient is IOrchestrationServiceLargePayloadPurgeClient purgeClient)
+            {
+                return purgeClient.SetLargePayloadAutoPurgeAsync(enabled, deadlineUtc, cancellationToken);
+            }
+            else
+            {
+                throw new NotSupportedException($"{this.innerServiceClient.GetType().Name} doesn't support large-payload purge operations.");
+            }
+        }
+
+        /// <inheritdoc />
+        Task<IReadOnlyList<LargePayloadPurgeTombstone>> IOrchestrationServiceLargePayloadPurgeClient.GetLargePayloadsToPurgeAsync(
+            int limit, DateTime deadlineUtc, CancellationToken cancellationToken)
+        {
+            if (this.innerServiceClient is IOrchestrationServiceLargePayloadPurgeClient purgeClient)
+            {
+                return purgeClient.GetLargePayloadsToPurgeAsync(limit, deadlineUtc, cancellationToken);
+            }
+            else
+            {
+                throw new NotSupportedException($"{this.innerServiceClient.GetType().Name} doesn't support large-payload purge operations.");
+            }
+        }
+
+        /// <inheritdoc />
+        Task IOrchestrationServiceLargePayloadPurgeClient.ReportLargePayloadPurgeResultsAsync(
+            IReadOnlyList<LargePayloadPurgeResult> results, DateTime deadlineUtc, CancellationToken cancellationToken)
+        {
+            if (this.innerServiceClient is IOrchestrationServiceLargePayloadPurgeClient purgeClient)
+            {
+                return purgeClient.ReportLargePayloadPurgeResultsAsync(results, deadlineUtc, cancellationToken);
+            }
+            else
+            {
+                throw new NotSupportedException($"{this.innerServiceClient.GetType().Name} doesn't support large-payload purge operations.");
             }
         }
 

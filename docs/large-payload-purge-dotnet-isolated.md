@@ -51,7 +51,7 @@ The SDK purge orchestration is explicitly unversioned, even when the application
 
 Every worker eligible to receive these functions must use compatible extension, Core, and provider versions. Older workers can reject or fail the reserved orchestration. Do not roll back while removing support needed by existing purge executions.
 
-The provider must implement the optional `ILargePayloadPurgeProvider` capability. The local gRPC service forwards only the existing set/fetch/report operations to the provider selected by the normal binding's hub and connection headers, preserving deadlines and cancellation. Unsupported providers report `Unimplemented`; the common host does not implement storage deletion.
+The underlying orchestration service client must implement Core's optional `IOrchestrationServiceLargePayloadPurgeClient` capability. The base `DurabilityProvider` forwards the calls directly to its inner service client, so a Functions provider needs no additional purge interface, mapping, or client factory. The local gRPC service forwards only the existing set/fetch/report operations through the provider selected by the normal binding's hub and connection headers, preserving deadlines and cancellation. Unsupported inner clients report `Unimplemented`; the common host does not implement storage deletion.
 
 This first integration is limited to .NET isolated Functions. It adds no HTTP management API or support for other language workers.
 

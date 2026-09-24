@@ -16,6 +16,9 @@ using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
 using Xunit.Abstractions;
+using LargePayloadPurgeDisposition = DurableTask.Core.LargePayloadPurgeDisposition;
+using LargePayloadPurgeResult = DurableTask.Core.LargePayloadPurgeResult;
+using LargePayloadPurgeTombstone = DurableTask.Core.LargePayloadPurgeTombstone;
 using LP = Microsoft.DurableTask.Protobuf.LargePayloads;
 using P = Microsoft.DurableTask.Protobuf;
 
@@ -49,7 +52,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 DateTime deadline = i == 2 ? DateTime.MaxValue : DateTime.UtcNow.AddMinutes(1);
                 var context = new TestCallContext(bindings[i].Item1, bindings[i].Item2, deadline, cancellation.Token);
-                Mock<ILargePayloadPurgeProvider> provider = providers[i];
+                Mock<IOrchestrationServiceLargePayloadPurgeClient> provider = providers[i];
                 IReadOnlyList<LargePayloadPurgeResult> received = null;
                 provider.Setup(p => p.SetLargePayloadAutoPurgeAsync(enabled, deadline, cancellation.Token)).Returns(Task.CompletedTask);
                 provider.Setup(p => p.GetLargePayloadsToPurgeAsync(17, deadline, cancellation.Token))
@@ -109,6 +112,72 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [InlineData(TestGrpcListenerMode.Legacy, "Set")]
+        [InlineData(TestGrpcListenerMode.Legacy, "Get")]
+        [InlineData(TestGrpcListenerMode.Legacy, "Report")]
+        [InlineData(TestGrpcListenerMode.AspNetCore, "Set")]
+        [InlineData(TestGrpcListenerMode.AspNetCore, "Get")]
+        [InlineData(TestGrpcListenerMode.AspNetCore, "Report")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task UnsupportedInnerClientReturnsUnimplementedOverExistingWire(TestGrpcListenerMode mode, string operation)
+        {
+            using var fixture = new BridgeFixture(this.output);
+            fixture.AddUnsupportedProvider("UnsupportedHub", "UnsupportedConnection");
+            ILocalGrpcListener listener = LocalGrpcListener.Create(fixture.Extension, (LocalGrpcListenerMode)mode);
+
+            try
+            {
+                await listener.StartAsync(default);
+                using GrpcChannel channel = GrpcChannel.ForAddress(listener.ListenAddress);
+                var client = new LP.LargePayloadPurge.LargePayloadPurgeClient(channel);
+                var headers = new Metadata { { "Durable-TaskHub", "UnsupportedHub" }, { "Durable-ConnectionName", "UnsupportedConnection" } };
+
+                RpcException exception = await Assert.ThrowsAsync<RpcException>(() => InvokeAsync(client, operation, headers));
+
+                Assert.Equal(StatusCode.Unimplemented, exception.StatusCode);
+                Assert.Contains("large-payload purge", exception.Status.Detail);
+                fixture.AssertNoDefaultOrLifecycleCalls();
+            }
+            finally
+            {
+                await listener.StopAsync(default);
+            }
+        }
+
+        [Theory]
+        [InlineData("Set", StatusCode.InvalidArgument)]
+        [InlineData("Get", StatusCode.InvalidArgument)]
+        [InlineData("Report", StatusCode.InvalidArgument)]
+        [InlineData("Set", StatusCode.PermissionDenied)]
+        [InlineData("Get", StatusCode.PermissionDenied)]
+        [InlineData("Report", StatusCode.PermissionDenied)]
+        [InlineData("Set", StatusCode.FailedPrecondition)]
+        [InlineData("Get", StatusCode.FailedPrecondition)]
+        [InlineData("Report", StatusCode.FailedPrecondition)]
+        [InlineData("Set", StatusCode.Unimplemented)]
+        [InlineData("Get", StatusCode.Unimplemented)]
+        [InlineData("Report", StatusCode.Unimplemented)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task InnerRpcStatusAndTrailersRemainUnchanged(string operation, StatusCode status)
+        {
+            using var fixture = new BridgeFixture(this.output);
+            Mock<IOrchestrationServiceLargePayloadPurgeClient> client = fixture.AddProvider("Hub", "Connection");
+            var failure = new RpcException(new Status(status, "backend status"), new Metadata { { "backend-detail", "opaque" } });
+            client.Setup(c => c.SetLargePayloadAutoPurgeAsync(true, DateTime.MaxValue, default)).ThrowsAsync(failure);
+            client.Setup(c => c.GetLargePayloadsToPurgeAsync(17, DateTime.MaxValue, default)).ThrowsAsync(failure);
+            client.Setup(c => c.ReportLargePayloadPurgeResultsAsync(
+                It.IsAny<IReadOnlyList<LargePayloadPurgeResult>>(), DateTime.MaxValue, default)).ThrowsAsync(failure);
+
+            RpcException actual = await Assert.ThrowsAsync<RpcException>(() =>
+                InvokeAsync(fixture.Server, operation, new TestCallContext("Hub", "Connection", DateTime.MaxValue, default)));
+
+            Assert.Same(failure, actual);
+            Assert.Equal("opaque", actual.Trailers.GetValue("backend-detail"));
+            Assert.Single(client.Invocations);
+            fixture.AssertNoDefaultOrLifecycleCalls();
+        }
+
+        [Theory]
         [InlineData("Set", false)]
         [InlineData("Get", false)]
         [InlineData("Report", false)]
@@ -127,7 +196,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             DateTime deadline = DateTime.UtcNow.AddMinutes(1);
             var context = new TestCallContext("Hub", "Connection", deadline, cancellation.Token);
-            Mock<ILargePayloadPurgeProvider> provider = fixture.AddProvider("Hub", "Connection");
+            Mock<IOrchestrationServiceLargePayloadPurgeClient> provider = fixture.AddProvider("Hub", "Connection");
             Exception failure = canceled
                 ? new OperationCanceledException(cancellation.Token)
                 : new RpcException(new Status(StatusCode.ResourceExhausted, "backend failure"), new Metadata { { "failure-id", "opaque" } });
@@ -161,7 +230,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task LocalListenerBindsAllOperationsAndPreservesBackendStatus(TestGrpcListenerMode mode)
         {
             using var fixture = new BridgeFixture(this.output);
-            Mock<ILargePayloadPurgeProvider> provider = fixture.AddProvider("WireHub", "WireConnection");
+            Mock<IOrchestrationServiceLargePayloadPurgeClient> provider = fixture.AddProvider("WireHub", "WireConnection");
             provider.Setup(p => p.SetLargePayloadAutoPurgeAsync(true, DateTime.MaxValue, It.IsAny<CancellationToken>())).Returns(Task.CompletedTask).Verifiable();
             provider.Setup(p => p.GetLargePayloadsToPurgeAsync(17, DateTime.MaxValue, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new[] { new LargePayloadPurgeTombstone(TombstoneToken, PayloadToken) }).Verifiable();
@@ -220,7 +289,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public async Task LocalListenerUsesExistingExceptionInterceptor(TestGrpcListenerMode mode, string operation)
         {
             using var fixture = new BridgeFixture(this.output);
-            Mock<ILargePayloadPurgeProvider> provider = fixture.AddProvider("FailureHub", "FailureConnection");
+            Mock<IOrchestrationServiceLargePayloadPurgeClient> provider = fixture.AddProvider("FailureHub", "FailureConnection");
             var failure = new InvalidOperationException("Purge provider failure.");
             provider.Setup(p => p.SetLargePayloadAutoPurgeAsync(true, DateTime.MaxValue, It.IsAny<CancellationToken>())).ThrowsAsync(failure);
             provider.Setup(p => p.GetLargePayloadsToPurgeAsync(17, DateTime.MaxValue, It.IsAny<CancellationToken>())).ThrowsAsync(failure);
@@ -278,16 +347,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             private readonly Dictionary<(string Hub, string Connection), DurabilityProvider> providers = new Dictionary<(string, string), DurabilityProvider>();
             private readonly Mock<IOrchestrationService> service = new Mock<IOrchestrationService>();
             private readonly Mock<IOrchestrationServiceClient> serviceClient = new Mock<IOrchestrationServiceClient>();
-            private readonly Mock<DurabilityProvider> defaultProvider;
+            private readonly List<Mock<IOrchestrationServiceClient>> unsupportedClients = new List<Mock<IOrchestrationServiceClient>>();
             private readonly LoggerFactory loggerFactory;
 
             public BridgeFixture(ITestOutputHelper output)
             {
                 this.LoggerProvider = new TestLoggerProvider(output);
-                this.defaultProvider = this.CreateProvider();
-                this.defaultProvider.As<ILargePayloadPurgeProvider>();
+                var defaultProvider = new DurabilityProvider("Test", this.service.Object, this.serviceClient.Object, "TestConnection");
                 this.Factory.SetupGet(f => f.Name).Returns(AzureStorageDurabilityProviderFactory.ProviderName);
-                this.Factory.Setup(f => f.GetDurabilityProvider()).Returns(this.defaultProvider.Object);
+                this.Factory.Setup(f => f.GetDurabilityProvider()).Returns(defaultProvider);
                 this.Factory.Setup(f => f.GetDurabilityProvider(It.IsAny<DurableClientAttribute>()))
                     .Returns<DurableClientAttribute>(a => this.providers[(a.TaskHub, a.ConnectionName)]);
                 this.loggerFactory = new LoggerFactory(new[] { this.LoggerProvider });
@@ -301,7 +369,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     platformInformationService: TestHelpers.GetMockPlatformInformationService(language: WorkerRuntimeType.DotNet));
                 this.Server = new LargePayloadPurgeGrpcServer(this.Extension);
                 this.Factory.Invocations.Clear();
-                this.defaultProvider.Invocations.Clear();
                 this.service.Invocations.Clear();
                 this.serviceClient.Invocations.Clear();
             }
@@ -314,38 +381,36 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             public LargePayloadPurgeGrpcServer Server { get; }
 
-            public Mock<ILargePayloadPurgeProvider> AddProvider(string hub, string connection)
+            public Mock<IOrchestrationServiceLargePayloadPurgeClient> AddProvider(string hub, string connection)
             {
-                Mock<DurabilityProvider> provider = this.CreateProvider();
-                Mock<ILargePayloadPurgeProvider> purgeProvider = provider.As<ILargePayloadPurgeProvider>();
-                this.providers.Add((hub, connection), provider.Object);
-                return purgeProvider;
+                var client = new Mock<IOrchestrationServiceClient>(MockBehavior.Strict);
+                Mock<IOrchestrationServiceLargePayloadPurgeClient> purgeClient = client.As<IOrchestrationServiceLargePayloadPurgeClient>();
+                this.providers.Add((hub, connection), new DurabilityProvider("Test", this.service.Object, client.Object, connection));
+                return purgeClient;
             }
 
             public void AddUnsupportedProvider(string hub, string connection)
             {
-                this.providers.Add((hub, connection), this.CreateProvider().Object);
+                var client = new Mock<IOrchestrationServiceClient>(MockBehavior.Strict);
+                this.providers.Add((hub, connection), new DurabilityProvider("Unsupported", this.service.Object, client.Object, connection));
+                this.unsupportedClients.Add(client);
             }
 
             public void AssertNoDefaultOrLifecycleCalls()
             {
                 this.Factory.Verify(f => f.GetDurabilityProvider(), Times.Never);
-                this.defaultProvider.VerifyNoOtherCalls();
                 this.service.VerifyNoOtherCalls();
                 this.serviceClient.VerifyNoOtherCalls();
+                foreach (Mock<IOrchestrationServiceClient> client in this.unsupportedClients)
+                {
+                    client.VerifyNoOtherCalls();
+                }
             }
 
             public void Dispose()
             {
                 this.Extension.Dispose();
                 this.loggerFactory.Dispose();
-            }
-
-            private Mock<DurabilityProvider> CreateProvider()
-            {
-                var provider = new Mock<DurabilityProvider>("Test", this.service.Object, this.serviceClient.Object, "TestConnection") { CallBase = true };
-                provider.Setup(p => p.SetUseSeparateQueueForEntityWorkItems(It.IsAny<bool>()));
-                return provider;
             }
         }
 

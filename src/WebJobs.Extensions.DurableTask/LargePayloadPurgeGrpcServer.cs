@@ -2,8 +2,10 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 #nullable enable
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using DurableTask.Core;
 using Grpc.Core;
 using LP = Microsoft.DurableTask.Protobuf.LargePayloads;
 
@@ -20,20 +22,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<LP.SetLargePayloadAutoPurgeResponse> SetLargePayloadAutoPurge(LP.SetLargePayloadAutoPurgeRequest request, ServerCallContext context)
         {
-            // This records a setting only. Purge Functions execute in the language worker.
-            await this.GetLargePayloadPurgeProvider(context).SetLargePayloadAutoPurgeAsync(
-                request.Enabled,
-                context.Deadline,
-                context.CancellationToken);
+            var purgeClient = (IOrchestrationServiceLargePayloadPurgeClient)this.taskHubServer.GetDurabilityProvider(context);
+            try
+            {
+                // This records a setting only. Purge Functions execute in the language worker.
+                await purgeClient.SetLargePayloadAutoPurgeAsync(request.Enabled, context.Deadline, context.CancellationToken);
+            }
+            catch (NotSupportedException exception)
+            {
+                throw new RpcException(new Status(StatusCode.Unimplemented, exception.Message));
+            }
+
             return new LP.SetLargePayloadAutoPurgeResponse();
         }
 
         public async override Task<LP.GetLargePayloadTombstonesResponse> GetLargePayloadTombstones(LP.GetLargePayloadTombstonesRequest request, ServerCallContext context)
         {
-            IReadOnlyList<LargePayloadPurgeTombstone> tombstones = await this.GetLargePayloadPurgeProvider(context).GetLargePayloadsToPurgeAsync(
-                request.Limit,
-                context.Deadline,
-                context.CancellationToken);
+            var purgeClient = (IOrchestrationServiceLargePayloadPurgeClient)this.taskHubServer.GetDurabilityProvider(context);
+            IReadOnlyList<LargePayloadPurgeTombstone> tombstones;
+            try
+            {
+                tombstones = await purgeClient.GetLargePayloadsToPurgeAsync(request.Limit, context.Deadline, context.CancellationToken);
+            }
+            catch (NotSupportedException exception)
+            {
+                throw new RpcException(new Status(StatusCode.Unimplemented, exception.Message));
+            }
+
             var response = new LP.GetLargePayloadTombstonesResponse();
             foreach (LargePayloadPurgeTombstone tombstone in tombstones)
             {
@@ -49,7 +64,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<LP.ReportLargePayloadPurgeResultsResponse> ReportLargePayloadPurgeResults(LP.ReportLargePayloadPurgeResultsRequest request, ServerCallContext context)
         {
-            ILargePayloadPurgeProvider provider = this.GetLargePayloadPurgeProvider(context);
+            var purgeClient = (IOrchestrationServiceLargePayloadPurgeClient)this.taskHubServer.GetDurabilityProvider(context);
             var results = new List<LargePayloadPurgeResult>(request.Results.Count);
             foreach (LP.LargePayloadPurgeResult result in request.Results)
             {
@@ -59,18 +74,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     (LargePayloadPurgeDisposition)result.Disposition));
             }
 
-            await provider.ReportLargePayloadPurgeResultsAsync(results, context.Deadline, context.CancellationToken);
-            return new LP.ReportLargePayloadPurgeResultsResponse();
-        }
-
-        private ILargePayloadPurgeProvider GetLargePayloadPurgeProvider(ServerCallContext context)
-        {
-            if (this.taskHubServer.GetDurabilityProvider(context) is ILargePayloadPurgeProvider provider)
+            try
             {
-                return provider;
+                await purgeClient.ReportLargePayloadPurgeResultsAsync(results, context.Deadline, context.CancellationToken);
+            }
+            catch (NotSupportedException exception)
+            {
+                throw new RpcException(new Status(StatusCode.Unimplemented, exception.Message));
             }
 
-            throw new RpcException(new Status(StatusCode.Unimplemented, "The selected durability provider does not support large-payload purge."));
+            return new LP.ReportLargePayloadPurgeResultsResponse();
         }
     }
 }
