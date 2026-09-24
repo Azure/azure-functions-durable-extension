@@ -49,6 +49,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     cts.CancelAfter(durableHttpRequest.Timeout ?? TimeSpan.FromSeconds(240));
                     try
                     {
+                        this.config.TraceHelper.HttpRequestSending(
+                            this.config.Options.HubName,
+                            context?.OrchestrationInstance?.InstanceId ?? string.Empty,
+                            requestMessage.Method.ToString(),
+                            requestMessage.RequestUri,
+                            durableHttpRequest.PollingAttempt);
                         response = await this.httpClient.SendAsync(requestMessage, cts.Token);
                     }
                     catch (OperationCanceledException ex) when (durableHttpRequest.Timeout.HasValue && cts.IsCancellationRequested)

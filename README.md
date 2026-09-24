@@ -55,6 +55,42 @@ func extensions install -p Microsoft.Azure.WebJobs.Extensions.DurableTask -v <la
 
 Durable Functions is also available in supported [extension bundles](https://docs.microsoft.com/azure/azure-functions/functions-bindings-register#extension-bundles). Note that extension bundles are only supported for non-.NET languages.
 
+## Durable HTTP diagnostics
+
+`CallHttpAsync` emits an Information-level `Sending HTTP request` log in the host's
+`Host.Triggers.DurableTask` category before each built-in HTTP activity send attempt.
+The structured fields include `instanceId`, `hubName`, `httpMethod`, `requestUri`
+(scheme, host, port, and path), `queryParameterNames`, and `pollingAttempt`.
+Query values, URI user information, fragments, headers, and bodies are not included
+in this diagnostic, even when `traceInputsAndOutputs` is enabled. Paths and query
+parameter names are retained in escaped form and can still contain application data.
+
+`pollingAttempt` is `0` for the initial request and `1`, `2`, etc. for subsequent
+202/Location polls within that call. Retries and activity redeliveries retain the
+same polling attempt and produce another send log; orchestration replay alone does
+not send requests or produce these logs. Requests persisted by older versions
+without polling metadata also report `0`.
+
+The .NET isolated worker retains its replay-safe Information-level log with the
+exact prefix `Polling HTTP status at location: ` and category
+`Microsoft.Azure.Functions.Worker.Extensions.DurableTask.CallHttp`. The logged URL
+is the resolved polling endpoint's escaped scheme, host, port, and path, without
+the entire query, URI user information, or fragment. Prefix/category-based queries
+do not require migration; parsers relying on the original full URL or query values
+are not preserved.
+
+The worker log means a poll is about to be scheduled, not that a network request
+was sent. The host diagnostic describes an activity send attempt. When both are
+enabled, a poll can produce both records, increasing log volume; they must not be
+counted as two HTTP sends.
+
+A newer worker with an older host still emits the sanitized worker polling log.
+New host send diagnostics require a host extension containing this feature, and
+isolated-worker polling counts additionally require a worker containing the
+metadata change. Older hosts ignore the optional metadata. Updating only the host
+cannot sanitize the raw polling log emitted by an older worker. These diagnostics
+do not change HTTP payloads or the redaction policies of other telemetry collectors.
+
 ## Contributing
 
 Many features of Durable Functions have been voluntarily contributed by the community, and we always welcome such contributions. If you are interested in contributing, please take a look at our [CONTRIBUTING](./CONTRIBUTING.md) guide.

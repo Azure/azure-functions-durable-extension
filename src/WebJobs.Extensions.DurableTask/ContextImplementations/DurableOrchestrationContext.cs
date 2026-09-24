@@ -282,6 +282,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         async Task<DurableHttpResponse> IDurableOrchestrationContext.CallHttpAsync(DurableHttpRequest req)
         {
+            int pollingAttempt = 0;
             DurableHttpResponse durableHttpResponse = await this.ScheduleDurableHttpActivityAsync(req);
 
             HttpStatusCode currStatusCode = durableHttpResponse.StatusCode;
@@ -310,6 +311,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 DurableHttpRequest durableAsyncHttpRequest = CreateLocationPollRequest(
                     req,
                     durableHttpResponse.Headers["Location"]);
+                durableAsyncHttpRequest.PollingAttempt = ++pollingAttempt;
                 durableHttpResponse = await this.ScheduleDurableHttpActivityAsync(durableAsyncHttpRequest);
                 currStatusCode = durableHttpResponse.StatusCode;
             }

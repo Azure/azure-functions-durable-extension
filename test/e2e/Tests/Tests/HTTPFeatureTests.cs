@@ -31,7 +31,9 @@ public class HttpFeatureTests
     [Trait("Java", "Skip")] // HTTP automatic polling is not yet implemented in Java
     public async Task HttpAutomaticPollingTests()
     {
-        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("HttpStart_HttpPollingOrchestrator");
+        const string queryValue = "synthetic-http-secret";
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(
+            "HttpStart_HttpPollingOrchestrator", $"?diagnostic={queryValue}");
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
@@ -46,10 +48,33 @@ public class HttpFeatureTests
         // waited for the long-running HTTP call to complete rather than returning immediately.
         Assert.Contains("Long-running orchestration completed.", orchestrationDetails.Output);
 
-        // Check that logs include evidence of HTTP polling behavior.
         await this.fixture.TestLogs.AssertLogExistsAsync(
-            l => l.Contains("Polling HTTP status at location"),
-            "Expected log containing 'Polling HTTP status at location' was not found.");
+            l => l.Contains(orchestrationDetails.InstanceId) && l.Contains("Sending HTTP request") && l.Contains("PollingAttempt: 0."),
+            "Expected initial HTTP request diagnostic was not found.");
+        await this.fixture.TestLogs.AssertLogExistsAsync(
+            l => l.Contains(orchestrationDetails.InstanceId) && l.Contains("Sending HTTP request") && l.Contains("PollingAttempt: 1."),
+            "Expected first HTTP polling diagnostic was not found.");
+
+        string[] requestLogs = this.fixture.TestLogs.CoreToolsLogs
+            .Where(l => l.Contains(orchestrationDetails.InstanceId) && l.Contains("Sending HTTP request")).ToArray();
+        Assert.Contains(requestLogs, l => l.Contains("QueryParameterNames: diagnostic."));
+        Assert.All(requestLogs, l => Assert.DoesNotContain(queryValue, l));
+
+        const string pollingPrefix = "Polling HTTP status at location: ";
+        await this.fixture.TestLogs.AssertLogExistsAsync(
+            l => l.Contains(pollingPrefix),
+            "Expected compatible worker polling diagnostic was not found.");
+        string[] pollingLogs = this.fixture.TestLogs.CoreToolsLogs.Where(l => l.Contains(pollingPrefix)).ToArray();
+        Assert.All(pollingLogs, line =>
+        {
+            string endpoint = line.Substring(line.IndexOf(pollingPrefix, StringComparison.Ordinal) + pollingPrefix.Length).Trim();
+            Assert.True(Uri.TryCreate(endpoint, UriKind.Absolute, out Uri? uri));
+            Assert.NotNull(uri);
+            Assert.Empty(uri.Query);
+            Assert.Empty(uri.UserInfo);
+            Assert.Empty(uri.Fragment);
+            Assert.DoesNotContain(queryValue, line);
+        });
     }
 
     [Fact]

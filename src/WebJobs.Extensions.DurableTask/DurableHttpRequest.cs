@@ -101,6 +101,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         [JsonProperty("timeout")]
         public TimeSpan? Timeout { get; }
 
+        // Diagnostic metadata only: omitted for initial requests and older persisted inputs.
+        [JsonProperty("pollingAttempt", DefaultValueHandling = DefaultValueHandling.Ignore)]
+        internal int PollingAttempt { get; set; }
+
         private class HttpMethodConverter : JsonConverter
         {
             public override bool CanConvert(Type objectType)

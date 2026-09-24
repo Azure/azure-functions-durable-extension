@@ -13,6 +13,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     public class DurableHttpRequestTests
     {
+        [Theory]
+        [InlineData(null)]
+        [InlineData(0)]
+        [InlineData(2)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void PollingAttempt_RoundTripsOptionalWorkerMetadata(int? pollingAttempt)
+        {
+            var json = new JObject { ["method"] = "GET", ["uri"] = "https://example.com/status" };
+            if (pollingAttempt.HasValue)
+            {
+                json["pollingAttempt"] = pollingAttempt.Value;
+            }
+
+            DurableHttpRequest request = json.ToObject<DurableHttpRequest>();
+            JObject serialized = JObject.FromObject(request);
+
+            if (pollingAttempt.GetValueOrDefault() == 0)
+            {
+                Assert.Null(serialized["pollingAttempt"]);
+            }
+            else
+            {
+                Assert.Equal(pollingAttempt.Value, (int?)serialized["pollingAttempt"]);
+            }
+        }
+
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void TokenSource_RoundTripsManagedIdentity()

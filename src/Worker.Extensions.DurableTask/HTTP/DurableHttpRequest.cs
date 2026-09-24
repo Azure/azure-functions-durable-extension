@@ -88,4 +88,10 @@ public class DurableHttpRequest
     /// </summary>
     [JsonPropertyName("timeout")]
     public TimeSpan? Timeout { get; set; }
+
+    // Diagnostic metadata passed to the host, not an outgoing HTTP header.
+    [JsonInclude]
+    [JsonPropertyName("pollingAttempt")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    internal int PollingAttempt { get; set; }
 }

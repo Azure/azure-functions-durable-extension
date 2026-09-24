@@ -37,6 +37,7 @@ public static class TaskOrchestrationContextExtensionMethods
             throw new ArgumentNullException(nameof(context));
         }
         ILogger logger = context.CreateReplaySafeLogger("Microsoft.Azure.Functions.Worker.Extensions.DurableTask.CallHttp");
+        int pollingAttempt = 0;
 
 #pragma warning disable DURABLE2003 // BuiltIn::HttpActivity is a reserved framework activity, not user-defined
         DurableHttpResponse response = await context.CallActivityAsync<DurableHttpResponse>(Constants.HttpTaskActivityReservedName, request);
@@ -81,8 +82,10 @@ public static class TaskOrchestrationContextExtensionMethods
             }
 
             DurableHttpRequest newHttpRequest = CreateLocationPollRequest(request, locationUrl);
+            newHttpRequest.PollingAttempt = ++pollingAttempt;
 
-            logger.LogInformation($"Polling HTTP status at location: {locationUrl}");
+            string sanitizedLocation = newHttpRequest.Uri.GetComponents(UriComponents.SchemeAndServer | UriComponents.Path, UriFormat.UriEscaped);
+            logger.LogInformation("Polling HTTP status at location: {locationUrl}", sanitizedLocation);
 
 #pragma warning disable DURABLE2003 // BuiltIn::HttpActivity is a reserved framework activity, not user-defined
             response = await context.CallActivityAsync<DurableHttpResponse>(Constants.HttpTaskActivityReservedName, newHttpRequest);
