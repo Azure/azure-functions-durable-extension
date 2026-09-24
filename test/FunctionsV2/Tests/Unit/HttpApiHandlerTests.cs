@@ -1419,7 +1419,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(NewInstanceId, capturedEvent.OrchestrationInstance.InstanceId);
             Assert.Equal(expectedVersion, capturedEvent.Version);
             Assert.True(JToken.DeepEquals(JToken.Parse(Input), JToken.Parse(capturedEvent.Input)));
-            Assert.Equal(tags, capturedEvent.Tags);
+            Assert.Equal("restart-test", capturedEvent.Tags["source"]);
+            Assert.Equal(SourceInstanceId, capturedEvent.Tags[DurableClient.SourceInstanceIdTag]);
+            Assert.DoesNotContain(DurableClient.SourceInstanceIdTag, tags);
         }
 
         [Theory]

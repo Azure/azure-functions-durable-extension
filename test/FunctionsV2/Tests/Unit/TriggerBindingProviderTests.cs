@@ -8,10 +8,13 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using DurableTask.Core;
 using DurableTask.AzureStorage;
 using Microsoft.Azure.WebJobs.Host.Triggers;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Moq;
+using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
@@ -75,6 +78,41 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             Assert.Contains($"Don't know how to bind to {expectedType}.", exception.Message);
             Assert.Equal("value", exception.ParamName);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task OrchestrationBinding_IncludesSourceInstanceId()
+        {
+            DurableTaskExtension extension = CreateExtension();
+            var provider = new OrchestrationTriggerAttributeBindingProvider(
+                extension,
+                connectionName: "AzureWebJobsStorage",
+                TestHelpers.GetMockPlatformInformationService());
+            var providerContext = new TriggerBindingProviderContext(
+                GetTriggerParameter(nameof(TestStringOrchestrator)),
+                CancellationToken.None);
+            ITriggerBinding binding = await provider.TryCreateAsync(providerContext)
+                ?? throw new InvalidOperationException("The orchestration trigger binding was not created.");
+            var durabilityProvider = new DurabilityProvider(
+                "test",
+                new Mock<IOrchestrationService>().Object,
+                new Mock<IOrchestrationServiceClient>().Object,
+                "AzureWebJobsStorage");
+            var orchestrationContext = new DurableOrchestrationContext(
+                extension,
+                durabilityProvider,
+                "TestStringOrchestrator")
+            {
+                InstanceId = "clone-instance",
+                SourceInstanceId = "source-instance",
+            };
+
+            ITriggerData triggerData = await binding.BindAsync(orchestrationContext, context: null!);
+            string payload = Assert.IsType<string>(await triggerData.ValueProvider.GetValueAsync());
+            JObject json = JObject.Parse(payload);
+
+            Assert.Equal("source-instance", (string?)json["sourceInstanceId"]);
         }
 
         [Theory]
@@ -155,6 +193,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         private static void TestOrchestrator(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
+        {
+        }
+
+        private static void TestStringOrchestrator(
+            [OrchestrationTrigger] string context)
         {
         }
 

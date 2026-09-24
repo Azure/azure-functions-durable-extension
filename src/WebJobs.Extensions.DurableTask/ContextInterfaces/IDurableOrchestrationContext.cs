@@ -49,6 +49,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         string ParentInstanceId { get; }
 
         /// <summary>
+        /// Gets the instance ID of the orchestration from which the current orchestration was cloned.
+        /// </summary>
+        /// <value>
+        /// The immediate source orchestration instance ID, or <c>null</c> if the current orchestration
+        /// was not created as a clone.
+        /// </value>
+        string SourceInstanceId => null;
+
+        /// <summary>
         /// Gets the current date/time in a way that is safe for use in orchestrations and entity operations.
         /// </summary>
         /// <remarks>
