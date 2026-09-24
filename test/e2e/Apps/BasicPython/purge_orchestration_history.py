@@ -14,7 +14,7 @@ bp = df.Blueprint()
 
 @bp.route(route="PurgeOrchestrationHistory", methods=["GET", "POST"])
 @bp.durable_client_input(client_name="client")
-async def purge_history(req: func.HttpRequest, client: df.DurableOrchestrationClient):
+async def purge_history(req: func.HttpRequest, client):
     logging.info("Starting to purge instance histories")
     try:
         instance_id = req.params.get("instanceId")
