@@ -125,6 +125,8 @@ jobs:
     steps:
       - checkout: self
         clean: true
+      - pwsh: ./test/SmokeTests/OOProcSmokeTests/DotNetIsolated/test-smoke-runner.ps1
+        displayName: Test smoke runner recovery
       - template: cfs-authentication.yml
       - task: UseDotNet@2
         displayName: Install .NET 8 SDK
@@ -167,7 +169,9 @@ jobs:
           try {
             $configPath = Join-Path (Get-Location) 'NuGet.config'
             dotnet restore --configfile $configPath --verbosity normal -p:TargetFramework=$(testTargetFramework)
+            if ($LASTEXITCODE) { exit $LASTEXITCODE }
             dotnet build -c Release -f $(testTargetFramework) --no-restore
+            if ($LASTEXITCODE) { exit $LASTEXITCODE }
           } finally {
             Pop-Location
           }
@@ -204,11 +208,12 @@ jobs:
         displayName: Start Azurite
       - pwsh: |
           $script = './test/SmokeTests/OOProcSmokeTests/DotNetIsolated/run-smoke-tests.ps1'
-          & $script -HttpStartPath api/StartHelloCitiesTyped
-          & $script -HttpStartPath api/StartHelloCitiesUntyped
-          & $script -HttpStartPath api/StartHelloCitiesUntyped -TestWithCustomInstanceId
-          & $script -HttpStartPath api/durable_HttpStartProcessExitOrchestrator
-          & $script -HttpStartPath api/durable_HttpStartTimeoutOrchestrator
-          & $script -HttpStartPath api/durable_HttpStartOOMOrchestrator
-          & $script -HttpStartPath api/StartEntityOrchestration
+          $appDirectory = Join-Path (Split-Path -Parent $script) 'bin' 'Release' '$(testTargetFramework)'
+          & $script -AppDirectory $appDirectory -HttpStartPath api/StartHelloCitiesTyped
+          & $script -AppDirectory $appDirectory -HttpStartPath api/StartHelloCitiesUntyped
+          & $script -AppDirectory $appDirectory -HttpStartPath api/StartHelloCitiesUntyped -TestWithCustomInstanceId
+          & $script -AppDirectory $appDirectory -HttpStartPath api/durable_HttpStartProcessExitOrchestrator -TriggerFault
+          & $script -AppDirectory $appDirectory -HttpStartPath api/durable_HttpStartTimeoutOrchestrator -TriggerFault
+          & $script -AppDirectory $appDirectory -HttpStartPath api/durable_HttpStartOOMOrchestrator -TriggerFault
+          & $script -AppDirectory $appDirectory -HttpStartPath api/StartEntityOrchestration
         displayName: Run .NET isolated smoke tests

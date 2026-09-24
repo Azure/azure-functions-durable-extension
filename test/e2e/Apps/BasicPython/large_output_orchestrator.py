@@ -36,7 +36,7 @@ def large_output_say_hello(name) -> str:
 
 @bp.route(route="LargeOutputOrchestrator_HttpStart", methods=["GET", "POST"])
 @bp.durable_client_input(client_name="client")
-async def start_large_output_orchestrator(req: func.HttpRequest, client):
+async def start_large_output_orchestrator(req: func.HttpRequest, client, context: func.Context):
     logger = logging.getLogger("LargeOutputOrchestrator_HttpStart")
     try:
         size_in_kb = int(req.get_json())
@@ -49,7 +49,7 @@ async def start_large_output_orchestrator(req: func.HttpRequest, client):
 
 @bp.route(route="LargeOutputOrchestrator_Query_Output", methods=["GET", "POST"])
 @bp.durable_client_input(client_name="client")
-async def query_large_output(req: func.HttpRequest, client):
+async def query_large_output(req: func.HttpRequest, client, context: func.Context):
     id = req.route_params.get("id") or req.params.get("id")
     metadata = await client.get_status(id, show_input=True)
     if metadata is None:
