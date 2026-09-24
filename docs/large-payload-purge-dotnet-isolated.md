@@ -57,6 +57,26 @@ This first integration is limited to .NET isolated Functions. It adds no HTTP ma
 
 ## Development dependency gate
 
-This change requires the companion Core exact-unversioned exemption and the SDK's public purge integration types. Until those changes are published and the actual package references are updated, validation uses explicit local packages. An ordinary build against the older committed dependencies is not evidence that the integration is ready to release.
+This change requires Core's optional service-client purge capability and exact-unversioned exemption, plus the SDK's public purge integration types. Until those changes are published and the actual package references are updated, validation uses explicit local packages. An ordinary build against the older committed dependencies is not evidence that the integration is ready to release.
 
-The package-only local test app is `test/e2e/Apps/LargePayloadPurgeDotNetIsolated`. Its HTTP endpoints are test-only controls for explicit enable/disable, binding overrides, large payload creation, query, and ordinary instance purge. Its invocation middleware records the worker process ID for verifying actual language-worker execution. Use only an isolated local backend and payload account.
+The local test app is `test/e2e/Apps/LargePayloadPurgeDotNetIsolated`. By default it references the optional project; setting `PurgeFunctionsPackageVersion` selects a package-only consumer. `DurableTaskHostPackageVersion` overrides only the common host package in the Worker SDK's generated extensions project. Neither property changes production package versions.
+
+Its HTTP endpoints are test-only controls for explicit enable/disable, binding overrides, large payload creation, query, and ordinary instance purge. Its invocation middleware records the worker process ID and entry point for verifying actual language-worker execution. Use only an isolated local backend and payload account.
+
+`test/e2e/Validate-LargePayloadPurge.ps1` accepts a running loopback host URL and an evidence directory. Run its preparation phase to enable the hub and create a payload, then obtain that instance's actual v2 references from the test backend before the purge phase:
+
+```powershell
+# Supply the local feed configuration and package versions built from the coordinated changes.
+dotnet build .\test\e2e\Apps\LargePayloadPurgeDotNetIsolated\app.csproj `
+    "-p:PurgeFunctionsPackageVersion=$OptionalPackageVersion" `
+    "-p:DurableTaskHostPackageVersion=$HostPackageVersion" `
+    "-p:DirectoryPackagesPropsPath=$PackageOverrideProps" `
+    "-p:RestoreConfigFile=$LocalNuGetConfig"
+
+.\test\e2e\Validate-LargePayloadPurge.ps1 -BaseUri $LoopbackHostUri -ArtifactsDirectory $PreparationEvidence
+# $InstanceId and $ReferencedBlobNames come from the preparation result and a read-only backend observation.
+.\test\e2e\Validate-LargePayloadPurge.ps1 -BaseUri $LoopbackHostUri -ArtifactsDirectory $PurgeEvidence `
+    -InstanceId $InstanceId -ReferencedBlobNames $ReferencedBlobNames
+```
+
+Configure `PurgeTestHub`, `PurgePayloadConnection`, `PurgePayloadContainer`, and the backend's normal connection settings on the test host process. The override case also needs `PurgeOverrideHub` and a `PurgeOverrideConnection` app setting. The test's 384 KiB payload must exceed the configured externalization threshold; use 256 KiB for that threshold. The driver does not provision resources or start/stop the host. Its physical deletion assertion covers only the observed referenced blob names, not every blob in the container; capture the backend ledger separately to verify retirement and report acknowledgement.

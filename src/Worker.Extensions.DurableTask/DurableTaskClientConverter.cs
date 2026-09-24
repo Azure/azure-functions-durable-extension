@@ -5,8 +5,8 @@ using System;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Azure.Functions.Worker.Converters;
-using Microsoft.DurableTask.Client;
 using Microsoft.DurableTask.AzureBlobPayloads;
+using Microsoft.DurableTask.Client;
 
 namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 

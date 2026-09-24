@@ -3,7 +3,6 @@
 
 using Grpc.Core;
 using Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
-using Microsoft.DurableTask.AzureBlobPayloads;
 using Microsoft.DurableTask.Client;
 using Microsoft.DurableTask.Client.Grpc.Internal;
 using Moq;

@@ -16,9 +16,6 @@ using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
 using Xunit.Abstractions;
-using LargePayloadPurgeDisposition = DurableTask.Core.LargePayloadPurgeDisposition;
-using LargePayloadPurgeResult = DurableTask.Core.LargePayloadPurgeResult;
-using LargePayloadPurgeTombstone = DurableTask.Core.LargePayloadPurgeTombstone;
 using LP = Microsoft.DurableTask.Protobuf.LargePayloads;
 using P = Microsoft.DurableTask.Protobuf;
 

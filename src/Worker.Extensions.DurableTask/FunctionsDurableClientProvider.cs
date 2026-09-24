@@ -6,9 +6,9 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Grpc.Core;
+using Microsoft.DurableTask.AzureBlobPayloads;
 using Microsoft.DurableTask.Client;
 using Microsoft.DurableTask.Client.Grpc;
-using Microsoft.DurableTask.AzureBlobPayloads;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 

@@ -8,9 +8,6 @@ using System.Threading.Tasks;
 using DurableTask.Core;
 using Moq;
 using Xunit;
-using LargePayloadPurgeDisposition = DurableTask.Core.LargePayloadPurgeDisposition;
-using LargePayloadPurgeResult = DurableTask.Core.LargePayloadPurgeResult;
-using LargePayloadPurgeTombstone = DurableTask.Core.LargePayloadPurgeTombstone;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {

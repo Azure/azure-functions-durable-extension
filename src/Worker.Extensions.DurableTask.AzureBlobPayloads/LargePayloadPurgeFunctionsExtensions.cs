@@ -3,11 +3,10 @@
 
 using System;
 using Microsoft.DurableTask;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Azure.Functions.Worker;
 
-/// <summary>Registration for SDK-owned external payload cleanup Functions.</summary>
+/// <summary>Payload store configuration for SDK-owned external payload cleanup Functions.</summary>
 public static class LargePayloadPurgeFunctionsExtensions
 {
     /// <summary>
