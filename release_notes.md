@@ -22,6 +22,7 @@
 
 ### New Features
 
+- Added opt-in `OrchestrationStatusQueryCondition.ExcludeEntities` and the HTTP instance-list query parameter `excludeEntities=true` to omit durable entities without changing the default results. Continuation tokens are preserved even when filtering produces an empty page. (#1991)
 - Allow overriding orchestration version when starting orchestrations via APIs in PowerShell, Python, and Node.js (https://github.com/Azure/azure-functions-durable-extension/pull/3213)
 - Added `IServiceCollection.AddDurableTaskTelemetryInitializer` overloads for explicitly enriching distributed tracing V2 requests and dependencies with Application Insights telemetry initializers or service-provider factories. Host initializers and processors are not inherited automatically. (#1792)
 - Added `ClientOperationReceived` trace event to `DurableFunctionsEvents` for correlating out-of-process worker invocations with orchestration events. The event includes `FunctionInvocationId`, `OperationType`, and `InstanceId` fields for cross-log correlation. (#3317)

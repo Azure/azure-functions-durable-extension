@@ -11,9 +11,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     public class OrchestrationStatusQueryConditionTest
     {
-        [Fact]
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void Parse_OrchestrationStatusQueryCondition()
+        public void Parse_OrchestrationStatusQueryCondition(bool excludeEntities)
         {
             var runtimeStatus = new List<OrchestrationRuntimeStatus>()
             {
@@ -34,6 +36,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 CreatedTimeFrom = createdTimeFrom,
                 CreatedTimeTo = createdTimeTo,
                 TaskHubNames = taskHubNames,
+                ExcludeEntities = excludeEntities,
             };
 
             var result = AzureStorageDurabilityProvider.ConvertWebjobsDurableConditionToAzureStorageCondition(condition);
@@ -43,6 +46,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(createdTimeFrom, result.CreatedTimeFrom);
             Assert.Equal(createdTimeTo, result.CreatedTimeTo);
             Assert.Equal(taskHubNames, result.TaskHubNames);
+            Assert.Equal(excludeEntities, result.ExcludeEntities);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void OrchestrationStatusQueryCondition_IncludesEntitiesByDefault()
+        {
+            var condition = new OrchestrationStatusQueryCondition();
+
+            Assert.False(condition.ExcludeEntities);
+            Assert.False(AzureStorageDurabilityProvider.ConvertWebjobsDurableConditionToAzureStorageCondition(condition).ExcludeEntities);
         }
     }
 }

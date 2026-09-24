@@ -222,6 +222,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 TaskHubNames = condition.TaskHubNames,
                 InstanceIdPrefix = condition.InstanceIdPrefix,
                 FetchInput = condition.ShowInput,
+                ExcludeEntities = condition.ExcludeEntities,
             };
         }
 

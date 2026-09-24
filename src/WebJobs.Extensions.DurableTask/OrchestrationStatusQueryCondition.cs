@@ -74,6 +74,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public string InstanceIdPrefix { get; set; }
 
         /// <summary>
+        /// Gets or sets a value indicating whether to exclude durable entity instances from the results.
+        /// The default value is <c>false</c>, which preserves the inclusion of entities.
+        /// </summary>
+        /// <remarks>
+        /// Filtering can produce an empty page even when more results are available.
+        /// Always check the continuation token to determine whether there are more records.
+        /// </remarks>
+        public bool ExcludeEntities { get; set; }
+
+        /// <summary>
         /// Determines whether the query will include the input of the orchestration.
         /// </summary>
         public bool ShowInput { get; set; } = true;
