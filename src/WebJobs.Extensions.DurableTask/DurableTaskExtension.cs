@@ -417,6 +417,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 .AddConverter<JObject, StartOrchestrationArgs>(bindings.JObjectToStartOrchestrationArgs)
                 .AddConverter<IDurableClient, string>(bindings.DurableOrchestrationClientToString);
 
+            // Extension discovery can load Durable in apps that never use it. Validate slot isolation
+            // when a Durable binding is indexed, not while registering the extension.
+            rule.AddValidator((attribute, type) => this.Options.ValidateHubNameForSlot());
             rule.BindToCollector<StartOrchestrationArgs>(bindings.CreateAsyncCollector);
             rule.BindToInput<IDurableOrchestrationClient>(this.GetClient);
             rule.BindToInput<IDurableEntityClient>(this.GetClient);
@@ -438,6 +441,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 .AddConverter<JObject, StartOrchestrationArgs>(bindings.JObjectToStartOrchestrationArgs)
                 .AddConverter<IDurableClient, string>(bindings.DurableOrchestrationClientToString);
 
+            backwardsCompRule.AddValidator((attribute, type) => this.Options.ValidateHubNameForSlot());
             backwardsCompRule.BindToCollector<StartOrchestrationArgs>(bindings.CreateAsyncCollector);
             backwardsCompRule.BindToInput<IDurableOrchestrationClient>(this.GetClient);
             backwardsCompRule.BindToInput<IDurableEntityClient>(this.GetClient);
@@ -651,6 +655,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <returns>A task representing the async delete operation.</returns>
         public Task DeleteTaskHubAsync()
         {
+            this.Options.ValidateHubNameForSlot();
             return this.defaultDurabilityProvider.DeleteAsync();
         }
 
@@ -1366,6 +1371,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <returns>Returns a <see cref="IDurableClient"/> instance. The returned instance may be a cached instance.</returns>
         protected internal virtual IDurableClient GetClient(DurableClientAttribute attribute)
         {
+            this.Options.ValidateHubNameForSlot();
+
             if (attribute.DurableRequiresGrpc)
             {
                 // In the case when an app has only a durable client binding initialized, we still need to detect and start
@@ -1392,6 +1399,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal void RegisterOrchestrator(FunctionName orchestratorFunction, RegisteredFunctionInfo orchestratorInfo)
         {
+            this.Options.ValidateHubNameForSlot();
+
             if (orchestratorInfo != null)
             {
                 orchestratorInfo.IsDeregistered = false;
@@ -1430,6 +1439,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal void RegisterActivity(FunctionName activityFunction, ITriggeredFunctionExecutor executor)
         {
+            this.Options.ValidateHubNameForSlot();
+
             if (this.knownActivities.TryGetValue(activityFunction, out RegisteredFunctionInfo existing))
             {
                 existing.Executor = executor;
@@ -1466,6 +1477,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal void RegisterEntity(FunctionName entityFunction, RegisteredFunctionInfo entityInfo)
         {
+            this.Options.ValidateHubNameForSlot();
+
             if (entityInfo != null)
             {
                 entityInfo.IsDeregistered = false;
@@ -1589,6 +1602,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal async Task<bool> StartTaskHubWorkerIfNotStartedAsync()
         {
+            this.Options.ValidateHubNameForSlot();
+
             if (!this.isTaskHubWorkerStarted)
             {
                 using (await this.taskHubLock.AcquireAsync())
