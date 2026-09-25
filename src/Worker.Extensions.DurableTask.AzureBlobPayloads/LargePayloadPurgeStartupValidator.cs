@@ -30,7 +30,7 @@ internal sealed class LargePayloadPurgeStartupValidator(
                 throw new InvalidOperationException("No PayloadStore is registered.");
             }
         }
-        catch (Exception exception) when (exception is InvalidOperationException or ArgumentException or OptionsValidationException)
+        catch (Exception exception) when (exception is InvalidOperationException or ArgumentException or FormatException or OptionsValidationException)
         {
             logger.LogError(exception, ConfigurationMessage);
             throw new InvalidOperationException(ConfigurationMessage, exception);

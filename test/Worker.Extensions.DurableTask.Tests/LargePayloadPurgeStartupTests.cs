@@ -9,6 +9,7 @@ using Microsoft.DurableTask;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace Microsoft.Azure.Functions.Worker.Tests;
@@ -43,6 +44,33 @@ public class LargePayloadPurgeStartupTests
     }
 
     [Fact]
+    public async Task MalformedConnectionStringRetainsCauseAndLogsConfigurationErrorBeforeWorkerStart()
+    {
+        var worker = new StartProbe();
+        var logger = new Mock<ILogger>();
+        logger.Setup(value => value.IsEnabled(It.IsAny<LogLevel>())).Returns(true);
+        var loggerProvider = new Mock<ILoggerProvider>();
+        loggerProvider.Setup(value => value.CreateLogger(It.IsAny<string>())).Returns(logger.Object);
+        using IHost host = CreateHost(worker, (builder, services) =>
+        {
+            services.AddLogging(logging => logging.AddProvider(loggerProvider.Object));
+            builder.ConfigureLargePayloadPurgeFunctions(options => options.ConnectionString = "not-a-connection-string");
+        });
+
+        InvalidOperationException exception = await Assert.ThrowsAsync<InvalidOperationException>(() => host.StartAsync());
+
+        Assert.Contains("ConfigureLargePayloadPurgeFunctions", exception.Message);
+        FormatException cause = Assert.IsType<FormatException>(exception.InnerException);
+        logger.Verify(value => value.Log(
+            LogLevel.Error,
+            It.IsAny<EventId>(),
+            It.Is<It.IsAnyType>((state, _) => state.ToString()!.Contains("ConfigureLargePayloadPurgeFunctions")),
+            cause,
+            It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
+        Assert.False(worker.Started);
+    }
+
+    [Fact]
     public async Task StoreFactoryFailureRetainsCauseAndPreventsWorkerStart()
     {
         var worker = new StartProbe();
@@ -64,6 +92,17 @@ public class LargePayloadPurgeStartupTests
         using IHost host = CreateHost(worker, (_, services) => services.AddSingleton<PayloadStore>(_ => throw failure));
 
         Assert.Same(failure, await Assert.ThrowsAsync<NullReferenceException>(() => host.StartAsync()));
+        Assert.False(worker.Started);
+    }
+
+    [Fact]
+    public async Task StoreFactoryCancellationPropagatesUnchanged()
+    {
+        var worker = new StartProbe();
+        var failure = new OperationCanceledException(new CancellationToken(canceled: true));
+        using IHost host = CreateHost(worker, (_, services) => services.AddSingleton<PayloadStore>(_ => throw failure));
+
+        Assert.Same(failure, await Assert.ThrowsAsync<OperationCanceledException>(() => host.StartAsync()));
         Assert.False(worker.Started);
     }
 
