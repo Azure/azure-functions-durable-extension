@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 /// <see cref="LargePayloadPurgeFunctionsExtensions.ConfigureLargePayloadPurgeFunctions"/> configures their payload store.
 /// </summary>
 [EditorBrowsable(EditorBrowsableState.Never)]
-public sealed class LargePayloadPurgeFunctions(PayloadStore payloadStore, ILoggerFactory loggerFactory)
+public sealed class LargePayloadPurgeFunctions(ILoggerFactory loggerFactory)
 {
     /// <summary>Executes the shared SDK purge orchestrator as an ordinary Function.</summary>
     /// <param name="context">The bound orchestration context.</param>
@@ -36,16 +36,7 @@ public sealed class LargePayloadPurgeFunctions(PayloadStore payloadStore, ILogge
     public Task<List<LargePayloadTombstone>> Fetch(
         [ActivityTrigger] int input, string instanceId, [DurableClient] DurableTaskClient client)
         => new GetLargePayloadTombstonesActivity(GetPurgeClient(client), loggerFactory.CreateLogger<GetLargePayloadTombstonesActivity>())
-            .RunAsync(new ActivityContext(nameof(GetLargePayloadTombstonesActivity), instanceId), input);
-
-    /// <summary>Deletes external payloads using the configured shared SDK store.</summary>
-    /// <param name="input">The payload tokens supplied by the orchestrator.</param>
-    /// <param name="instanceId">The orchestration instance ID supplied by the activity binding.</param>
-    /// <returns>The shared activity result.</returns>
-    [Function(nameof(DeleteExternalBlobActivity))]
-    public Task<List<BlobPurgeOutcome>> Delete([ActivityTrigger] List<string> input, string instanceId)
-        => new DeleteExternalBlobActivity(payloadStore, loggerFactory.CreateLogger<DeleteExternalBlobActivity>())
-            .RunAsync(new ActivityContext(nameof(DeleteExternalBlobActivity), instanceId), input);
+            .RunAsync(new LargePayloadPurgeActivityContext(nameof(GetLargePayloadTombstonesActivity), instanceId), input);
 
     /// <summary>Reports outcomes through the current worker's task hub client binding.</summary>
     /// <param name="input">The deletion outcomes.</param>
@@ -56,16 +47,9 @@ public sealed class LargePayloadPurgeFunctions(PayloadStore payloadStore, ILogge
     public Task<object?> Report(
         [ActivityTrigger] List<LargePayloadPurgeResult> input, string instanceId, [DurableClient] DurableTaskClient client)
         => new ReportLargePayloadPurgeResultsActivity(GetPurgeClient(client), loggerFactory.CreateLogger<ReportLargePayloadPurgeResultsActivity>())
-            .RunAsync(new ActivityContext(nameof(ReportLargePayloadPurgeResultsActivity), instanceId), input);
+            .RunAsync(new LargePayloadPurgeActivityContext(nameof(ReportLargePayloadPurgeResultsActivity), instanceId), input);
 
     private static ILargePayloadPurgeClient GetPurgeClient(DurableTaskClient client)
         => client as ILargePayloadPurgeClient
             ?? throw new NotSupportedException("The bound Durable Functions client does not support large payload purge operations.");
-
-    private sealed class ActivityContext(TaskName name, string instanceId) : TaskActivityContext
-    {
-        public override TaskName Name { get; } = name;
-
-        public override string InstanceId { get; } = instanceId;
-    }
 }

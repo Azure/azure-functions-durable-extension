@@ -12,7 +12,7 @@ public class LargePayloadPurgeFunctionsTests
     [Fact]
     public void OptionalAssembly_SuppliesFourOrdinaryFunctionMethods()
     {
-        MethodInfo[] functions = typeof(LargePayloadPurgeFunctions).GetMethods()
+        MethodInfo[] functions = typeof(LargePayloadPurgeFunctions).Assembly.GetTypes().SelectMany(type => type.GetMethods())
             .Where(method => method.GetCustomAttribute<FunctionAttribute>() != null).ToArray();
         Assert.Equal(4, functions.Length);
         Assert.Equal(

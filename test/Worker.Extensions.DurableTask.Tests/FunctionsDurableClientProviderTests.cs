@@ -77,8 +77,14 @@ public class FunctionsDurableClientProviderTests
         Assert.Throws<ObjectDisposedException>(() => provider.GetClient(endpoint, "hub", "connection", null, TimeSpan.FromMinutes(1)));
     }
 
-    private static object? ReadField(FunctionsDurableTaskClient client, string name)
-        => typeof(FunctionsDurableTaskClient).GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(client);
+    private static object ReadField(FunctionsDurableTaskClient client, string name)
+    {
+        FieldInfo? field = typeof(FunctionsDurableTaskClient).GetField(name, BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.NotNull(field);
+        object? value = field.GetValue(client);
+        Assert.NotNull(value);
+        return value;
+    }
 
     /// <summary>
     /// Tests that the DefaultMethodConfig static field is correctly configured with retry policy.
