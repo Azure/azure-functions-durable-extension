@@ -101,7 +101,16 @@ jobs:
         displayName: 'dotnet pack Worker.Extensions.DurableTask.csproj'
         inputs:
             command: pack
-            packagesToPack: 'src/**/Worker.Extensions.DurableTask*.csproj'
+            packagesToPack: 'src/**/Worker.Extensions.DurableTask.csproj'
+            configuration: Release
+            packDirectory: $(build.artifactStagingDirectory)
+            nobuild: true
+
+      - task: DotNetCoreCLI@2
+        displayName: 'dotnet pack Worker.Extensions.DurableTask.AzureBlobPayloads.csproj'
+        inputs:
+            command: pack
+            packagesToPack: 'src/**/Worker.Extensions.DurableTask.AzureBlobPayloads.csproj'
             configuration: Release
             packDirectory: $(build.artifactStagingDirectory)
             nobuild: true

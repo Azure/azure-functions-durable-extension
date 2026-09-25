@@ -111,14 +111,24 @@ steps:
 # Packaging needs to be a separate step from build.
 # This will automatically pick up any signed DLLs.
 - task: DotNetCoreCLI@2
-  displayName: Generate nuget packages
+  displayName: Generate Worker.Extensions.DurableTask nuget package
   inputs:
     command: pack
     verbosityPack: Minimal
     configuration: Release
     nobuild: true
     packDirectory: $(build.artifactStagingDirectory)
-    packagesToPack: 'src/Worker.Extensions.DurableTask*/*.csproj'
+    packagesToPack: 'src/Worker.Extensions.DurableTask/Worker.Extensions.DurableTask.csproj'
+
+- task: DotNetCoreCLI@2
+  displayName: Generate Worker.Extensions.DurableTask.AzureBlobPayloads nuget package
+  inputs:
+    command: pack
+    verbosityPack: Minimal
+    configuration: Release
+    nobuild: true
+    packDirectory: $(build.artifactStagingDirectory)
+    packagesToPack: 'src/Worker.Extensions.DurableTask.AzureBlobPayloads/Worker.Extensions.DurableTask.AzureBlobPayloads.csproj'
 
 # Digitally sign all the nuget packages with the Microsoft certificate.
 # This appears to be an in-place signing job, which is convenient.
