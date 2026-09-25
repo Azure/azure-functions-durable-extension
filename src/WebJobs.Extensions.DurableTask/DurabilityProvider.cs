@@ -11,9 +11,12 @@ using DurableTask.Core.Entities;
 using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Query;
+using DurableTask.LargePayloadPurge;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using LargePayloadPurgeResult = Microsoft.DurableTask.Client.LargePayloadPurgeResult;
+using LargePayloadTombstone = Microsoft.DurableTask.Client.LargePayloadTombstone;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -29,6 +32,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         IOrchestrationServiceClient,
         IOrchestrationServiceQueryClient,
         IOrchestrationServicePurgeClient,
+        IOrchestrationServiceLargePayloadPurgeClient,
         IEntityOrchestrationService
     {
         internal const string NoConnectionDetails = "default";
@@ -590,6 +594,48 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             else
             {
                 throw new NotSupportedException($"{this.innerServiceClient.GetType().Name} doesn't support purge operations.");
+            }
+        }
+
+        /// <inheritdoc />
+        Task IOrchestrationServiceLargePayloadPurgeClient.SetLargePayloadAutoPurgeAsync(
+            bool enabled, DateTime deadlineUtc, CancellationToken cancellationToken)
+        {
+            if (this.innerServiceClient is IOrchestrationServiceLargePayloadPurgeClient purgeClient)
+            {
+                return purgeClient.SetLargePayloadAutoPurgeAsync(enabled, deadlineUtc, cancellationToken);
+            }
+            else
+            {
+                throw new NotSupportedException($"{this.innerServiceClient.GetType().Name} doesn't support large-payload purge operations.");
+            }
+        }
+
+        /// <inheritdoc />
+        Task<IReadOnlyList<LargePayloadTombstone>> IOrchestrationServiceLargePayloadPurgeClient.GetLargePayloadsToPurgeAsync(
+            int limit, DateTime deadlineUtc, CancellationToken cancellationToken)
+        {
+            if (this.innerServiceClient is IOrchestrationServiceLargePayloadPurgeClient purgeClient)
+            {
+                return purgeClient.GetLargePayloadsToPurgeAsync(limit, deadlineUtc, cancellationToken);
+            }
+            else
+            {
+                throw new NotSupportedException($"{this.innerServiceClient.GetType().Name} doesn't support large-payload purge operations.");
+            }
+        }
+
+        /// <inheritdoc />
+        Task IOrchestrationServiceLargePayloadPurgeClient.ReportLargePayloadPurgeResultsAsync(
+            IReadOnlyList<LargePayloadPurgeResult> results, DateTime deadlineUtc, CancellationToken cancellationToken)
+        {
+            if (this.innerServiceClient is IOrchestrationServiceLargePayloadPurgeClient purgeClient)
+            {
+                return purgeClient.ReportLargePayloadPurgeResultsAsync(results, deadlineUtc, cancellationToken);
+            }
+            else
+            {
+                throw new NotSupportedException($"{this.innerServiceClient.GetType().Name} doesn't support large-payload purge operations.");
             }
         }
 

@@ -52,8 +52,9 @@ internal sealed partial class DurableTaskClientConverter : IInputConverter
             TimeSpan grpcHttpClientTimeout = inputData?.grpcHttpClientTimeout != null
                                                 ? JsonSerializer.Deserialize<TimeSpan>(inputData.grpcHttpClientTimeout) : TimeSpan.FromSeconds(100);
 
-            DurableTaskClient client = this.clientProvider.GetClient(endpoint, inputData?.taskHubName, inputData?.connectionName, inputData?.maxGrpcMessageSizeInBytes, grpcHttpClientTimeout);
-            client = new FunctionsDurableTaskClient(client, inputData!.requiredQueryStringParameters, inputData!.httpBaseUrl);
+            DurableTaskClient client = this.clientProvider.CreateBoundClient(
+                endpoint, inputData?.taskHubName, inputData?.connectionName, inputData?.maxGrpcMessageSizeInBytes,
+                grpcHttpClientTimeout, inputData!.requiredQueryStringParameters, inputData!.httpBaseUrl);
             return new ValueTask<ConversionResult>(ConversionResult.Success(client));
         }
         catch (Exception innerException)

@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using Microsoft.Azure.WebJobs.Description;
 
@@ -43,5 +44,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// True if gRPC is required; otherwise, false.
         /// </value>
         public bool DurableRequiresGrpc { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this is the SDK-owned .NET isolated payload purge orchestration.
+        /// </summary>
+        /// <remarks>
+        /// Reserved for metadata emitted by the isolated Durable Functions SDK. Only its exact registered
+        /// orchestration name is accepted. This does not change dispatch or exempt customer function versions.
+        /// </remarks>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public bool LargePayloadPurge { get; set; }
     }
 }

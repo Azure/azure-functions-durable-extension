@@ -19,6 +19,7 @@
     <PackageVersion Include="Microsoft.DurableTask.AzureManagedBackend" Version="1.3.0" />
     <PackageVersion Include="Microsoft.DurableTask.SqlServer" Version="1.5.2" />
     <PackageVersion Include="Microsoft.Azure.DurableTask.Core" Version="3.9.0" />
+    <PackageVersion Include="Microsoft.Azure.DurableTask.LargePayloadPurge.Abstractions" Version="0.1.0" />
     <PackageVersion Include="Microsoft.Azure.Functions.Worker.Core" Version="2.51.0" />
     <PackageVersion Include="Microsoft.Azure.Functions.Worker.Extensions.Abstractions" Version="1.3.0" />
     <PackageVersion Include="Microsoft.Azure.Functions.Worker.Extensions.Storage.Blobs" Version="6.7.0" />
@@ -35,6 +36,7 @@
     <PackageVersion Include="Microsoft.DurableTask.Client.Grpc" Version="1.24.1" />
     <PackageVersion Include="Microsoft.DurableTask.Worker.Grpc" Version="1.24.1" />
     <PackageVersion Include="Microsoft.DurableTask.Abstractions" Version="1.24.1" />
+    <PackageVersion Include="Microsoft.DurableTask.Extensions.AzureBlobPayloads" Version="1.24.1" />
     <PackageVersion Include="Microsoft.DurableTask.Analyzers" Version="0.2.0" />
     <PackageVersion Include="Microsoft.Extensions.Azure" Version="1.13.1" />
     <PackageVersion Include="Microsoft.Extensions.Caching.Memory" Version="10.0.2" />
