@@ -56,6 +56,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <remarks>
         /// A task hub is a logical grouping of storage resources. Alternate task hub names can be used to isolate
         /// multiple Durable Functions applications from each other, even if they are using the same storage backend.
+        /// Non-production deployment slots must configure a non-default task hub name when using Durable bindings
+        /// or clients. Merely referencing the extension without using Durable functionality does not require one.
         /// </remarks>
         /// <value>The name of the default task hub.</value>
         public string HubName
@@ -356,12 +358,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new InvalidOperationException($"A non-empty {nameof(this.HubName)} configuration is required.");
             }
 
-            if (IsInNonProductionSlot() && this.IsDefaultHubName())
-            {
-                throw new InvalidOperationException($"Task Hub name must be specified in host.json when using slots. Specified name must not equal the default HubName ({this.defaultHubName})." +
-                    "See documentation on Task Hubs for information on how to set this: https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-task-hubs");
-            }
-
             string runtimeLanguage = environmentVariableResolver.Resolve("FUNCTIONS_WORKER_RUNTIME");
             if (this.ExtendedSessionsEnabled &&
                 runtimeLanguage != null && // If we don't know from the environment variable, don't assume customer isn't .NET
@@ -392,6 +388,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (this.MaxEntityOperationBatchSize <= 0)
             {
                 throw new InvalidOperationException($"{nameof(this.MaxEntityOperationBatchSize)} must be a positive integer value.");
+            }
+        }
+
+        internal void ValidateHubNameForSlot()
+        {
+            if (IsInNonProductionSlot() && this.IsDefaultHubName())
+            {
+                throw new InvalidOperationException($"Task Hub name must be specified in host.json when using slots. Specified name must not equal the default HubName ({this.defaultHubName})." +
+                    "See documentation on Task Hubs for information on how to set this: https://docs.microsoft.com/azure/azure-functions/durable/durable-functions-task-hubs");
             }
         }
 
