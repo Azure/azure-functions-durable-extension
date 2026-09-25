@@ -99,9 +99,17 @@ internal partial class FunctionsDurableClientProvider : IAsyncDisposable
     /// <param name="grpcHttpClientTimeout">Timeout for the underlying HTTP client used by the gRPC channel. Only applies when .NET 6 or greater is used.</param>
     /// <returns>A <see cref="DurableTaskClient" />.</returns>
     public DurableTaskClient GetClient(Uri endpoint, string? taskHub, string? connectionName, int? maxGrpcMessageSizeInBytes, TimeSpan grpcHttpClientTimeout)
-        => this.GetClient(endpoint, taskHub, connectionName, maxGrpcMessageSizeInBytes, grpcHttpClientTimeout, out _);
+        => this.GetOrCreateClient(endpoint, taskHub, connectionName, maxGrpcMessageSizeInBytes, grpcHttpClientTimeout).Client;
 
-    internal DurableTaskClient GetClient(Uri endpoint, string? taskHub, string? connectionName, int? maxGrpcMessageSizeInBytes, TimeSpan grpcHttpClientTimeout, out ILargePayloadPurgeClient purgeClient)
+    internal FunctionsDurableTaskClient CreateBoundClient(
+        Uri endpoint, string? taskHub, string? connectionName, int? maxGrpcMessageSizeInBytes,
+        TimeSpan grpcHttpClientTimeout, string? queryString, string? httpBaseUrl)
+    {
+        ClientHolder holder = this.GetOrCreateClient(endpoint, taskHub, connectionName, maxGrpcMessageSizeInBytes, grpcHttpClientTimeout);
+        return new FunctionsDurableTaskClient(holder.Client, queryString, httpBaseUrl, holder.PurgeClient);
+    }
+
+    private ClientHolder GetOrCreateClient(Uri endpoint, string? taskHub, string? connectionName, int? maxGrpcMessageSizeInBytes, TimeSpan grpcHttpClientTimeout)
     {
         this.VerifyNotDisposed();
         this.sync.EnterReadLock();
@@ -115,8 +123,7 @@ internal partial class FunctionsDurableClientProvider : IAsyncDisposable
             if (this.clients!.TryGetValue(key, out ClientHolder? holder))
             {
                 this.logger.LogTrace("DurableTaskClient resolved from cache");
-                purgeClient = holder.PurgeClient;
-                return holder.Client;
+                return holder;
             }
         }
         finally
@@ -131,8 +138,7 @@ internal partial class FunctionsDurableClientProvider : IAsyncDisposable
             if (this.clients!.TryGetValue(key, out ClientHolder? holder))
             {
                 this.logger.LogTrace("DurableTaskClient resolved from cache");
-                purgeClient = holder.PurgeClient;
-                return holder.Client;
+                return holder;
             }
 
             this.logger.LogTrace(
@@ -155,10 +161,9 @@ internal partial class FunctionsDurableClientProvider : IAsyncDisposable
 
             ILogger logger = this.loggerFactory.CreateLogger<GrpcDurableTaskClient>();
             GrpcDurableTaskClient client = new(taskHub, options, logger);
-            purgeClient = new FunctionsLargePayloadPurgeClient(callInvoker);
-            holder = new(client, channel, purgeClient);
+            holder = new(client, channel, new FunctionsLargePayloadPurgeClient(callInvoker));
             this.clients[key] = holder;
-            return client;
+            return holder;
         }
         finally
         {

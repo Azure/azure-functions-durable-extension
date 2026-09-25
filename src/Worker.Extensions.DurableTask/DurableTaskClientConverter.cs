@@ -5,7 +5,6 @@ using System;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Azure.Functions.Worker.Converters;
-using Microsoft.DurableTask.AzureBlobPayloads;
 using Microsoft.DurableTask.Client;
 
 namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
@@ -53,8 +52,9 @@ internal sealed partial class DurableTaskClientConverter : IInputConverter
             TimeSpan grpcHttpClientTimeout = inputData?.grpcHttpClientTimeout != null
                                                 ? JsonSerializer.Deserialize<TimeSpan>(inputData.grpcHttpClientTimeout) : TimeSpan.FromSeconds(100);
 
-            DurableTaskClient client = this.clientProvider.GetClient(endpoint, inputData?.taskHubName, inputData?.connectionName, inputData?.maxGrpcMessageSizeInBytes, grpcHttpClientTimeout, out ILargePayloadPurgeClient purgeClient);
-            client = new FunctionsDurableTaskClient(client, inputData!.requiredQueryStringParameters, inputData!.httpBaseUrl, purgeClient);
+            DurableTaskClient client = this.clientProvider.CreateBoundClient(
+                endpoint, inputData?.taskHubName, inputData?.connectionName, inputData?.maxGrpcMessageSizeInBytes,
+                grpcHttpClientTimeout, inputData!.requiredQueryStringParameters, inputData!.httpBaseUrl);
             return new ValueTask<ConversionResult>(ConversionResult.Success(client));
         }
         catch (Exception innerException)

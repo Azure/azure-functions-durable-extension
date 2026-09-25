@@ -24,6 +24,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Worker.Extensions.DurableTask\Worker.Extensions.DurableTask.csproj" />
+    <PackageReference Include="Microsoft.DurableTask.Extensions.AzureBlobPayloads" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
     <None Include="..\..\docs\large-payload-purge-dotnet-isolated.md" Pack="true" PackagePath="README.md" />
   </ItemGroup>

@@ -2,7 +2,9 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using Grpc.Core;
+using DurableTask.LargePayloadPurge;
 using Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
+using Microsoft.DurableTask.AzureBlobPayloads;
 using Microsoft.DurableTask.Client;
 using Microsoft.DurableTask.Client.Grpc.Internal;
 using Moq;
@@ -12,6 +14,16 @@ namespace Microsoft.Azure.Functions.Worker.Tests;
 
 public class FunctionsLargePayloadPurgeClientTests
 {
+    [Fact]
+    public void ClientFacadeLivesInContractsAndBaseWorkerDoesNotReferenceBlobImplementation()
+    {
+        Assert.Same(typeof(IOrchestrationServiceLargePayloadPurgeClient).Assembly, typeof(ILargePayloadPurgeClient).Assembly);
+        Assert.Equal(2, typeof(ILargePayloadPurgeClient).Assembly.GetExportedTypes().Length);
+        Assert.DoesNotContain(typeof(FunctionsDurableClientProvider).Assembly.GetReferencedAssemblies(),
+            reference => reference.Name == "Microsoft.DurableTask.Extensions.AzureBlobPayloads"
+                || reference.Name == "Azure.Storage.Blobs");
+    }
+
     [Fact]
     public async Task GetAndReport_PreserveOpaqueTokensDeadlinesAndCancellation()
     {
