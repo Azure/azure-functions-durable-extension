@@ -69,7 +69,7 @@ The local test app is `test/e2e/Apps/LargePayloadPurgeDotNetIsolated`. By defaul
 
 The existing worker unit-test project also builds `GeneratedInvocationApp` using the standard Worker SDK. `GeneratedPurgeFunctionInvocationTests` invokes its generated `IFunctionExecutor` for all four optional Functions with the real worker activator and DI. Controlled orchestration context, bound client, and payload store inputs make this an in-process generated-invocation test, not a Core Tools, remote DTS, replay, or physical blob-deletion E2E test. It runs through the normal worker unit-test CI command and does not depend on an emulator's purge capability.
 
-Its HTTP endpoints are test-only controls for explicit enable/disable, binding overrides, large payload creation, query, and ordinary instance purge. Its invocation middleware records the worker process ID and entry point for verifying actual language-worker execution. Use only an isolated local backend and payload account.
+The local E2E app's HTTP endpoints are test-only controls for explicit enable/disable, binding overrides, large payload creation, query, and ordinary instance purge. Its invocation middleware records the worker process ID and entry point for verifying actual language-worker execution. Use only an isolated local backend and payload account.
 
 `test/e2e/Validate-LargePayloadPurge.ps1` accepts a running loopback host URL and an evidence directory. Run its preparation phase to enable the hub and create a payload, then obtain that instance's actual v2 references from the test backend before the purge phase:
 
