@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Security.Authentication;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure.Identity;
@@ -26,6 +27,47 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     {
         private const string SystemAssigned = "Authorization=AAD";
         private const string UserAssigned = "Authorization=AAD;ClientId=00000000-0000-0000-0000-000000000001";
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(SystemAssigned, null)]
+        [InlineData(UserAssigned, "00000000-0000-0000-0000-000000000001")]
+        [InlineData(" ; authoRization = aad ;; ClIentId = 00000000-0000-0000-0000-000000000001 ; ", "00000000-0000-0000-0000-000000000001")]
+        [InlineData("ClientId={00000000-0000-0000-0000-000000000001};Authorization=AAD", "{00000000-0000-0000-0000-000000000001}")]
+        [InlineData("Authorization=AAD;ClientId=00000000000000000000000000000001", "00000000000000000000000000000001")]
+        [InlineData("Authorization=AAD;Authorization=aad", null)]
+        [InlineData("Authorization=AAD;ClientId=00000000-0000-0000-0000-000000000001;ClientId=00000000-0000-0000-0000-000000000002", "00000000-0000-0000-0000-000000000002")]
+        [InlineData("unknown=value=extra;ignored;=blank;Authorization=AAD;ClientId", null)]
+        public void ParseManagedIdentityClientId_MatchesHostForValidSettings(string authenticationString, string expectedClientId)
+        {
+            Assert.Equal(expectedClientId, TelemetryActivator.ParseManagedIdentityClientId(authenticationString));
+            Assert.Equal(
+                ApplicationInsightsTokenCredentialOptions.ParseAuthenticationString(authenticationString).ClientId,
+                TelemetryActivator.ParseManagedIdentityClientId(authenticationString));
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(null, typeof(ArgumentNullException))]
+        [InlineData("", typeof(ArgumentNullException))]
+        [InlineData(" \t ", typeof(ArgumentNullException))]
+        [InlineData(" ; ; ", typeof(InvalidCredentialException))]
+        [InlineData("Authorization=AAD1", typeof(InvalidCredentialException))]
+        [InlineData("Auth123=AAD", typeof(InvalidCredentialException))]
+        [InlineData("Authorization=", typeof(InvalidCredentialException))]
+        [InlineData("Authorization=AAD=extra", typeof(InvalidCredentialException))]
+        [InlineData("ClientId=00000000-0000-0000-0000-000000000001", typeof(InvalidCredentialException))]
+        [InlineData("Authorization=AAD;ClientId=123", typeof(FormatException))]
+        [InlineData("Authorization=AAD;ClientId=", typeof(FormatException))]
+        [InlineData("Authorization=AAD;Authorization=invalid", typeof(InvalidCredentialException))]
+        [InlineData("Authorization=invalid;Authorization=AAD", typeof(InvalidCredentialException))]
+        [InlineData("Authorization=AAD;ClientId=invalid;ClientId=00000000-0000-0000-0000-000000000001", typeof(FormatException))]
+        [InlineData("Authorization=AAD;ClientId=00000000-0000-0000-0000-000000000001;ClientId=invalid", typeof(FormatException))]
+        public void ParseManagedIdentityClientId_MatchesHostForInvalidSettings(string authenticationString, Type expectedExceptionType)
+        {
+            Assert.Throws(expectedExceptionType, () => TelemetryActivator.ParseManagedIdentityClientId(authenticationString));
+            Assert.Throws(expectedExceptionType, () => ApplicationInsightsTokenCredentialOptions.ParseAuthenticationString(authenticationString));
+        }
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
@@ -213,7 +255,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             bool reusedHostChannel = TelemetryActivator.ApplyEntraAuthentication(
                 durableConfiguration,
                 hostConfiguration,
-                ApplicationInsightsTokenCredentialOptions.ParseAuthenticationString(SystemAssigned),
+                TelemetryActivator.ParseManagedIdentityClientId(SystemAssigned),
                 preserveExistingChannel: true);
 
             Assert.False(reusedHostChannel);
@@ -288,7 +330,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return TelemetryActivator.ApplyEntraAuthentication(
                 durableConfiguration,
                 hostConfiguration,
-                ApplicationInsightsTokenCredentialOptions.ParseAuthenticationString(authenticationString));
+                TelemetryActivator.ParseManagedIdentityClientId(authenticationString));
         }
 
         /// <summary>

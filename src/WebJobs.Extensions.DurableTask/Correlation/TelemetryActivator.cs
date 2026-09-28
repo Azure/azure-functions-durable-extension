@@ -14,11 +14,9 @@ using DurableTask.Core.Settings;
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.Channel;
 using Microsoft.ApplicationInsights.Extensibility;
-using Microsoft.Azure.WebJobs.Logging.ApplicationInsights;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using ApplicationInsightsTokenCredentialOptions = Microsoft.Azure.WebJobs.Logging.ApplicationInsights.TokenCredentialOptions;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 {
@@ -326,13 +324,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             {
                 try
                 {
-                    ApplicationInsightsTokenCredentialOptions tokenCredentialOptions =
-                        ApplicationInsightsTokenCredentialOptions.ParseAuthenticationString(resolvedAuthenticationString);
-                    bool userAssignedIdentity = tokenCredentialOptions.ClientId != null;
+                    string managedIdentityClientId = ParseManagedIdentityClientId(resolvedAuthenticationString);
+                    bool userAssignedIdentity = managedIdentityClientId != null;
                     bool reusedHostChannel = ApplyEntraAuthentication(
                         config,
                         this.hostTelemetryConfiguration,
-                        tokenCredentialOptions,
+                        managedIdentityClientId,
                         preserveExistingChannel: this.OnSend != null);
                     if (this.hostTelemetryConfiguration != null && !reusedHostChannel && this.OnSend == null)
                     {
@@ -402,7 +399,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         /// </remarks>
         /// <param name="durableConfiguration">The private Durable telemetry configuration.</param>
         /// <param name="hostConfiguration">The host telemetry configuration, if available.</param>
-        /// <param name="tokenCredentialOptions">The parsed authentication string.</param>
+        /// <param name="managedIdentityClientId">The user-assigned client ID, or null for system-assigned identity.</param>
         /// <param name="preserveExistingChannel">
         /// True when the configuration already has a channel that must not be replaced, such as the
         /// test channel installed by <see cref="OnSend"/>.
@@ -411,7 +408,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         internal static bool ApplyEntraAuthentication(
             TelemetryConfiguration durableConfiguration,
             TelemetryConfiguration hostConfiguration,
-            ApplicationInsightsTokenCredentialOptions tokenCredentialOptions,
+            string managedIdentityClientId,
             bool preserveExistingChannel = false)
         {
             ITelemetryChannel hostChannel = hostConfiguration?.TelemetryChannel;
@@ -421,11 +418,57 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                 return true;
             }
 
-            ManagedIdentityId managedIdentityId = tokenCredentialOptions.ClientId != null
-                ? ManagedIdentityId.FromUserAssignedClientId(tokenCredentialOptions.ClientId)
+            ManagedIdentityId managedIdentityId = managedIdentityClientId != null
+                ? ManagedIdentityId.FromUserAssignedClientId(managedIdentityClientId)
                 : ManagedIdentityId.SystemAssigned;
             durableConfiguration.SetAzureTokenCredential(new ManagedIdentityCredential(managedIdentityId));
             return false;
+        }
+
+        internal static string ParseManagedIdentityClientId(string authenticationString)
+        {
+            if (string.IsNullOrWhiteSpace(authenticationString))
+            {
+                throw new ArgumentNullException(nameof(authenticationString));
+            }
+
+            // Match the host's authentication-string semantics without pulling in its telemetry collectors.
+            bool hasAuthorization = false;
+            string clientId = null;
+            foreach (string token in authenticationString.Split(';', StringSplitOptions.RemoveEmptyEntries))
+            {
+                string[] pair = token.Split('=', 2, StringSplitOptions.TrimEntries);
+                if (pair.Length != 2)
+                {
+                    continue;
+                }
+
+                if (pair[0].Equals("Authorization", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!pair[1].Equals("AAD", StringComparison.OrdinalIgnoreCase))
+                    {
+                        throw new InvalidCredentialException("Application Insights authorization must be AAD.");
+                    }
+
+                    hasAuthorization = true;
+                }
+                else if (pair[0].Equals("ClientId", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!Guid.TryParse(pair[1], out _))
+                    {
+                        throw new FormatException("Application Insights ClientId must be a valid GUID.");
+                    }
+
+                    clientId = pair[1];
+                }
+            }
+
+            if (!hasAuthorization)
+            {
+                throw new InvalidCredentialException("Application Insights authorization is missing.");
+            }
+
+            return clientId;
         }
 
         private void LogTracingWarning(string message)
