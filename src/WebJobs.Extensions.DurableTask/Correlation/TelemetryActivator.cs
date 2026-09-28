@@ -14,11 +14,9 @@ using DurableTask.Core.Settings;
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.Channel;
 using Microsoft.ApplicationInsights.Extensibility;
-using Microsoft.Azure.WebJobs.Logging.ApplicationInsights;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using ApplicationInsightsTokenCredentialOptions = Microsoft.Azure.WebJobs.Logging.ApplicationInsights.TokenCredentialOptions;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 {
@@ -326,13 +324,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             {
                 try
                 {
-                    ApplicationInsightsTokenCredentialOptions tokenCredentialOptions =
-                        ApplicationInsightsTokenCredentialOptions.ParseAuthenticationString(resolvedAuthenticationString);
-                    bool userAssignedIdentity = tokenCredentialOptions.ClientId != null;
+                    string managedIdentityClientId = ParseManagedIdentityClientId(resolvedAuthenticationString);
+                    bool userAssignedIdentity = managedIdentityClientId != null;
                     bool reusedHostChannel = ApplyEntraAuthentication(
                         config,
                         this.hostTelemetryConfiguration,
-                        tokenCredentialOptions,
+                        managedIdentityClientId,
                         preserveExistingChannel: this.OnSend != null);
                     if (this.hostTelemetryConfiguration != null && !reusedHostChannel && this.OnSend == null)
                     {
@@ -388,6 +385,58 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         }
 
         /// <summary>
+        /// Parses the authentication string using the host's semantics without depending on its logging integration.
+        /// </summary>
+        /// <param name="authenticationString">The Application Insights authentication string.</param>
+        /// <returns>The user-assigned identity's client ID, or null for the system-assigned identity.</returns>
+        internal static string ParseManagedIdentityClientId(string authenticationString)
+        {
+            if (string.IsNullOrWhiteSpace(authenticationString))
+            {
+                throw new ArgumentNullException(nameof(authenticationString));
+            }
+
+            bool authorizationProvided = false;
+            string clientId = null;
+            foreach (string token in authenticationString.Split(';'))
+            {
+                int separator = token.IndexOf('=');
+                if (separator < 0)
+                {
+                    continue;
+                }
+
+                string key = token.Substring(0, separator).Trim();
+                string value = token.Substring(separator + 1).Trim();
+                if (key.Equals("Authorization", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!value.Equals("AAD", StringComparison.OrdinalIgnoreCase))
+                    {
+                        throw new InvalidCredentialException("Application Insights authentication requires Authorization=AAD.");
+                    }
+
+                    authorizationProvided = true;
+                }
+                else if (key.Equals("ClientId", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!Guid.TryParse(value, out _))
+                    {
+                        throw new FormatException("The Application Insights authentication client ID must be a GUID.");
+                    }
+
+                    clientId = value;
+                }
+            }
+
+            if (!authorizationProvided)
+            {
+                throw new InvalidCredentialException("Application Insights authentication requires an Authorization key.");
+            }
+
+            return clientId;
+        }
+
+        /// <summary>
         /// Enables Microsoft Entra authenticated ingestion for the private Durable telemetry
         /// configuration.
         /// </summary>
@@ -402,7 +451,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         /// </remarks>
         /// <param name="durableConfiguration">The private Durable telemetry configuration.</param>
         /// <param name="hostConfiguration">The host telemetry configuration, if available.</param>
-        /// <param name="tokenCredentialOptions">The parsed authentication string.</param>
+        /// <param name="managedIdentityClientId">The user-assigned identity's client ID, or null for the system-assigned identity.</param>
         /// <param name="preserveExistingChannel">
         /// True when the configuration already has a channel that must not be replaced, such as the
         /// test channel installed by <see cref="OnSend"/>.
@@ -411,7 +460,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         internal static bool ApplyEntraAuthentication(
             TelemetryConfiguration durableConfiguration,
             TelemetryConfiguration hostConfiguration,
-            ApplicationInsightsTokenCredentialOptions tokenCredentialOptions,
+            string managedIdentityClientId,
             bool preserveExistingChannel = false)
         {
             ITelemetryChannel hostChannel = hostConfiguration?.TelemetryChannel;
@@ -421,8 +470,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                 return true;
             }
 
-            ManagedIdentityId managedIdentityId = tokenCredentialOptions.ClientId != null
-                ? ManagedIdentityId.FromUserAssignedClientId(tokenCredentialOptions.ClientId)
+            ManagedIdentityId managedIdentityId = managedIdentityClientId != null
+                ? ManagedIdentityId.FromUserAssignedClientId(managedIdentityClientId)
                 : ManagedIdentityId.SystemAssigned;
             durableConfiguration.SetAzureTokenCredential(new ManagedIdentityCredential(managedIdentityId));
             return false;
