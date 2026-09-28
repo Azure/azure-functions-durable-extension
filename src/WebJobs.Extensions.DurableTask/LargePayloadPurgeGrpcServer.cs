@@ -14,16 +14,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal sealed class LargePayloadPurgeGrpcServer : LP.LargePayloadPurge.LargePayloadPurgeBase
     {
-        private readonly TaskHubGrpcServer taskHubServer;
+        private readonly DurableTaskExtension extension;
 
         public LargePayloadPurgeGrpcServer(DurableTaskExtension extension)
         {
-            this.taskHubServer = new TaskHubGrpcServer(extension);
+            this.extension = extension;
         }
 
         public async override Task<LP.SetLargePayloadAutoPurgeResponse> SetLargePayloadAutoPurge(LP.SetLargePayloadAutoPurgeRequest request, ServerCallContext context)
         {
-            var purgeClient = (IOrchestrationServiceLargePayloadPurgeClient)this.taskHubServer.GetDurabilityProvider(context);
+            var purgeClient = (IOrchestrationServiceLargePayloadPurgeClient)this.extension.GetDurabilityProvider(GrpcClientBinding.GetAttribute(context));
             try
             {
                 // This records a setting only. Purge Functions execute in the language worker.
@@ -39,7 +39,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<LP.GetLargePayloadTombstonesResponse> GetLargePayloadTombstones(LP.GetLargePayloadTombstonesRequest request, ServerCallContext context)
         {
-            var purgeClient = (IOrchestrationServiceLargePayloadPurgeClient)this.taskHubServer.GetDurabilityProvider(context);
+            var purgeClient = (IOrchestrationServiceLargePayloadPurgeClient)this.extension.GetDurabilityProvider(GrpcClientBinding.GetAttribute(context));
             IReadOnlyList<LargePayloadTombstone> tombstones;
             try
             {
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<LP.ReportLargePayloadPurgeResultsResponse> ReportLargePayloadPurgeResults(LP.ReportLargePayloadPurgeResultsRequest request, ServerCallContext context)
         {
-            var purgeClient = (IOrchestrationServiceLargePayloadPurgeClient)this.taskHubServer.GetDurabilityProvider(context);
+            var purgeClient = (IOrchestrationServiceLargePayloadPurgeClient)this.extension.GetDurabilityProvider(GrpcClientBinding.GetAttribute(context));
             var results = new List<LargePayloadPurgeResult>(request.Results.Count);
             foreach (LP.LargePayloadPurgeResult result in request.Results)
             {

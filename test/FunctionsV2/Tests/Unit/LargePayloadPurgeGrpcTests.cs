@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
@@ -33,6 +34,45 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public LargePayloadPurgeGrpcTests(ITestOutputHelper output)
         {
             this.output = output;
+        }
+
+        [Fact]
+        public void PurgeServerDoesNotUseAnotherRpcServerAsItsBindingHelper()
+        {
+            Assert.DoesNotContain(
+                typeof(LargePayloadPurgeGrpcServer).GetFields(BindingFlags.Instance | BindingFlags.NonPublic),
+                field => field.FieldType == typeof(TaskHubGrpcServer));
+        }
+
+        [Theory]
+        [InlineData(null, null)]
+        [InlineData("", "")]
+        [InlineData("OtherHub", null)]
+        [InlineData(null, "OtherConnection")]
+        [InlineData("OtherHub", "OtherConnection")]
+        public async Task OrdinaryAndPurgeRequestsResolveTheSameBindingProvider(string hub, string connection)
+        {
+            using var fixture = new BridgeFixture(this.output);
+            Mock<IOrchestrationServiceLargePayloadPurgeClient> purge = fixture.AddProvider(hub, connection);
+            Mock<IOrchestrationServiceClient> client = purge.As<IOrchestrationServiceClient>();
+            client.Setup(value => value.GetOrchestrationStateAsync("probe", (string)null))
+                .ReturnsAsync((OrchestrationState)null);
+            purge.Setup(value => value.SetLargePayloadAutoPurgeAsync(true, DateTime.MaxValue, default))
+                .Returns(Task.CompletedTask);
+            var context = new TestCallContext(hub, connection, DateTime.MaxValue, default);
+
+            P.GetInstanceResponse instance = await new TaskHubGrpcServer(fixture.Extension)
+                .GetInstance(new P.GetInstanceRequest { InstanceId = "probe" }, context);
+            await fixture.Server.SetLargePayloadAutoPurge(new LP.SetLargePayloadAutoPurgeRequest { Enabled = true }, context);
+
+            Assert.False(instance.Exists);
+            client.Verify(value => value.GetOrchestrationStateAsync("probe", (string)null), Times.Once);
+            purge.Verify(value => value.SetLargePayloadAutoPurgeAsync(true, DateTime.MaxValue, default), Times.Once);
+            fixture.Factory.Verify(
+                value => value.GetDurabilityProvider(
+                    It.Is<DurableClientAttribute>(attribute => attribute.TaskHub == hub && attribute.ConnectionName == connection)),
+                Times.Exactly(2));
+            fixture.AssertNoDefaultOrLifecycleCalls();
         }
 
         [Theory]
@@ -384,7 +424,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 var client = new Mock<IOrchestrationServiceClient>(MockBehavior.Strict);
                 Mock<IOrchestrationServiceLargePayloadPurgeClient> purgeClient = client.As<IOrchestrationServiceLargePayloadPurgeClient>();
-                this.providers.Add((hub, connection), new DurabilityProvider("Test", this.service.Object, client.Object, connection));
+                this.providers.Add((hub, connection), new DurabilityProvider("Test", this.service.Object, client.Object, connection ?? "DefaultConnection"));
                 return purgeClient;
             }
 
@@ -417,7 +457,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             public TestCallContext(string hub, string connection, DateTime deadline, CancellationToken cancellationToken)
             {
-                this.RequestHeadersCore = new Metadata { { "Durable-TaskHub", hub }, { "Durable-ConnectionName", connection } };
+                this.RequestHeadersCore = new Metadata();
+                if (hub != null)
+                {
+                    this.RequestHeadersCore.Add("Durable-TaskHub", hub);
+                }
+
+                if (connection != null)
+                {
+                    this.RequestHeadersCore.Add("Durable-ConnectionName", connection);
+                }
+
                 this.DeadlineCore = deadline;
                 this.CancellationTokenCore = cancellationToken;
             }
