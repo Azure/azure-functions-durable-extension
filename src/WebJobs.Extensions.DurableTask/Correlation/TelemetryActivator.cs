@@ -25,6 +25,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
     /// </summary>
     public class TelemetryActivator : ITelemetryActivator, IAsyncDisposable, IDisposable
     {
+        private const string AuthorizationKey = "Authorization";
+        private const string ClientIdKey = "ClientId";
+        private const string AadAuthorizationValue = "AAD";
+
         private readonly DurableTaskOptions options;
         private readonly INameResolver nameResolver;
         private readonly TelemetryConfiguration hostTelemetryConfiguration;
@@ -408,16 +412,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 
                 string key = token.Substring(0, separator).Trim();
                 string value = token.Substring(separator + 1).Trim();
-                if (key.Equals("Authorization", StringComparison.OrdinalIgnoreCase))
+                if (key.Equals(AuthorizationKey, StringComparison.OrdinalIgnoreCase))
                 {
-                    if (!value.Equals("AAD", StringComparison.OrdinalIgnoreCase))
+                    if (!value.Equals(AadAuthorizationValue, StringComparison.OrdinalIgnoreCase))
                     {
-                        throw new InvalidCredentialException("Application Insights authentication requires Authorization=AAD.");
+                        throw new InvalidCredentialException($"Application Insights authentication requires {AuthorizationKey}={AadAuthorizationValue}.");
                     }
 
                     authorizationProvided = true;
                 }
-                else if (key.Equals("ClientId", StringComparison.OrdinalIgnoreCase))
+                else if (key.Equals(ClientIdKey, StringComparison.OrdinalIgnoreCase))
                 {
                     if (!Guid.TryParse(value, out _))
                     {
@@ -430,7 +434,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 
             if (!authorizationProvided)
             {
-                throw new InvalidCredentialException("Application Insights authentication requires an Authorization key.");
+                throw new InvalidCredentialException($"Application Insights authentication requires an {AuthorizationKey} key.");
             }
 
             return clientId;
