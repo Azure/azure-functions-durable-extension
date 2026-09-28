@@ -50,7 +50,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations
             this.durableTaskOptions = durableTaskOptions?.Value ?? new DurableTaskOptions();
 
             this.MessageDataConverter = DurableTaskExtension.CreateMessageDataConverter(messageSerializerSettingsFactory);
-            this.TraceHelper = new EndToEndTraceHelper(this.logger, this.durableTaskOptions.Tracing.TraceReplayEvents);
+            this.TraceHelper = new EndToEndTraceHelper(loggerFactory, this.durableTaskOptions.Tracing.TraceReplayEvents);
         }
 
         internal MessagePayloadDataConverter MessageDataConverter { get; private set; }
