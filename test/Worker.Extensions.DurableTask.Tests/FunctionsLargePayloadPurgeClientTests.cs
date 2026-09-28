@@ -72,12 +72,13 @@ public class FunctionsLargePayloadPurgeClientTests
     {
         var invoker = new Mock<CallInvoker>();
         var error = new RpcException(new Status(StatusCode.Unimplemented, "unsupported"));
+        using var call = new AsyncUnaryCall<P.GetLargePayloadTombstonesResponse>(
+            Task.FromException<P.GetLargePayloadTombstonesResponse>(error), Task.FromResult(new Metadata()),
+            () => error.Status, () => new Metadata(), () => { });
         invoker.Setup(i => i.AsyncUnaryCall(
             It.IsAny<Method<P.GetLargePayloadTombstonesRequest, P.GetLargePayloadTombstonesResponse>>(),
             It.IsAny<string>(), It.IsAny<CallOptions>(), It.IsAny<P.GetLargePayloadTombstonesRequest>()))
-            .Returns(new AsyncUnaryCall<P.GetLargePayloadTombstonesResponse>(
-                Task.FromException<P.GetLargePayloadTombstonesResponse>(error), Task.FromResult(new Metadata()),
-                () => error.Status, () => new Metadata(), () => { }));
+            .Returns(call);
         var client = new FunctionsLargePayloadPurgeClient(invoker.Object);
         Assert.Same(error, await Assert.ThrowsAsync<RpcException>(
             () => client.GetLargePayloadTombstonesAsync(1, DateTime.UtcNow.AddSeconds(30))));

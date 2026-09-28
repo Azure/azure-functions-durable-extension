@@ -30,7 +30,11 @@ public sealed class OrchestrationTriggerAttribute : TriggerBindingAttribute
     /// <summary>
     /// Gets or sets a value identifying the SDK-owned, unversioned payload purge orchestration.
     /// </summary>
-    /// <remarks>Reserved for the exact .NET isolated SDK purge function; not a customer version-policy override.</remarks>
+    /// <remarks>
+    /// Reserved for the exact .NET isolated SDK purge function; not a customer version-policy override.
+    /// The host validates the reserved name and runtime, not the declaring assembly's identity.
+    /// This metadata marker is not an authentication or trusted-assembly boundary.
+    /// </remarks>
     [EditorBrowsable(EditorBrowsableState.Never)]
     public bool LargePayloadPurge { get; set; }
 }
