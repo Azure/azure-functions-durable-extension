@@ -3,10 +3,15 @@
 
 using System;
 using System.Collections.Generic;
+using System.Reflection;
+using Azure.Core;
+using Azure.Identity;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.AzureManaged;
 using Microsoft.Azure.WebJobs.Host.Scale;
+using Microsoft.DurableTask.AzureManagedBackend;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Moq;
 using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
@@ -167,6 +172,122 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
             var selectedFactory = DurableTaskScaleExtension.GetScalabilityProviderFactory(metadata, logger, factories);
 
             Assert.IsType<AzureManagedScalabilityProviderFactory>(selectedFactory);
+        }
+
+        [Theory]
+        [InlineData(null, null, "https://durabletask.io")]
+        [InlineData("westus", null, "https://durabletask.io")]
+        [InlineData("USGovVirginia", null, "https://durabletask.azure.us")]
+        [InlineData("UsDoDCentral", "", "https://durabletask.azure.us")]
+        [InlineData("westus", " https://durabletask.azure.us/.default/ ", "https://durabletask.azure.us")]
+        [InlineData("usgovarizona", "https://custom.example.com/", "https://custom.example.com")]
+        public void GetScalabilityProvider_CloudAudience_PreservesSdkResourceId(
+            string regionName,
+            string resourceId,
+            string expectedResourceId)
+        {
+            string originalRegionName = Environment.GetEnvironmentVariable("REGION_NAME");
+            try
+            {
+                // This test assembly disables parallel test collections in xunit.runner.json.
+                Environment.SetEnvironmentVariable("REGION_NAME", regionName);
+                string connectionString = "Endpoint=https://scheduler.example.com;Authentication=ManagedIdentity";
+                if (resourceId != null)
+                {
+                    connectionString += $";ResourceId={resourceId}";
+                }
+
+                var testConfiguration = new ConfigurationBuilder()
+                    .AddInMemoryCollection(new Dictionary<string, string> { { "cloudConnection", connectionString } })
+                    .Build();
+                var factory = new AzureManagedScalabilityProviderFactory(testConfiguration, this.loggerFactory);
+                var triggerMetadata = TestHelpers.CreateTriggerMetadata("cloudHub", 5, 10, "cloudConnection", "azureManaged");
+
+                var provider = factory.GetScalabilityProvider(triggerMetadata.ExtractDurableTaskMetadata(), triggerMetadata);
+
+                using var service = GetOrchestrationService(provider);
+                var options = GetServiceOptions(service);
+                Assert.Equal(expectedResourceId, options.ResourceId);
+                Assert.Equal("cloudHub", options.TaskHubName);
+                Assert.IsType<ManagedIdentityCredential>(options.TokenCredential);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("REGION_NAME", originalRegionName);
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void GetScalabilityProvider_CloudConnection_PreservesCredentialAndAudience(bool useScaleControllerCredential)
+        {
+            const string connectionString =
+                "Endpoint=https://scheduler.example.com;Authentication=DefaultAzure;" +
+                "ResourceId=https://durabletask.azure.us;AuthorityHost=https://login.microsoftonline.us/";
+            var testConfiguration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string> { { "cloudConnection", connectionString } })
+                .Build();
+            var factory = new AzureManagedScalabilityProviderFactory(testConfiguration, this.loggerFactory);
+            var triggerMetadata = TestHelpers.CreateTriggerMetadata("cloudHub", 5, 10, "cloudConnection", "azureManaged");
+            var credential = new Mock<TokenCredential>(MockBehavior.Strict).Object;
+            if (useScaleControllerCredential)
+            {
+                triggerMetadata.Properties["GetAzureManagedTokenCredential"] = new Func<string, TokenCredential>(connectionName =>
+                {
+                    Assert.Equal("cloudConnection", connectionName);
+                    return credential;
+                });
+            }
+
+            var provider = factory.GetScalabilityProvider(triggerMetadata.ExtractDurableTaskMetadata(), triggerMetadata);
+
+            using var service = GetOrchestrationService(provider);
+            var options = GetServiceOptions(service);
+            Assert.Equal("https://durabletask.azure.us", options.ResourceId);
+            Assert.Equal("https://scheduler.example.com", options.Address);
+            if (useScaleControllerCredential)
+            {
+                Assert.Same(credential, options.TokenCredential);
+            }
+            else
+            {
+                Assert.IsType<DefaultAzureCredential>(options.TokenCredential);
+            }
+        }
+
+        [Theory]
+        [InlineData("http://login.microsoftonline.us/")]
+        [InlineData("login.microsoftonline.us")]
+        public void GetScalabilityProvider_InvalidAuthorityHost_PropagatesSdkValidation(string authorityHost)
+        {
+            var testConfiguration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    { "cloudConnection", $"Endpoint=https://scheduler.example.com;Authentication=DefaultAzure;AuthorityHost={authorityHost}" },
+                })
+                .Build();
+            var factory = new AzureManagedScalabilityProviderFactory(testConfiguration, this.loggerFactory);
+            var triggerMetadata = TestHelpers.CreateTriggerMetadata("cloudHub", 5, 10, "cloudConnection", "azureManaged");
+
+            var exception = Assert.Throws<ArgumentException>(() =>
+                factory.GetScalabilityProvider(triggerMetadata.ExtractDurableTaskMetadata(), triggerMetadata));
+
+            Assert.Contains("AuthorityHost", exception.Message);
+        }
+
+        private static AzureManagedOrchestrationService GetOrchestrationService(ScalabilityProvider provider)
+        {
+            var field = typeof(AzureManagedScalabilityProvider).GetField("orchestrationService", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(field);
+            return Assert.IsType<AzureManagedOrchestrationService>(field.GetValue(provider));
+        }
+
+        private static AzureManagedOrchestrationServiceOptions GetServiceOptions(AzureManagedOrchestrationService service)
+        {
+            var field = typeof(AzureManagedOrchestrationService).GetField("options", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(field);
+            return Assert.IsType<AzureManagedOrchestrationServiceOptions>(field.GetValue(service));
         }
 
         // Stub used to test factory selection without a real storage emulator.
