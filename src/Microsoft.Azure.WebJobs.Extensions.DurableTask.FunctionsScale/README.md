@@ -62,5 +62,12 @@ Endpoint=https://<scheduler-endpoint>;TaskHub=<task-hub>;Authentication=DefaultA
   externally supplied credentials. `ResourceId` still determines the requested audience.
 
 No separate Durable Functions `host.json` authority or audience setting is needed.
-Applications must also use the Azure Managed provider package version 1.10.2 or later;
-upgrading the scale extension alone does not upgrade the application's provider.
+Applications must also use the appropriate Azure Managed provider package version
+1.10.2 or later:
+
+- .NET isolated: [`Microsoft.Azure.Functions.Worker.Extensions.DurableTask.AzureManaged`](https://www.nuget.org/packages/Microsoft.Azure.Functions.Worker.Extensions.DurableTask.AzureManaged/1.10.2).
+- WebJobs/non-.NET: [`Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureManaged`](https://www.nuget.org/packages/Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureManaged/1.10.2).
+
+Both provider packages have a published 1.10.2 release. If the application directly
+references `Microsoft.DurableTask.AzureManagedBackend`, align it to 1.10.2 or later as
+well. Upgrading the scale extension alone does not upgrade the application's provider.

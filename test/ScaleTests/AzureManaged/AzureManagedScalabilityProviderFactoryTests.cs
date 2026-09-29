@@ -197,10 +197,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
                     connectionString += $";ResourceId={resourceId}";
                 }
 
-                var configuration = new ConfigurationBuilder()
+                var testConfiguration = new ConfigurationBuilder()
                     .AddInMemoryCollection(new Dictionary<string, string> { { "cloudConnection", connectionString } })
                     .Build();
-                var factory = new AzureManagedScalabilityProviderFactory(configuration, this.loggerFactory);
+                var factory = new AzureManagedScalabilityProviderFactory(testConfiguration, this.loggerFactory);
                 var triggerMetadata = TestHelpers.CreateTriggerMetadata("cloudHub", 5, 10, "cloudConnection", "azureManaged");
 
                 var provider = factory.GetScalabilityProvider(triggerMetadata.ExtractDurableTaskMetadata(), triggerMetadata);
@@ -225,10 +225,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
             const string connectionString =
                 "Endpoint=https://scheduler.example.com;Authentication=DefaultAzure;" +
                 "ResourceId=https://durabletask.azure.us;AuthorityHost=https://login.microsoftonline.us/";
-            var configuration = new ConfigurationBuilder()
+            var testConfiguration = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string> { { "cloudConnection", connectionString } })
                 .Build();
-            var factory = new AzureManagedScalabilityProviderFactory(configuration, this.loggerFactory);
+            var factory = new AzureManagedScalabilityProviderFactory(testConfiguration, this.loggerFactory);
             var triggerMetadata = TestHelpers.CreateTriggerMetadata("cloudHub", 5, 10, "cloudConnection", "azureManaged");
             var credential = new Mock<TokenCredential>(MockBehavior.Strict).Object;
             if (useScaleControllerCredential)
@@ -261,13 +261,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests
         [InlineData("login.microsoftonline.us")]
         public void GetScalabilityProvider_InvalidAuthorityHost_PropagatesSdkValidation(string authorityHost)
         {
-            var configuration = new ConfigurationBuilder()
+            var testConfiguration = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
                     { "cloudConnection", $"Endpoint=https://scheduler.example.com;Authentication=DefaultAzure;AuthorityHost={authorityHost}" },
                 })
                 .Build();
-            var factory = new AzureManagedScalabilityProviderFactory(configuration, this.loggerFactory);
+            var factory = new AzureManagedScalabilityProviderFactory(testConfiguration, this.loggerFactory);
             var triggerMetadata = TestHelpers.CreateTriggerMetadata("cloudHub", 5, 10, "cloudConnection", "azureManaged");
 
             var exception = Assert.Throws<ArgumentException>(() =>
