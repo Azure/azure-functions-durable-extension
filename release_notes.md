@@ -18,7 +18,7 @@
 
 ### Dependency Updates
 
-- Updated `Microsoft.DurableTask.Client.Grpc`, `Microsoft.DurableTask.Worker.Grpc`, and `Microsoft.DurableTask.Abstractions` to 1.25.0 to align with Azure Managed SDK 1.10.2.
+- Updated `Microsoft.DurableTask.Client.Grpc`, `Microsoft.DurableTask.Worker.Grpc`, and `Microsoft.DurableTask.Abstractions` to 1.26.0, including the fix for external-event loss after canceled waits in the isolated worker.
 
 ## Microsoft.Azure.WebJobs.Extensions.DurableTask
 
