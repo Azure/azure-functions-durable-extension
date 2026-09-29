@@ -339,6 +339,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <param name="condition">Return orchestration instances that match the specified conditions.</param>
         /// <param name="cancellationToken">Cancellation token that can be used to cancel the status query operation.</param>
         /// <returns>Returns each page of orchestration status for all instances and continuation token of next page.</returns>
+        /// <remarks>
+        /// Entity instances are included by default for compatibility. Set
+        /// <see cref="OrchestrationStatusQueryCondition.ExcludeEntities"/> to <c>true</c> to exclude them.
+        /// A page can be empty while still containing a continuation token for additional results.
+        /// </remarks>
         Task<OrchestrationStatusQueryResult> ListInstancesAsync(OrchestrationStatusQueryCondition condition, CancellationToken cancellationToken);
 
         /// <summary>

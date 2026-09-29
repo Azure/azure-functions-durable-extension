@@ -51,6 +51,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string ShowHistoryParameter = "showHistory";
         private const string ShowHistoryOutputParameter = "showHistoryOutput";
         private const string ShowInputParameter = "showInput";
+        private const string ExcludeEntitiesParameter = "excludeEntities";
         private const string FetchStateParameter = "fetchState";
         private const string InstanceIdPrefixParameter = "instanceIdPrefix";
         private const string CreatedTimeFromParameter = "createdTimeFrom";
@@ -496,6 +497,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (TryGetBooleanQueryParameterValue(queryNameValuePairs, ShowInputParameter, out bool showInput))
             {
                 condition.ShowInput = showInput;
+            }
+
+            if (TryGetBooleanQueryParameterValue(queryNameValuePairs, ExcludeEntitiesParameter, out bool excludeEntities))
+            {
+                condition.ExcludeEntities = excludeEntities;
             }
 
             if (TryGetIntQueryParameterValue(queryNameValuePairs, PageSizeParameter, out int pageSize))
