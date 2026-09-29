@@ -57,6 +57,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations
 
         internal EndToEndTraceHelper TraceHelper { get; private set; }
 
+        internal bool IsInFunctionsHost { get; set; }
+
         /// <summary>
         /// Gets a <see cref="IDurableClient"/> using configuration from a <see cref="DurableClientOptions"/> instance.
         /// </summary>
@@ -72,6 +74,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations
             if (string.IsNullOrWhiteSpace(durableClientOptions.TaskHub))
             {
                 throw new ArgumentException("Please provide value for 'TaskHub'");
+            }
+
+            if (this.IsInFunctionsHost)
+            {
+                this.durableTaskOptions.ValidateHubNameForSlot();
             }
 
             DurableClientAttribute attribute = new DurableClientAttribute(durableClientOptions);

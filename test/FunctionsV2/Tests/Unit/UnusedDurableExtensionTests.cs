@@ -263,11 +263,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string originalSiteName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME");
             string originalSlotName = Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME");
             string originalRuntime = Environment.GetEnvironmentVariable("FUNCTIONS_WORKER_RUNTIME");
+            string originalStorage = Environment.GetEnvironmentVariable("AzureWebJobsStorage");
+            string originalStorageConnection = Environment.GetEnvironmentVariable("ConnectionStrings__AzureWebJobsStorage");
             try
             {
                 Environment.SetEnvironmentVariable("WEBSITE_SITE_NAME", "UnusedDurableExtension");
                 Environment.SetEnvironmentVariable("WEBSITE_SLOT_NAME", slotName);
                 Environment.SetEnvironmentVariable("FUNCTIONS_WORKER_RUNTIME", runtime);
+
+                // Host construction needs a connection, but these tests never perform storage operations.
+                Environment.SetEnvironmentVariable("AzureWebJobsStorage", "UseDevelopmentStorage=true");
+                Environment.SetEnvironmentVariable("ConnectionStrings__AzureWebJobsStorage", "UseDevelopmentStorage=true");
                 await action();
             }
             finally
@@ -275,6 +281,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Environment.SetEnvironmentVariable("WEBSITE_SITE_NAME", originalSiteName);
                 Environment.SetEnvironmentVariable("WEBSITE_SLOT_NAME", originalSlotName);
                 Environment.SetEnvironmentVariable("FUNCTIONS_WORKER_RUNTIME", originalRuntime);
+                Environment.SetEnvironmentVariable("AzureWebJobsStorage", originalStorage);
+                Environment.SetEnvironmentVariable("ConnectionStrings__AzureWebJobsStorage", originalStorageConnection);
             }
         }
 
