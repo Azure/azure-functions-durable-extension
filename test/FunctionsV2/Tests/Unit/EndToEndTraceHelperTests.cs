@@ -11,10 +11,12 @@ using System.Net;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests;
+using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Azure.WebJobs.Logging;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
 using Xunit.Abstractions;
@@ -297,7 +299,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 factory,
                 traceReplayEvents: true,
                 shouldTraceRawData: true,
-                isFunctionNameRegistered: knownFunctions.Contains);
+                resolveFunctionName: name => knownFunctions.TryGetValue(name, out string? registeredName) ? registeredName : null);
             var error = new InvalidOperationException("Synthetic error");
             Action<string>[] events =
             {
@@ -392,7 +394,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                     factory,
                     traceReplayEvents: false,
                     shouldTraceRawData: traceRaw,
-                    isFunctionNameRegistered: _ => true);
+                    resolveFunctionName: name => name);
                 string functionName = type + "Function";
                 foreach (string? payload in new[] { null, "", "\"SYNTHETIC_CONTENT\"", "{\"value\":\"SYNTHETIC_CONTENT\"}", "[\"SYNTHETIC_CONTENT\"]", "42", "null" })
                 {
@@ -435,7 +437,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 factory,
                 traceReplay,
                 shouldTraceRawData: true,
-                isFunctionNameRegistered: _ => true);
+                resolveFunctionName: name => name);
             helper.FunctionStarting("hub", "Orchestrator", "instance", "input", FunctionType.Orchestrator, replay);
             helper.FunctionCompleted("hub", "Orchestrator", "instance", "output", false, FunctionType.Orchestrator, replay);
             Assert.Equal(expectedCount, provider.GetAllLogMessages().Count());
@@ -455,7 +457,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 factory,
                 false,
                 shouldTraceRawData: true,
-                isFunctionNameRegistered: _ => true);
+                resolveFunctionName: name => name);
             helper.FunctionCompleted("hub", functionName!, "instance", "SYNTHETIC_CONTENT", false, FunctionType.Activity, false);
             LogMessage message = Assert.Single(provider.GetAllLogMessages());
             Assert.Equal(LogCategories.CreateFunctionUserCategory("DurableTask"), message.Category);
@@ -472,7 +474,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 factory,
                 false,
                 shouldTraceRawData: true,
-                isFunctionNameRegistered: name => name == "KnownFunction");
+                resolveFunctionName: name => name == "KnownFunction" ? name : null);
 
             helper.FunctionCompleted("hub", "KnownFunction", "instance", "output", false, FunctionType.Activity, false);
             foreach (int index in Enumerable.Range(0, 100))
@@ -504,6 +506,58 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             Assert.Equal(LogCategories.CreateFunctionUserCategory("DurableTask"), message.Category);
         }
 
+        [Theory]
+        [InlineData((int)FunctionType.Orchestrator, false)]
+        [InlineData((int)FunctionType.Orchestrator, true)]
+        [InlineData((int)FunctionType.Activity, false)]
+        [InlineData((int)FunctionType.Activity, true)]
+        [InlineData((int)FunctionType.Entity, false)]
+        [InlineData((int)FunctionType.Entity, true)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void RegisteredFunctions_CasingVariantsShareCanonicalCategory(int functionType, bool disabled)
+        {
+            const string RegisteredName = "KnownFunction";
+            using ILoggerFactory factory = this.CreateLoggerFactory(out TestLoggerProvider provider);
+            using DurableTaskExtension extension = CreateExtension(factory);
+            FunctionType type = (FunctionType)functionType;
+            ITriggeredFunctionExecutor? executor = disabled ? null : Mock.Of<ITriggeredFunctionExecutor>();
+            RegisteredFunctionInfo? info = disabled ? null : new RegisteredFunctionInfo(executor!, isOutOfProc: false);
+            Action<string> register = type switch
+            {
+                FunctionType.Orchestrator => name => extension.RegisterOrchestrator(new FunctionName(name), info),
+                FunctionType.Activity => name => extension.RegisterActivity(new FunctionName(name), executor!),
+                FunctionType.Entity => name => extension.RegisterEntity(new FunctionName(name), info),
+                _ => throw new ArgumentOutOfRangeException(nameof(functionType)),
+            };
+
+            extension.TraceHelper.FunctionCompleted("hub", RegisteredName, "instance", "output", false, type, false);
+            register(RegisteredName);
+            register(RegisteredName.ToLowerInvariant());
+
+            for (int index = 0; index < 1024; index++)
+            {
+                string variant = new string(RegisteredName.Select((character, position) =>
+                    position < 10 && (index & (1 << position)) != 0
+                        ? char.ToUpperInvariant(character)
+                        : char.ToLowerInvariant(character)).ToArray());
+                extension.TraceHelper.FunctionCompleted("hub", variant, "instance", "output", false, type, false);
+            }
+
+            extension.TraceHelper.FunctionCompleted("hub", "UnknownFunction", "instance", "output", false, type, false);
+            TestLogger canonicalLogger = Assert.Single(
+                provider.CreatedLoggers,
+                logger => logger.Category == LogCategories.CreateFunctionUserCategory(RegisteredName));
+            Assert.Equal(1024, canonicalLogger.LogMessages.Count);
+            Assert.Equal(
+                1024,
+                canonicalLogger.LogMessages.Select(message => message.State.Single(property => property.Key == "functionName").Value).Distinct().Count());
+            TestLogger fallbackLogger = Assert.Single(
+                provider.CreatedLoggers,
+                logger => logger.Category == LogCategories.CreateFunctionUserCategory("DurableTask"));
+            Assert.Equal(2, fallbackLogger.LogMessages.Count);
+            Assert.Equal(2, provider.CreatedLoggers.Count(logger => LogCategories.IsFunctionUserCategory(logger.Category)));
+        }
+
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void HostOnlyHelper_CannotEmitFunctionPayloads()
@@ -520,7 +574,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         public async Task ConcurrentFunctions_UseTheirOwnCategories()
         {
             using ILoggerFactory factory = this.CreateLoggerFactory(out TestLoggerProvider provider);
-            var helper = new EndToEndTraceHelper(factory, false, isFunctionNameRegistered: _ => true);
+            var helper = new EndToEndTraceHelper(factory, false, resolveFunctionName: name => name);
             await Task.WhenAll(Enumerable.Range(0, 1000).Select(index => Task.Run(() =>
                 helper.FunctionCompleted("hub", "Function" + (index % 3), "instance", "output", false, FunctionType.Activity, false))));
 
@@ -541,7 +595,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         public void DebugEntityMessages_UseTheOriginatingFunctionCategory()
         {
             using ILoggerFactory factory = this.CreateLoggerFactory(out TestLoggerProvider provider);
-            var helper = new EndToEndTraceHelper(factory, false, isFunctionNameRegistered: _ => true);
+            var helper = new EndToEndTraceHelper(factory, false, resolveFunctionName: name => name);
             helper.DeliveringEntityMessage("EntityFunction", "instance", "execution", 1, "event", "SYNTHETIC_CONTENT");
             helper.SendingEntityMessage("OrchestratorFunction", "instance", "execution", "target", "event", "SYNTHETIC_CONTENT");
 #if DEBUG
@@ -560,7 +614,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         public void DurableTestCollector_MergesCategoriesWithoutApplicationMessages()
         {
             using ILoggerFactory factory = this.CreateLoggerFactory(out TestLoggerProvider provider);
-            var helper = new EndToEndTraceHelper(factory, false, isFunctionNameRegistered: _ => true);
+            var helper = new EndToEndTraceHelper(factory, false, resolveFunctionName: name => name);
             helper.FunctionStarting("hub", "Second", "instance", "input", FunctionType.Orchestrator, false);
             factory.CreateLogger(LogCategories.CreateFunctionUserCategory("Second")).LogInformation("Application message for instance");
             helper.FunctionStarting("hub", "First", "instance", "input", FunctionType.Activity, false);
@@ -613,6 +667,31 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             {
                 await host.StopAsync();
             }
+        }
+
+        private static DurableTaskExtension CreateExtension(ILoggerFactory loggerFactory)
+        {
+            var options = new OptionsWrapper<DurableTaskOptions>(new DurableTaskOptions
+            {
+                HubName = "TestHub",
+                WebhookUriProviderOverride = () => new Uri("https://localhost"),
+            });
+            var nameResolver = TestHelpers.GetTestNameResolver();
+            var platformInformation = TestHelpers.GetMockPlatformInformationService();
+            var storageFactory = new AzureStorageDurabilityProviderFactory(
+                options,
+                new TestStorageServiceClientProviderFactory(),
+                nameResolver,
+                loggerFactory,
+                platformInformation);
+            return new DurableTaskExtension(
+                options,
+                loggerFactory,
+                nameResolver,
+                new[] { storageFactory },
+                new TestHostShutdownNotificationService(),
+                new DurableHttpMessageHandlerFactory(),
+                platformInformationService: platformInformation);
         }
 
         private ILoggerFactory CreateLoggerFactory(out TestLoggerProvider provider)

@@ -22,7 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private readonly ILogger logger;
         private readonly ILoggerFactory? loggerFactory;
-        private readonly Func<string, bool>? isFunctionNameRegistered;
+        private readonly Func<string, string?>? resolveFunctionName;
         private readonly bool traceReplayEvents;
         private readonly bool shouldTraceRawData;
 
@@ -40,14 +40,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             ILoggerFactory loggerFactory,
             bool traceReplayEvents,
             bool shouldTraceRawData = false,
-            Func<string, bool>? isFunctionNameRegistered = null)
+            Func<string, string?>? resolveFunctionName = null)
             : this(
                 (loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory))).CreateLogger(DurableTaskExtension.LoggerCategoryName),
                 traceReplayEvents,
                 shouldTraceRawData)
         {
             this.loggerFactory = loggerFactory;
-            this.isFunctionNameRegistered = isFunctionNameRegistered;
+            this.resolveFunctionName = resolveFunctionName;
         }
 
         public static string LocalAppName
@@ -1204,9 +1204,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private ILogger GetFunctionLogger(string functionName)
         {
-            string category = LogCategories.CreateFunctionUserCategory(functionName);
-            if (!LogCategories.IsFunctionUserCategory(category) ||
-                this.isFunctionNameRegistered?.Invoke(functionName) != true)
+            string? registeredName = string.IsNullOrEmpty(functionName) ? null : this.resolveFunctionName?.Invoke(functionName);
+            string category = LogCategories.CreateFunctionUserCategory(registeredName);
+            if (!LogCategories.IsFunctionUserCategory(category))
             {
                 // Failure paths can lack a valid or locally registered name; they still must not use the host category.
                 category = LogCategories.CreateFunctionUserCategory("DurableTask");
