@@ -682,6 +682,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     if (message is LockMessage lockMessage)
                     {
                         this.Config.TraceHelper.SendingEntityMessage(
+                            this.Name,
                             this.InstanceId,
                             this.ExecutionId,
                             lockMessage.Target.InstanceId,
@@ -702,6 +703,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         }
 
                         this.Config.TraceHelper.SendingEntityMessage(
+                            this.Name,
                             this.InstanceId,
                             this.ExecutionId,
                             resultMessage.Target.InstanceId,
@@ -723,6 +725,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         }
 
                         this.Config.TraceHelper.SendingEntityMessage(
+                            this.Name,
                             this.InstanceId,
                             this.ExecutionId,
                             operationMessage.Target.InstanceId,

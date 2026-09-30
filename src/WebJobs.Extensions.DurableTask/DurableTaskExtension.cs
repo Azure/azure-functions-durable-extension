@@ -61,6 +61,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly ConcurrentDictionary<FunctionName, RegisteredFunctionInfo> knownActivities =
             new ConcurrentDictionary<FunctionName, RegisteredFunctionInfo>();
 
+        // Only registration populates this map; caller casing must not create additional logger categories.
+        private readonly ConcurrentDictionary<FunctionName, string> registeredFunctionNames =
+            new ConcurrentDictionary<FunctionName, string>();
+
         private readonly AsyncLock taskHubLock = new AsyncLock();
         private readonly object protocolLockObject = new ();
         private readonly object taskHubWorkerInitLock = new ();
@@ -129,7 +133,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             ILogger logger = loggerFactory.CreateLogger(LoggerCategoryName);
 
-            this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.Tracing.TraceReplayEvents, this.Options.Tracing.TraceInputsAndOutputs);
+            this.TraceHelper = new EndToEndTraceHelper(
+                loggerFactory,
+                this.Options.Tracing.TraceReplayEvents,
+                this.Options.Tracing.TraceInputsAndOutputs,
+                this.ResolveFunctionName);
             this.LifeCycleNotificationHelper = lifeCycleNotificationHelper ?? this.CreateLifeCycleNotificationHelper();
             this.durabilityProviderFactory = GetDurabilityProviderFactory(this.Options, logger, orchestrationServiceFactories);
             this.defaultDurabilityProvider = this.durabilityProviderFactory.GetDurabilityProvider();
@@ -984,6 +992,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             EventRaisedEvent eventRaisedEvent = (EventRaisedEvent)e;
 
                             this.TraceHelper.DeliveringEntityMessage(
+                                entityContext.Name,
                                 entityContext.InstanceId,
                                 entityContext.ExecutionId,
                                 e.EventId,
@@ -1392,6 +1401,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal void RegisterOrchestrator(FunctionName orchestratorFunction, RegisteredFunctionInfo orchestratorInfo)
         {
+            this.registeredFunctionNames.TryAdd(orchestratorFunction, orchestratorFunction.Name);
             if (orchestratorInfo != null)
             {
                 orchestratorInfo.IsDeregistered = false;
@@ -1430,6 +1440,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal void RegisterActivity(FunctionName activityFunction, ITriggeredFunctionExecutor executor)
         {
+            this.registeredFunctionNames.TryAdd(activityFunction, activityFunction.Name);
             if (this.knownActivities.TryGetValue(activityFunction, out RegisteredFunctionInfo existing))
             {
                 existing.Executor = executor;
@@ -1466,6 +1477,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal void RegisterEntity(FunctionName entityFunction, RegisteredFunctionInfo entityInfo)
         {
+            this.registeredFunctionNames.TryAdd(entityFunction, entityFunction.Name);
             if (entityInfo != null)
             {
                 entityInfo.IsDeregistered = false;
@@ -1523,6 +1535,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 throw new ArgumentException(this.GetInvalidEntityFunctionMessage(name));
             }
+        }
+
+        private string ResolveFunctionName(string name)
+        {
+            this.registeredFunctionNames.TryGetValue(new FunctionName(name), out string registeredName);
+            return registeredName;
         }
 
         internal void ThrowIfOrchestratorFunctionIsDisabled(string name)
