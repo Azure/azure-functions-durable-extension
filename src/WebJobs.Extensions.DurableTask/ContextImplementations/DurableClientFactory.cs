@@ -26,7 +26,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations
         private readonly DurableClientOptions defaultDurableClientOptions;
         private readonly DurableTaskOptions durableTaskOptions;
         private readonly IDurabilityProviderFactory durabilityProviderFactory;
-        private readonly ILogger logger;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="DurableClientFactory"/> class.
@@ -43,8 +42,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations
             ILoggerFactory loggerFactory,
             IMessageSerializerSettingsFactory messageSerializerSettingsFactory = null)
         {
-            this.logger = loggerFactory.CreateLogger(DurableTaskExtension.LoggerCategoryName);
-
             this.durabilityProviderFactory = orchestrationServiceFactory;
             this.defaultDurableClientOptions = defaultDurableClientOptions.Value;
             this.durableTaskOptions = durableTaskOptions?.Value ?? new DurableTaskOptions();
