@@ -53,14 +53,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <summary>
-        /// Passes the names of registered orchestrators, activities, and entities to the factory
+        /// Passes the names of orchestrators, activities, and entities with active listeners to the factory
         /// so that it can build work-item filters for backends that support selective dispatch (e.g., DTS).
-        /// Called after function indexing completes but before the task hub worker starts.
+        /// Called after listeners are created but before the task hub worker starts.
         /// The default implementation is a no-op.
         /// </summary>
-        /// <param name="orchestratorNames">The names of registered orchestrator functions.</param>
-        /// <param name="activityNames">The names of registered activity functions.</param>
-        /// <param name="entityNames">The names of registered entity functions.</param>
+        /// <param name="orchestratorNames">The names of orchestrator functions with active listeners.</param>
+        /// <param name="activityNames">The names of activity functions with active listeners.</param>
+        /// <param name="entityNames">The names of entity functions with active listeners.</param>
         void SetRegisteredFunctions(
             IReadOnlyCollection<string> orchestratorNames,
             IReadOnlyCollection<string> activityNames,
