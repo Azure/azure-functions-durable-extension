@@ -129,7 +129,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             ILogger logger = loggerFactory.CreateLogger(LoggerCategoryName);
 
-            this.TraceHelper = new EndToEndTraceHelper(loggerFactory, this.Options.Tracing.TraceReplayEvents, this.Options.Tracing.TraceInputsAndOutputs);
+            this.TraceHelper = new EndToEndTraceHelper(
+                loggerFactory,
+                this.Options.Tracing.TraceReplayEvents,
+                this.Options.Tracing.TraceInputsAndOutputs,
+                this.IsFunctionNameRegistered);
             this.LifeCycleNotificationHelper = lifeCycleNotificationHelper ?? this.CreateLifeCycleNotificationHelper();
             this.durabilityProviderFactory = GetDurabilityProviderFactory(this.Options, logger, orchestrationServiceFactories);
             this.defaultDurabilityProvider = this.durabilityProviderFactory.GetDurabilityProvider();
@@ -1524,6 +1528,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 throw new ArgumentException(this.GetInvalidEntityFunctionMessage(name));
             }
+        }
+
+        private bool IsFunctionNameRegistered(string name)
+        {
+            var functionName = new FunctionName(name);
+            return this.knownActivities.ContainsKey(functionName) ||
+                this.knownOrchestrators.ContainsKey(functionName) ||
+                this.knownEntities.ContainsKey(functionName);
         }
 
         internal void ThrowIfOrchestratorFunctionIsDisabled(string name)
