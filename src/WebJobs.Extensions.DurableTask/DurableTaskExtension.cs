@@ -655,6 +655,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <returns>A task representing the async delete operation.</returns>
         public Task DeleteTaskHubAsync()
         {
+            // Deletion uses the host's default provider without acquiring a client, so it must
+            // enforce slot isolation here even when no Durable bindings are present.
             this.Options.ValidateHubNameForSlot();
             return this.defaultDurabilityProvider.DeleteAsync();
         }

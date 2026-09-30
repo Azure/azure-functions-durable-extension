@@ -57,6 +57,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations
 
         internal EndToEndTraceHelper TraceHelper { get; private set; }
 
+        // Set by Functions-host DI registration, not Azure environment detection. Enables slot
+        // validation on CreateClient, not factory resolution; standalone factories leave this false.
         internal bool IsInFunctionsHost { get; set; }
 
         /// <summary>
