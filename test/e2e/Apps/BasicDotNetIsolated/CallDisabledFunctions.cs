@@ -18,7 +18,7 @@ public static class CallDisabledFunctions
         [OrchestrationTrigger] TaskOrchestrationContext context)
     {
         // DisabledActivity is indexed but has no active listener (its executor is null), so this
-        // must surface as a deterministic activity failure rather than hanging forever.
+        // fails deterministically with filtering off, or waits for an eligible worker with filtering on.
         return await context.CallActivityAsync<string>(nameof(DisabledActivity), "hello");
     }
 
