@@ -18,6 +18,8 @@
 
 ### Dependency Updates
 
+- Updated `Microsoft.DurableTask.Client.Grpc`, `Microsoft.DurableTask.Worker.Grpc`, and `Microsoft.DurableTask.Abstractions` to 1.26.0, including the fix for external-event loss after canceled waits in the isolated worker.
+
 ## Microsoft.Azure.WebJobs.Extensions.DurableTask
 
 ### New Features
@@ -42,3 +44,7 @@
 ### Dependency Updates
 
 - Remove LegacyLocalGrpcListener and the dependency on Grpc.Core (https://github.com/Azure/azure-functions-durable-extension/pull/3236)
+- Removed the production dependency on `Microsoft.Azure.WebJobs.Logging.ApplicationInsights` to reduce the extension's transitive dependencies while preserving Microsoft Entra authentication for distributed tracing.
+- Updated the Azure Managed SDK references to 1.10.2 for DTS sovereign-cloud token audiences and per-connection authority hosts, including the Functions scale extension and E2E apps.
+- Updated `Grpc.Net.Client` to 2.80.0 and `Microsoft.Bcl.AsyncInterfaces` to 10.0.9 to meet the Azure Managed SDK 1.10.2 dependency requirements.
+- Updated `Microsoft.Azure.DurableTask.AzureStorage` to 2.10.0 and `Microsoft.Azure.DurableTask.Core` to 3.10.0.

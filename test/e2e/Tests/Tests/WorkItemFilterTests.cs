@@ -16,10 +16,10 @@ namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 [Collection(WorkItemFilterCollection.Name)]
 [Trait("AzureStorage", "Skip")] // Work item filtering is a DTS-only feature
 [Trait("MSSQL", "Skip")] // Work item filtering is a DTS-only feature
-[Trait("PowerShell", "Skip")] // AzureManaged 1.10.0 is configured only in the BasicDotNetIsolated test app
-[Trait("Python", "Skip")] // AzureManaged 1.10.0 is configured only in the BasicDotNetIsolated test app
-[Trait("Node", "Skip")] // AzureManaged 1.10.0 is configured only in the BasicDotNetIsolated test app
-[Trait("Java", "Skip")] // AzureManaged 1.10.0 is configured only in the BasicDotNetIsolated test app
+[Trait("PowerShell", "Skip")] // Suite requires GetMainActivityInfoOrchestration, implemented only in BasicDotNetIsolated
+[Trait("Python", "Skip")] // Suite requires GetMainActivityInfoOrchestration, implemented only in BasicDotNetIsolated
+[Trait("Node", "Skip")] // Suite requires GetMainActivityInfoOrchestration, implemented only in BasicDotNetIsolated
+[Trait("Java", "Skip")] // Suite requires GetMainActivityInfoOrchestration, implemented only in BasicDotNetIsolated
 public class WorkItemFilterTests
 {
     private readonly WorkItemFilterFixture fixture;
