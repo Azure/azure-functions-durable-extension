@@ -1,0 +1,12 @@
+<Project>
+  <PropertyGroup Condition="'$(MSBuildProjectFile)' == 'WorkerExtensions.csproj'">
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>false</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+  <Import Condition="'$(MSBuildProjectFile)' != 'WorkerExtensions.csproj'"
+          Project="$([MSBuild]::GetPathOfFileAbove(Directory.Packages.props, $(MSBuildThisFileDirectory)..))" />
+  <ItemGroup Condition="'$(MSBuildProjectFile)' != 'WorkerExtensions.csproj'">
+    <PackageVersion Include="Microsoft.Azure.Functions.Worker.Extensions.DurableTask" Version="1.19.1" />
+    <PackageVersion Include="Microsoft.Azure.Functions.Worker.Extensions.DurableTask.AzureBlobPayloads" Version="$(PurgeFunctionsPackageVersion)" Condition="'$(PurgeFunctionsPackageVersion)' != ''" />
+  </ItemGroup>
+</Project>

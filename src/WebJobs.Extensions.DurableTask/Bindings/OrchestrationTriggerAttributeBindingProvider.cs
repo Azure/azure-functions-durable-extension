@@ -69,6 +69,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 throw new ArgumentException("Orchestration names must not start with @.");
             }
 
+            if (trigger.LargePayloadPurge)
+            {
+                this.config.RegisterLargePayloadPurgeOrchestration(name);
+            }
+
             this.config.RegisterOrchestrator(orchestratorName, null);
             if (trigger.DurableRequiresGrpc)
             {
