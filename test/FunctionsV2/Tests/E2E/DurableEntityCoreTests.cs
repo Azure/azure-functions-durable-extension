@@ -626,7 +626,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 var timeout = Debugger.IsAttached ? TimeSpan.FromMinutes(5) : TimeSpan.FromSeconds(60);
                 var state = await client.WaitForEntityState<TestEntityClasses.SelfSchedulingEntity>(this.output, timeout, curstate => curstate.Value.Length == 4 ? null : "expect 4 letters");
 
-                Assert.Equal("ABCD", state.Value);
+                // Scheduled signals do not guarantee delivery order.
+                Assert.Equal("ABCD", new string(state.Value.OrderBy(letter => letter).ToArray()));
 
                 await host.StopAsync();
             }
