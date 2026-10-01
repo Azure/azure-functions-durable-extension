@@ -43,7 +43,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             IReadOnlyList<LargePayloadTombstone> tombstones;
             try
             {
-                tombstones = await purgeClient.GetLargePayloadsToPurgeAsync(request.Limit, context.Deadline, context.CancellationToken);
+                tombstones = await purgeClient.GetLargePayloadTombstonesAsync(request.Limit, context.Deadline, context.CancellationToken);
             }
             catch (NotSupportedException exception)
             {

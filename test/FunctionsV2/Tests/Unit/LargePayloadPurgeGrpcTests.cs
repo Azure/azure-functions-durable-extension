@@ -94,8 +94,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Mock<IOrchestrationServiceLargePayloadPurgeClient> provider = providers[i];
                 IReadOnlyList<LargePayloadPurgeResult> received = null;
                 provider.Setup(p => p.SetLargePayloadAutoPurgeAsync(enabled, deadline, cancellation.Token)).Returns(Task.CompletedTask);
-                provider.Setup(p => p.GetLargePayloadsToPurgeAsync(17, deadline, cancellation.Token))
-                    .ReturnsAsync(new[] { new LargePayloadTombstone(TombstoneToken, PayloadToken) });
+                provider.Setup(p => p.GetLargePayloadTombstonesAsync(17, deadline, cancellation.Token))
+                    .ReturnsAsync(new List<LargePayloadTombstone> { new LargePayloadTombstone(TombstoneToken, PayloadToken) });
                 provider.Setup(p => p.ReportLargePayloadPurgeResultsAsync(It.IsAny<IReadOnlyList<LargePayloadPurgeResult>>(), deadline, cancellation.Token))
                     .Callback<IReadOnlyList<LargePayloadPurgeResult>, DateTime, CancellationToken>((results, _, _) => received = results)
                     .Returns(Task.CompletedTask);
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Assert.Equal(dispositions, received.Select(result => (int)result.Disposition));
                 Assert.All(received, result => Assert.Equal(TombstoneToken, result.TombstoneToken));
                 provider.Verify(p => p.SetLargePayloadAutoPurgeAsync(enabled, deadline, cancellation.Token), Times.Once);
-                provider.Verify(p => p.GetLargePayloadsToPurgeAsync(17, deadline, cancellation.Token), Times.Once);
+                provider.Verify(p => p.GetLargePayloadTombstonesAsync(17, deadline, cancellation.Token), Times.Once);
                 provider.Verify(p => p.ReportLargePayloadPurgeResultsAsync(It.IsAny<IReadOnlyList<LargePayloadPurgeResult>>(), deadline, cancellation.Token), Times.Once);
                 provider.VerifyNoOtherCalls();
                 fixture.Factory.Verify(
@@ -203,7 +203,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Mock<IOrchestrationServiceLargePayloadPurgeClient> client = fixture.AddProvider("Hub", "Connection");
             var failure = new RpcException(new Status(status, "backend status"), new Metadata { { "backend-detail", "opaque" } });
             client.Setup(c => c.SetLargePayloadAutoPurgeAsync(true, DateTime.MaxValue, default)).ThrowsAsync(failure);
-            client.Setup(c => c.GetLargePayloadsToPurgeAsync(17, DateTime.MaxValue, default)).ThrowsAsync(failure);
+            client.Setup(c => c.GetLargePayloadTombstonesAsync(17, DateTime.MaxValue, default)).ThrowsAsync(failure);
             client.Setup(c => c.ReportLargePayloadPurgeResultsAsync(
                 It.IsAny<IReadOnlyList<LargePayloadPurgeResult>>(), DateTime.MaxValue, default)).ThrowsAsync(failure);
 
@@ -240,7 +240,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 ? new OperationCanceledException(cancellation.Token)
                 : new RpcException(new Status(StatusCode.ResourceExhausted, "backend failure"), new Metadata { { "failure-id", "opaque" } });
             provider.Setup(p => p.SetLargePayloadAutoPurgeAsync(true, deadline, cancellation.Token)).ThrowsAsync(failure);
-            provider.Setup(p => p.GetLargePayloadsToPurgeAsync(17, deadline, cancellation.Token)).ThrowsAsync(failure);
+            provider.Setup(p => p.GetLargePayloadTombstonesAsync(17, deadline, cancellation.Token)).ThrowsAsync(failure);
             provider.Setup(p => p.ReportLargePayloadPurgeResultsAsync(It.IsAny<IReadOnlyList<LargePayloadPurgeResult>>(), deadline, cancellation.Token)).ThrowsAsync(failure);
 
             Exception actual = await Assert.ThrowsAnyAsync<Exception>(() => InvokeAsync(fixture.Server, operation, context));
@@ -271,8 +271,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             using var fixture = new BridgeFixture(this.output);
             Mock<IOrchestrationServiceLargePayloadPurgeClient> provider = fixture.AddProvider("WireHub", "WireConnection");
             provider.Setup(p => p.SetLargePayloadAutoPurgeAsync(true, DateTime.MaxValue, It.IsAny<CancellationToken>())).Returns(Task.CompletedTask).Verifiable();
-            provider.Setup(p => p.GetLargePayloadsToPurgeAsync(17, DateTime.MaxValue, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new[] { new LargePayloadTombstone(TombstoneToken, PayloadToken) }).Verifiable();
+            provider.Setup(p => p.GetLargePayloadTombstonesAsync(17, DateTime.MaxValue, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<LargePayloadTombstone> { new LargePayloadTombstone(TombstoneToken, PayloadToken) }).Verifiable();
             provider.Setup(p => p.ReportLargePayloadPurgeResultsAsync(
                 It.Is<IReadOnlyList<LargePayloadPurgeResult>>(r => r.Count == 1 && r[0].TombstoneToken == TombstoneToken && r[0].Disposition == LargePayloadPurgeDisposition.Retry),
                 DateTime.MaxValue,
@@ -331,7 +331,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Mock<IOrchestrationServiceLargePayloadPurgeClient> provider = fixture.AddProvider("FailureHub", "FailureConnection");
             var failure = new InvalidOperationException("Purge provider failure.");
             provider.Setup(p => p.SetLargePayloadAutoPurgeAsync(true, DateTime.MaxValue, It.IsAny<CancellationToken>())).ThrowsAsync(failure);
-            provider.Setup(p => p.GetLargePayloadsToPurgeAsync(17, DateTime.MaxValue, It.IsAny<CancellationToken>())).ThrowsAsync(failure);
+            provider.Setup(p => p.GetLargePayloadTombstonesAsync(17, DateTime.MaxValue, It.IsAny<CancellationToken>())).ThrowsAsync(failure);
             provider.Setup(p => p.ReportLargePayloadPurgeResultsAsync(It.IsAny<IReadOnlyList<LargePayloadPurgeResult>>(), DateTime.MaxValue, It.IsAny<CancellationToken>())).ThrowsAsync(failure);
             ILocalGrpcListener listener = LocalGrpcListener.Create(fixture.Extension, (LocalGrpcListenerMode)mode);
 

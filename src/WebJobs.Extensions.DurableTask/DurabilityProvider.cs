@@ -13,6 +13,7 @@ using DurableTask.Core.History;
 using DurableTask.Core.Query;
 using DurableTask.LargePayloadPurge;
 using Microsoft.Azure.WebJobs.Host.Scale;
+using Microsoft.DurableTask.AzureBlobPayloads;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using LargePayloadPurgeResult = Microsoft.DurableTask.Client.LargePayloadPurgeResult;
@@ -612,12 +613,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
-        Task<IReadOnlyList<LargePayloadTombstone>> IOrchestrationServiceLargePayloadPurgeClient.GetLargePayloadsToPurgeAsync(
+        Task<List<LargePayloadTombstone>> ILargePayloadPurgeClient.GetLargePayloadTombstonesAsync(
             int limit, DateTime deadlineUtc, CancellationToken cancellationToken)
         {
             if (this.innerServiceClient is IOrchestrationServiceLargePayloadPurgeClient purgeClient)
             {
-                return purgeClient.GetLargePayloadsToPurgeAsync(limit, deadlineUtc, cancellationToken);
+                return purgeClient.GetLargePayloadTombstonesAsync(limit, deadlineUtc, cancellationToken);
             }
             else
             {
@@ -626,7 +627,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc />
-        Task IOrchestrationServiceLargePayloadPurgeClient.ReportLargePayloadPurgeResultsAsync(
+        Task ILargePayloadPurgeClient.ReportLargePayloadPurgeResultsAsync(
             IReadOnlyList<LargePayloadPurgeResult> results, DateTime deadlineUtc, CancellationToken cancellationToken)
         {
             if (this.innerServiceClient is IOrchestrationServiceLargePayloadPurgeClient purgeClient)

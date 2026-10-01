@@ -18,6 +18,10 @@ public class FunctionsLargePayloadPurgeClientTests
     public void ClientFacadeLivesInContractsAndBaseWorkerDoesNotReferenceBlobImplementation()
     {
         Assert.Same(typeof(IOrchestrationServiceLargePayloadPurgeClient).Assembly, typeof(ILargePayloadPurgeClient).Assembly);
+        Assert.Equal(
+            "Microsoft.DurableTask.LargePayloadPurge.Abstractions, Version=0.1.0.0, Culture=neutral, PublicKeyToken=6a4c0315c2d1d937",
+            typeof(ILargePayloadPurgeClient).Assembly.FullName);
+        Assert.Equal(typeof(ILargePayloadPurgeClient), Assert.Single(typeof(IOrchestrationServiceLargePayloadPurgeClient).GetInterfaces()));
         Assert.Equal(2, typeof(ILargePayloadPurgeClient).Assembly.GetExportedTypes().Length);
         Assert.DoesNotContain(typeof(FunctionsDurableClientProvider).Assembly.GetReferencedAssemblies(),
             reference => reference.Name == "Microsoft.DurableTask.Extensions.AzureBlobPayloads"

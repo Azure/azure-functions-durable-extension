@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
 using DurableTask.LargePayloadPurge;
+using Microsoft.DurableTask.AzureBlobPayloads;
 using Microsoft.DurableTask.Client;
 using Moq;
 using Xunit;
@@ -21,13 +22,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             Type capability = typeof(IOrchestrationServiceLargePayloadPurgeClient);
             Assert.Equal("DurableTask.LargePayloadPurge", capability.Namespace);
-            Assert.Equal("DurableTask.LargePayloadPurge.Abstractions", capability.Assembly.GetName().Name);
             Assert.Equal(
-                typeof(Task<IReadOnlyList<LargePayloadTombstone>>),
-                capability.GetMethod(nameof(IOrchestrationServiceLargePayloadPurgeClient.GetLargePayloadsToPurgeAsync)).ReturnType);
+                "Microsoft.DurableTask.LargePayloadPurge.Abstractions, Version=0.1.0.0, Culture=neutral, PublicKeyToken=6a4c0315c2d1d937",
+                capability.Assembly.FullName);
+            Type shared = Assert.Single(capability.GetInterfaces());
+            Assert.Equal(typeof(ILargePayloadPurgeClient), shared);
+            Assert.Same(capability.Assembly, shared.Assembly);
+            Assert.Equal(nameof(IOrchestrationServiceLargePayloadPurgeClient.SetLargePayloadAutoPurgeAsync), Assert.Single(capability.GetMethods()).Name);
+            Assert.Equal(2, shared.GetMethods().Length);
+            Assert.Equal(
+                typeof(Task<List<LargePayloadTombstone>>),
+                shared.GetMethod(nameof(ILargePayloadPurgeClient.GetLargePayloadTombstonesAsync)).ReturnType);
             Assert.Equal(
                 typeof(IReadOnlyList<LargePayloadPurgeResult>),
-                capability.GetMethod(nameof(IOrchestrationServiceLargePayloadPurgeClient.ReportLargePayloadPurgeResultsAsync)).GetParameters()[0].ParameterType);
+                shared.GetMethod(nameof(ILargePayloadPurgeClient.ReportLargePayloadPurgeResultsAsync)).GetParameters()[0].ParameterType);
             Assert.Equal("Microsoft.DurableTask.Client", typeof(LargePayloadTombstone).Assembly.GetName().Name);
             Assert.Same(typeof(LargePayloadTombstone).Assembly, typeof(LargePayloadPurgeResult).Assembly);
             Assert.Same(typeof(LargePayloadTombstone).Assembly, typeof(LargePayloadPurgeDisposition).Assembly);
@@ -48,25 +56,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             cancellation.Cancel();
             DateTime deadline = enabled ? DateTime.UtcNow.AddMinutes(1) : DateTime.MaxValue;
             var setting = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-            IReadOnlyList<LargePayloadTombstone> tombstones = new[]
+            var tombstones = new List<LargePayloadTombstone>
             {
                 new LargePayloadTombstone(" opaque:/+== ", "blob:v2:uninterpreted"),
             };
-            Task<IReadOnlyList<LargePayloadTombstone>> fetch = Task.FromResult(tombstones);
+            Task<List<LargePayloadTombstone>> fetch = Task.FromResult(tombstones);
             IReadOnlyList<LargePayloadPurgeResult> results = new[]
             {
                 new LargePayloadPurgeResult(tombstones[0].TombstoneToken, (LargePayloadPurgeDisposition)73),
             };
             var report = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             capability.Setup(c => c.SetLargePayloadAutoPurgeAsync(enabled, deadline, cancellation.Token)).Returns(setting.Task);
-            capability.Setup(c => c.GetLargePayloadsToPurgeAsync(17, deadline, cancellation.Token)).Returns(fetch);
+            capability.Setup(c => c.GetLargePayloadTombstonesAsync(17, deadline, cancellation.Token)).Returns(fetch);
             capability.Setup(c => c.ReportLargePayloadPurgeResultsAsync(
                 It.Is<IReadOnlyList<LargePayloadPurgeResult>>(value => ReferenceEquals(value, results)), deadline, cancellation.Token))
                 .Returns(report.Task);
 
             Assert.Same(setting.Task, forwarder.SetLargePayloadAutoPurgeAsync(enabled, deadline, cancellation.Token));
-            Task<IReadOnlyList<LargePayloadTombstone>> actualFetch =
-                forwarder.GetLargePayloadsToPurgeAsync(17, deadline, cancellation.Token);
+            Task<List<LargePayloadTombstone>> actualFetch =
+                forwarder.GetLargePayloadTombstonesAsync(17, deadline, cancellation.Token);
             Assert.Same(fetch, actualFetch);
             Assert.Same(tombstones, await actualFetch);
             Assert.Same(report.Task, forwarder.ReportLargePayloadPurgeResultsAsync(results, deadline, cancellation.Token));
@@ -96,6 +104,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
+        [InlineData("Set")]
+        [InlineData("Get")]
+        [InlineData("Report")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void SharedFacadeAloneDoesNotAdvertiseServiceCapability(string operation)
+        {
+            var inner = new Mock<IOrchestrationServiceClient>(MockBehavior.Strict);
+            inner.As<ILargePayloadPurgeClient>();
+            var provider = new DurabilityProvider("Unsupported", Mock.Of<IOrchestrationService>(), inner.Object, "Connection");
+            var forwarder = Assert.IsAssignableFrom<IOrchestrationServiceLargePayloadPurgeClient>(provider);
+
+            Assert.Throws<NotSupportedException>(() => { _ = InvokeAsync(forwarder, operation); });
+
+            inner.VerifyNoOtherCalls();
+        }
+
+        [Theory]
         [InlineData("Set", false)]
         [InlineData("Get", false)]
         [InlineData("Report", false)]
@@ -111,14 +136,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             if (synchronous)
             {
                 capability.Setup(c => c.SetLargePayloadAutoPurgeAsync(true, DateTime.MaxValue, default)).Throws(failure);
-                capability.Setup(c => c.GetLargePayloadsToPurgeAsync(17, DateTime.MaxValue, default)).Throws(failure);
+                capability.Setup(c => c.GetLargePayloadTombstonesAsync(17, DateTime.MaxValue, default)).Throws(failure);
                 capability.Setup(c => c.ReportLargePayloadPurgeResultsAsync(
                     It.IsAny<IReadOnlyList<LargePayloadPurgeResult>>(), DateTime.MaxValue, default)).Throws(failure);
             }
             else
             {
                 capability.Setup(c => c.SetLargePayloadAutoPurgeAsync(true, DateTime.MaxValue, default)).ThrowsAsync(failure);
-                capability.Setup(c => c.GetLargePayloadsToPurgeAsync(17, DateTime.MaxValue, default)).ThrowsAsync(failure);
+                capability.Setup(c => c.GetLargePayloadTombstonesAsync(17, DateTime.MaxValue, default)).ThrowsAsync(failure);
                 capability.Setup(c => c.ReportLargePayloadPurgeResultsAsync(
                     It.IsAny<IReadOnlyList<LargePayloadPurgeResult>>(), DateTime.MaxValue, default)).ThrowsAsync(failure);
             }
@@ -134,7 +159,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return operation switch
             {
                 "Set" => client.SetLargePayloadAutoPurgeAsync(true, DateTime.MaxValue, default),
-                "Get" => client.GetLargePayloadsToPurgeAsync(17, DateTime.MaxValue, default),
+                "Get" => client.GetLargePayloadTombstonesAsync(17, DateTime.MaxValue, default),
                 "Report" => client.ReportLargePayloadPurgeResultsAsync(Array.Empty<LargePayloadPurgeResult>(), DateTime.MaxValue, default),
                 _ => throw new ArgumentOutOfRangeException(nameof(operation)),
             };
