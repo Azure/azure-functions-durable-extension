@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Security.Authentication;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure.Identity;
@@ -26,6 +27,58 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     {
         private const string SystemAssigned = "Authorization=AAD";
         private const string UserAssigned = "Authorization=AAD;ClientId=00000000-0000-0000-0000-000000000001";
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(SystemAssigned, null)]
+        [InlineData(UserAssigned, "00000000-0000-0000-0000-000000000001")]
+        [InlineData(" authoRization = aad ;; ClIentId = 00000000-0000-0000-0000-000000000001 ", "00000000-0000-0000-0000-000000000001")]
+        [InlineData("\tAuthorization\r\n=\taAd\r\n;\t", null)]
+        [InlineData("ClientId=00000000-0000-0000-0000-000000000001;Authorization=AAD", "00000000-0000-0000-0000-000000000001")]
+        [InlineData("Authorization=AAD;ClientId={00000000-0000-0000-0000-000000000001}", "{00000000-0000-0000-0000-000000000001}")]
+        [InlineData("Authorization=AAD;ClientId=00000000000000000000000000000001", "00000000000000000000000000000001")]
+        [InlineData("Authorization=AAD;ClientId=ABCDEF00-0000-0000-0000-000000000001", "ABCDEF00-0000-0000-0000-000000000001")]
+        [InlineData("Authorization=AAD;ClientId=00000000-0000-0000-0000-000000000000", "00000000-0000-0000-0000-000000000000")]
+        [InlineData("Authorization=AAD;Authorization=aad;", null)]
+        [InlineData(UserAssigned + ";ClientId=00000000-0000-0000-0000-000000000002", "00000000-0000-0000-0000-000000000002")]
+        [InlineData(";;; Authorization=AAD ;;;", null)]
+        [InlineData("Unknown=ignored;Authorization=AAD;Other=value=with=equals", null)]
+        [InlineData("ignored;Authorization=AAD;ClientId;Authorization", null)]
+        [InlineData("=ignored; =ignored;Authorization=AAD", null)]
+        public void ParseManagedIdentityClientId_ValidInput_MatchesHostParser(string authenticationString, string expectedClientId)
+        {
+            string clientId = TelemetryActivator.ParseManagedIdentityClientId(authenticationString);
+
+            Assert.Equal(expectedClientId, clientId);
+            Assert.Equal(ApplicationInsightsTokenCredentialOptions.ParseAuthenticationString(authenticationString).ClientId, clientId);
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(null, typeof(ArgumentNullException))]
+        [InlineData("", typeof(ArgumentNullException))]
+        [InlineData(" \t\r\n ", typeof(ArgumentNullException))]
+        [InlineData(";", typeof(InvalidCredentialException))]
+        [InlineData("ignored;=AAD;Unknown=AAD", typeof(InvalidCredentialException))]
+        [InlineData("Authorization", typeof(InvalidCredentialException))]
+        [InlineData("Authorization=", typeof(InvalidCredentialException))]
+        [InlineData("Authorization=AAD1", typeof(InvalidCredentialException))]
+        [InlineData("Authorization=AAD=extra", typeof(InvalidCredentialException))]
+        [InlineData("Auth123=AAD", typeof(InvalidCredentialException))]
+        [InlineData("ClientId=00000000-0000-0000-0000-000000000001", typeof(InvalidCredentialException))]
+        [InlineData("Authorization=AAD;ClientId=", typeof(FormatException))]
+        [InlineData("Authorization=AAD;ClientId= \t ", typeof(FormatException))]
+        [InlineData("Authorization=AAD;ClientId=123", typeof(FormatException))]
+        [InlineData(UserAssigned + "=extra", typeof(FormatException))]
+        [InlineData(UserAssigned + ";ClientId=invalid", typeof(FormatException))]
+        [InlineData("ClientId=invalid;" + UserAssigned, typeof(FormatException))]
+        [InlineData("Authorization=AAD;Authorization=invalid", typeof(InvalidCredentialException))]
+        [InlineData("Authorization=invalid;Authorization=AAD", typeof(InvalidCredentialException))]
+        public void ParseManagedIdentityClientId_InvalidInput_MatchesHostParser(string authenticationString, Type exceptionType)
+        {
+            Assert.IsType(exceptionType, Record.Exception(() => TelemetryActivator.ParseManagedIdentityClientId(authenticationString)));
+            Assert.IsType(exceptionType, Record.Exception(() => ApplicationInsightsTokenCredentialOptions.ParseAuthenticationString(authenticationString)));
+        }
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
@@ -213,7 +266,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             bool reusedHostChannel = TelemetryActivator.ApplyEntraAuthentication(
                 durableConfiguration,
                 hostConfiguration,
-                ApplicationInsightsTokenCredentialOptions.ParseAuthenticationString(SystemAssigned),
+                TelemetryActivator.ParseManagedIdentityClientId(SystemAssigned),
                 preserveExistingChannel: true);
 
             Assert.False(reusedHostChannel);
@@ -288,7 +341,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return TelemetryActivator.ApplyEntraAuthentication(
                 durableConfiguration,
                 hostConfiguration,
-                ApplicationInsightsTokenCredentialOptions.ParseAuthenticationString(authenticationString));
+                TelemetryActivator.ParseManagedIdentityClientId(authenticationString));
         }
 
         /// <summary>

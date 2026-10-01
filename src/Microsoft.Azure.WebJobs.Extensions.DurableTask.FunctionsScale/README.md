@@ -31,3 +31,43 @@ This package supports scaling for all four Durable Functions storage backends:
 3. MSSQL
 4. DurableTask Scheduler
 
+## DTS connections in sovereign clouds
+
+The Azure Managed SDK parses the DTS connection string for both the Durable Functions
+provider and this scale extension. SDK version 1.10.2 supports independent settings for
+the scheduler endpoint, token audience (`ResourceId`), and Microsoft Entra authority
+(`AuthorityHost`). For example, set `DURABLE_TASK_SCHEDULER_CONNECTION_STRING` to:
+
+```text
+Endpoint=https://<scheduler-endpoint>;TaskHub=<task-hub>;Authentication=DefaultAzure;ResourceId=https://durabletask.azure.us;AuthorityHost=https://login.microsoftonline.us/
+```
+
+- `ResourceId` explicitly selects the token audience, including for credentials supplied
+  by the Scale Controller. If omitted or empty, the SDK uses
+  `https://durabletask.azure.us` when the current process's `REGION_NAME` starts with
+  `usgov` or `usdod` (case-insensitive), and `https://durabletask.io` otherwise.
+  Set it explicitly when running locally or when the scaling process's region does not
+  identify the target cloud. Other clouds require their appropriate resource ID.
+  The SDK normalizes surrounding whitespace, trailing slashes, and an existing
+  `/.default` suffix before requesting the token scope.
+- `AuthorityHost` must be an absolute HTTPS URI. It overrides the authority for
+  SDK-created authority-aware credentials (`DefaultAzure`, `Environment`,
+  `WorkloadIdentity`, and `InteractiveBrowser`). If omitted or empty, Azure Identity
+  retains its `AZURE_AUTHORITY_HOST` setting or Azure Public default. The SDK does not
+  infer the authority from `REGION_NAME` or `ResourceId`. Managed identity and
+  developer-tool credentials use their platform/tool cloud configuration.
+- When trigger metadata supplies `GetAzureManagedTokenCredential`, the scale extension
+  preserves that credential instead of the SDK-created one. The Scale Controller must
+  configure its credential for the target cloud; `AuthorityHost` does not reconfigure
+  externally supplied credentials. `ResourceId` still determines the requested audience.
+
+No separate Durable Functions `host.json` authority or audience setting is needed.
+Applications must also use the appropriate Azure Managed provider package version
+1.10.2 or later:
+
+- .NET isolated: [`Microsoft.Azure.Functions.Worker.Extensions.DurableTask.AzureManaged`](https://www.nuget.org/packages/Microsoft.Azure.Functions.Worker.Extensions.DurableTask.AzureManaged/1.10.2).
+- WebJobs/non-.NET: [`Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureManaged`](https://www.nuget.org/packages/Microsoft.Azure.WebJobs.Extensions.DurableTask.AzureManaged/1.10.2).
+
+Both provider packages have a published 1.10.2 release. If the application directly
+references `Microsoft.DurableTask.AzureManagedBackend`, align it to 1.10.2 or later as
+well. Upgrading the scale extension alone does not upgrade the application's provider.
