@@ -383,6 +383,68 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Null(capturedEvent.Tags);
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task RestartWithOptionsAsync_RemovesInheritedCloneMetadataFromSubOrchestration()
+        {
+            const string InstanceId = "sub-orchestration";
+            const string FunctionName = "RestartedOrchestrator";
+            var tags = new Dictionary<string, string>
+            {
+                ["custom"] = "value",
+                [DurableClient.SourceInstanceIdTag] = "inherited-source",
+            };
+            ExecutionStartedEvent capturedEvent = null;
+            var serviceClient = new Mock<IOrchestrationServiceClient>();
+            serviceClient
+                .Setup(x => x.GetOrchestrationStateAsync(InstanceId, false))
+                .ReturnsAsync(
+                    new List<OrchestrationState>
+                    {
+                        new OrchestrationState
+                        {
+                            Name = FunctionName,
+                            Input = "null",
+                            OrchestrationInstance = new OrchestrationInstance { InstanceId = InstanceId },
+                            OrchestrationStatus = OrchestrationStatus.Completed,
+                            ParentInstance = new ParentInstance
+                            {
+                                OrchestrationInstance = new OrchestrationInstance { InstanceId = "parent-instance" },
+                            },
+                            Tags = tags,
+                        },
+                    });
+            serviceClient
+                .Setup(x => x.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()))
+                .Callback<TaskMessage, OrchestrationStatus[]>((message, _) =>
+                {
+                    capturedEvent = message.Event as ExecutionStartedEvent;
+                })
+                .Returns(Task.CompletedTask);
+            var storageProvider = new DurabilityProvider(
+                "clientProvider",
+                new Mock<IOrchestrationService>().Object,
+                serviceClient.Object,
+                TestConstants.ConnectionName);
+            var extension = GetDurableTaskConfig();
+            extension.RegisterOrchestrator(
+                new FunctionName(FunctionName),
+                new RegisteredFunctionInfo(executor: null, isOutOfProc: true));
+            var client = new DurableClient(
+                storageProvider,
+                extension,
+                extension.HttpApiHandler,
+                new DurableClientAttribute());
+
+            string result = await client.RestartWithOptionsAsync(InstanceId, InstanceId, version: null);
+
+            Assert.Equal(InstanceId, result);
+            Assert.NotNull(capturedEvent);
+            Assert.Equal("value", capturedEvent.Tags["custom"]);
+            Assert.False(capturedEvent.Tags.ContainsKey(DurableClient.SourceInstanceIdTag));
+            Assert.Equal("inherited-source", tags[DurableClient.SourceInstanceIdTag]);
+        }
+
         public static IEnumerable<object[]> InvalidRestartTargetInstanceIds()
         {
             yield return new object[] { null };

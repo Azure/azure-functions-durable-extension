@@ -809,6 +809,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 context.ParentInstanceId = orchestrationRuntimeState.ParentInstance.OrchestrationInstance.InstanceId;
             }
+
             context.SourceInstanceId = GetSourceInstanceId(orchestrationRuntimeState);
 
             context.InstanceId = orchestrationRuntimeState.OrchestrationInstance?.InstanceId;

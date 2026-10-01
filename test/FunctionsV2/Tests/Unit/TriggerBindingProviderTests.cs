@@ -8,8 +8,9 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using DurableTask.Core;
 using DurableTask.AzureStorage;
+using DurableTask.Core;
+using DurableTask.Core.History;
 using Microsoft.Azure.WebJobs.Host.Triggers;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -104,6 +105,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 durabilityProvider,
                 "TestStringOrchestrator")
             {
+                History = new List<HistoryEvent>(),
                 InstanceId = "clone-instance",
                 SourceInstanceId = "source-instance",
             };

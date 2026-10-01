@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.Command;
 using DurableTask.Core.Entities.OperationFormat;
 using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
@@ -18,6 +19,7 @@ using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
+using Newtonsoft.Json;
 using Xunit;
 using P = Microsoft.DurableTask.Protobuf;
 
@@ -27,6 +29,122 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     {
         private const string NoWorkerInitializedMessage = "Did not find any initialized language workers";
         private const string AssemblyNotLoadedMessage = "Could not load file or assembly";
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void RemoteResult_RejectsReservedSubOrchestrationTag(bool useJson, bool completionFirst)
+        {
+            var context = new RemoteOrchestratorContext(
+                new OrchestrationRuntimeState(),
+                entityParameters: null,
+                new DurableTaskOptions(),
+                isExtendedSession: false,
+                includePastEvents: true);
+            var protoAction = new P.OrchestratorAction
+            {
+                Id = 1,
+                CreateSubOrchestration = new P.CreateSubOrchestrationAction
+                {
+                    Name = "Child",
+                    InstanceId = "child-instance",
+                },
+            };
+            protoAction.CreateSubOrchestration.Tags.Add(DurableClient.SourceInstanceIdTag, "forged-source");
+            protoAction.CreateSubOrchestration.Tags.Add("custom", "value");
+            var actions = new List<OrchestratorAction>();
+            if (completionFirst)
+            {
+                actions.Add(new OrchestrationCompleteOrchestratorAction
+                {
+                    OrchestrationStatus = OrchestrationStatus.Completed,
+                });
+            }
+
+            actions.Add(ProtobufUtils.ToOrchestratorAction(protoAction));
+
+            ArgumentException exception = Assert.Throws<ArgumentException>(() =>
+            {
+                if (useJson)
+                {
+                    context.SetResult(JsonConvert.SerializeObject(new OrchestratorExecutionResult
+                    {
+                        Actions = actions,
+                        CustomStatus = null,
+                    }));
+                }
+                else
+                {
+                    context.SetResult(actions, customStatus: null);
+                }
+            });
+
+            Assert.Contains(DurableClient.SourceInstanceIdTag, exception.Message);
+            Assert.False(context.OrchestratorCompleted);
+            Assert.Throws<InvalidOperationException>(() => context.GetResult());
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void RemoteResult_PreservesSubOrchestrationTagsAndParentCloneMetadata(bool useJson, bool hasCustomTag)
+        {
+            var startedEvent = new ExecutionStartedEvent(-1, null)
+            {
+                Tags = new Dictionary<string, string>
+                {
+                    [DurableClient.SourceInstanceIdTag] = "source-instance",
+                },
+            };
+            var context = new RemoteOrchestratorContext(
+                new OrchestrationRuntimeState([startedEvent]),
+                entityParameters: null,
+                new DurableTaskOptions(),
+                isExtendedSession: false,
+                includePastEvents: true);
+            var protoAction = new P.OrchestratorAction
+            {
+                Id = 1,
+                CreateSubOrchestration = new P.CreateSubOrchestrationAction
+                {
+                    Name = "Child",
+                    InstanceId = "child-instance",
+                },
+            };
+            if (hasCustomTag)
+            {
+                protoAction.CreateSubOrchestration.Tags.Add("custom", "value");
+            }
+
+            var actions = new[] { ProtobufUtils.ToOrchestratorAction(protoAction) };
+            if (useJson)
+            {
+                context.SetResult(JsonConvert.SerializeObject(new OrchestratorExecutionResult
+                {
+                    Actions = actions,
+                    CustomStatus = null,
+                }));
+            }
+            else
+            {
+                context.SetResult(actions, customStatus: null);
+            }
+
+            var child = Assert.IsType<CreateSubOrchestrationAction>(Assert.Single(context.GetResult().Actions));
+            Assert.Equal(hasCustomTag ? 1 : 0, child.Tags?.Count ?? 0);
+            if (hasCustomTag)
+            {
+                Assert.Equal("value", child.Tags["custom"]);
+            }
+
+            Assert.Equal("source-instance", startedEvent.Tags[DurableClient.SourceInstanceIdTag]);
+        }
 
         [Theory]
         [InlineData(false, "source-instance")]

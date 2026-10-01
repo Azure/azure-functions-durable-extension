@@ -1308,6 +1308,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     : new Dictionary<string, string>(state.Tags);
                 tags[SourceInstanceIdTag] = sourceInstanceId;
             }
+            else if (state.ParentInstance != null && state.Tags?.ContainsKey(SourceInstanceIdTag) == true)
+            {
+                var filteredTags = new Dictionary<string, string>(state.Tags);
+                filteredTags.Remove(SourceInstanceIdTag);
+                tags = filteredTags.Count == 0 ? null : filteredTags;
+            }
 
             return await this.CreateOrchestrationInstanceAndTraceAsync(
                 orchestratorFunctionName: state.Name,
