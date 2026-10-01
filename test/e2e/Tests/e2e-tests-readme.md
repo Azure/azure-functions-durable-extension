@@ -66,7 +66,7 @@ build-e2e-test.ps1 includes several flags to assist setup for other storage back
 
 For MSSQL, you can use `-StartMSSqlContainer` to spin up a MSSQL docker container. Define the sa password you will use either in the MSSQL_SA_PASSWORD environment variable or with the `-MSSQLpwd` script argument.
 
-For DTS, pass `-StartDTSContainer` flag. This will create a docker container using the DTS emulator image.
+For DTS, pass `-StartDTSContainer` flag. This starts two DTS emulator containers: `dts-emulator` with `-p 8080:8080` for ordinary tests, and `dts-emulator-workitemfilters` with `-p 8083:8080` for the filtering collection. Only gRPC ports are published; the tests do not need dashboard or health-check ports, which can conflict with CI agent services. Separate emulator processes prevent filtered-worker state from stalling subsequent unfiltered workers. When starting emulators manually, start both containers with these port mappings.
 
 ### Step 4: Build the test project
 
