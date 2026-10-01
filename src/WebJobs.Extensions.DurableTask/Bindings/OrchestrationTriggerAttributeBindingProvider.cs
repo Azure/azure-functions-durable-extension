@@ -185,6 +185,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     };
                     orchestratorRequest.Properties.Add(ProtobufUtils.ConvertPocoToProtoMap(remoteContext.Configurations));
 
+                    if (remoteContext.SourceInstanceId is string sourceInstanceId)
+                    {
+                        orchestratorRequest.Properties.Add("sourceInstanceId", proto.Value.ForString(sourceInstanceId));
+                    }
+
                     // We only do a null check as an empty string is a valid version.
                     if (this.config.Options.DefaultVersion != null)
                     {
