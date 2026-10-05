@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using DurableTask.AzureStorage;
 using DurableTask.Core;
 using DurableTask.Core.Entities;
 using DurableTask.Core.Exceptions;
@@ -30,9 +31,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         // gRPC metadata key for correlating client operations with function invocations
         private const string FunctionInvocationIdMetadataKey = "x-azure-functions-invocationid";
-        private const string MigrationEndingMessage =
-            "The Azure Storage backend is temporarily unavailable because a migration is ending. " +
-            "Requests will be serviced by the new backend once migration finishes.";
 
         private readonly DurableTaskExtension extension;
 
@@ -48,21 +46,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.CreateTaskHubResponse> CreateTaskHub(P.CreateTaskHubRequest request, ServerCallContext context)
         {
-            this.ThrowIfMigrationEnding();
             await this.GetDurabilityProvider(context).CreateAsync(request.RecreateIfExists);
             return new P.CreateTaskHubResponse();
         }
 
         public async override Task<P.DeleteTaskHubResponse> DeleteTaskHub(P.DeleteTaskHubRequest request, ServerCallContext context)
         {
-            this.ThrowIfMigrationEnding();
             await this.GetDurabilityProvider(context).DeleteAsync();
             return new P.DeleteTaskHubResponse();
         }
 
         public async override Task<P.CreateInstanceResponse> StartInstance(P.CreateInstanceRequest request, ServerCallContext context)
         {
-            this.ThrowIfMigrationEnding();
             try
             {
                 List<OrchestrationStatus> allStatuses = System.Enum
@@ -140,7 +135,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 throw;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not OrchestrationServiceUnavailableException)
             {
                 this.extension.TraceHelper.ExtensionWarningEvent(
                     this.extension.Options.HubName,
@@ -153,7 +148,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.RaiseEventResponse> RaiseEvent(P.RaiseEventRequest request, ServerCallContext context)
         {
-            this.ThrowIfMigrationEnding();
             bool throwStatusExceptionsOnRaiseEvent = this.extension.Options.ThrowStatusExceptionsOnRaiseEvent ?? this.extension.DefaultDurabilityProvider.CheckStatusBeforeRaiseEvent;
 
             // Log correlation information for client operations
@@ -184,7 +178,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     throw new RpcException(new Status(StatusCode.FailedPrecondition, "The orchestration instance with the provided instance id is not running."));
                 }
             }
-            catch (Exception ex) when (ex is not OperationCanceledException || !context.CancellationToken.IsCancellationRequested)
+            catch (Exception ex) when (ex is not OrchestrationServiceUnavailableException &&
+                (ex is not OperationCanceledException || !context.CancellationToken.IsCancellationRequested))
             {
                 // Any other unexpected exceptions.
                 throw new TaskHubRpcException(new Status(StatusCode.Unknown, ex.Message), ex);
@@ -195,7 +190,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.SignalEntityResponse> SignalEntity(P.SignalEntityRequest request, ServerCallContext context)
         {
-            this.ThrowIfMigrationEnding();
             this.CheckEntitySupport(context, out var durabilityProvider, out var entityOrchestrationService);
 
             // Log correlation information for client operations
@@ -237,7 +231,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.GetEntityResponse> GetEntity(P.GetEntityRequest request, ServerCallContext context)
         {
-            this.ThrowIfMigrationEnding();
             this.LogClientOperationReceived(context, "GetEntity", request.InstanceId);
             this.CheckEntitySupport(context, out var durabilityProvider, out var entityOrchestrationService);
 
@@ -256,7 +249,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.QueryEntitiesResponse> QueryEntities(P.QueryEntitiesRequest request, ServerCallContext context)
         {
-            this.ThrowIfMigrationEnding();
             this.LogClientOperationReceived(context, "QueryEntities", string.Empty);
             this.CheckEntitySupport(context, out var durabilityProvider, out var entityOrchestrationService);
 
@@ -289,7 +281,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.CleanEntityStorageResponse> CleanEntityStorage(P.CleanEntityStorageRequest request, ServerCallContext context)
         {
-            this.ThrowIfMigrationEnding();
             this.LogClientOperationReceived(context, "CleanEntityStorage", string.Empty);
             this.CheckEntitySupport(context, out var durabilityProvider, out var entityOrchestrationService);
 
@@ -312,8 +303,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.TerminateResponse> TerminateInstance(P.TerminateRequest request, ServerCallContext context)
         {
-            this.ThrowIfMigrationEnding();
-
             // Log correlation information for client operations
             this.LogClientOperationReceived(context, "Terminate", request.InstanceId);
 
@@ -323,8 +312,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.SuspendResponse> SuspendInstance(P.SuspendRequest request, ServerCallContext context)
         {
-            this.ThrowIfMigrationEnding();
-
             // Log correlation information for client operations
             this.LogClientOperationReceived(context, "Suspend", request.InstanceId);
 
@@ -334,8 +321,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.ResumeResponse> ResumeInstance(P.ResumeRequest request, ServerCallContext context)
         {
-            this.ThrowIfMigrationEnding();
-
             // Log correlation information for client operations
             this.LogClientOperationReceived(context, "Resume", request.InstanceId);
 
@@ -345,8 +330,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.RewindInstanceResponse> RewindInstance(P.RewindInstanceRequest request, ServerCallContext context)
         {
-            this.ThrowIfMigrationEnding();
-
             // Log correlation information for client operations
             this.LogClientOperationReceived(context, "Rewind", request.InstanceId);
 
@@ -371,7 +354,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // Rewind is not supported by the underlying storage provider.
                 throw new RpcException(new Status(StatusCode.Unimplemented, ex.Message));
             }
-            catch (Exception ex) when (ex is not OperationCanceledException || !context.CancellationToken.IsCancellationRequested)
+            catch (Exception ex) when (ex is not OrchestrationServiceUnavailableException &&
+                (ex is not OperationCanceledException || !context.CancellationToken.IsCancellationRequested))
             {
                 // Any other unexpected exceptions.
                 throw new TaskHubRpcException(new Status(StatusCode.Unknown, ex.Message), ex);
@@ -382,7 +366,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.GetInstanceResponse> GetInstance(P.GetInstanceRequest request, ServerCallContext context)
         {
-            this.ThrowIfMigrationEnding();
             this.LogClientOperationReceived(context, "GetInstance", request.InstanceId);
 
             OrchestrationState state = await this.GetDurabilityProvider(context)
@@ -397,7 +380,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.QueryInstancesResponse> QueryInstances(P.QueryInstancesRequest request, ServerCallContext context)
         {
-            this.ThrowIfMigrationEnding();
             this.LogClientOperationReceived(context, "QueryInstances", string.Empty);
 
             var query = ProtobufUtils.ToOrchestrationQuery(request);
@@ -408,7 +390,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.PurgeInstancesResponse> PurgeInstances(P.PurgeInstancesRequest request, ServerCallContext context)
         {
-            this.ThrowIfMigrationEnding();
             var purgeClient = (IOrchestrationServicePurgeClient)this.GetDurabilityProvider(context);
 
             // Log correlation information for client operations
@@ -483,7 +464,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // Purging is not supported by the underlying storage provider.
                 throw new RpcException(new Status(StatusCode.Unimplemented, ex.Message));
             }
-            catch (Exception ex) when (ex is not OperationCanceledException || !context.CancellationToken.IsCancellationRequested)
+            catch (Exception ex) when (ex is not OrchestrationServiceUnavailableException &&
+                (ex is not OperationCanceledException || !context.CancellationToken.IsCancellationRequested))
             {
                 // Wrap all other exceptions in an RpcException.
                 throw new TaskHubRpcException(
@@ -494,7 +476,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.GetInstanceResponse> WaitForInstanceStart(P.GetInstanceRequest request, ServerCallContext context)
         {
-            this.ThrowIfMigrationEnding();
             this.LogClientOperationReceived(context, "WaitForInstanceStart", request.InstanceId);
 
             int retryCount = 0;
@@ -519,7 +500,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<P.GetInstanceResponse> WaitForInstanceCompletion(P.GetInstanceRequest request, ServerCallContext context)
         {
-            this.ThrowIfMigrationEnding();
             this.LogClientOperationReceived(context, "WaitForInstanceCompletion", request.InstanceId);
 
             OrchestrationState state = await this.GetDurabilityProvider(context).WaitForOrchestrationAsync(
@@ -538,7 +518,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public override async Task<P.RestartInstanceResponse> RestartInstance(P.RestartInstanceRequest request, ServerCallContext context)
         {
-            this.ThrowIfMigrationEnding();
             this.LogClientOperationReceived(context, "Restart", request.InstanceId);
 
             try
@@ -555,7 +534,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 throw new RpcException(new Status(StatusCode.FailedPrecondition, $"Non-terminal instance with this instance ID already exists: {ex.Message}"));
             }
-            catch (Exception ex) when (ex is not OperationCanceledException || !context.CancellationToken.IsCancellationRequested)
+            catch (Exception ex) when (ex is not OrchestrationServiceUnavailableException &&
+                (ex is not OperationCanceledException || !context.CancellationToken.IsCancellationRequested))
             {
                 // Any other unexpected exceptions.
                 throw new TaskHubRpcException(new Status(StatusCode.Unknown, ex.Message), ex);
@@ -604,7 +584,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             IServerStreamWriter<P.HistoryChunk> responseStream,
             ServerCallContext context)
         {
-            this.ThrowIfMigrationEnding();
             this.LogClientOperationReceived(context, "StreamInstanceHistory", request.InstanceId);
 
             if (await this.GetClient(context).GetStatusAsync(request.InstanceId, showInput: false) is null)
@@ -685,7 +664,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     new Status(StatusCode.Cancelled, $"Orchestration history streaming cancelled for instance {request.InstanceId}"),
                     ex);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not OrchestrationServiceUnavailableException)
             {
                 throw new TaskHubRpcException(
                     new Status(StatusCode.Internal, $"Failed to stream orchestration history for instance {request.InstanceId}: {ex.Message}"),
@@ -713,14 +692,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string? taskHub = context.RequestHeaders.GetValue("Durable-TaskHub");
             string? connectionName = context.RequestHeaders.GetValue("Durable-ConnectionName");
             return new DurableClientAttribute() { TaskHub = taskHub, ConnectionName = connectionName };
-        }
-
-        private void ThrowIfMigrationEnding()
-        {
-            if (this.extension.StorageMigrationMode == MigrationMode.MigrationEnding)
-            {
-                throw new RpcException(new Status(StatusCode.Unavailable, MigrationEndingMessage));
-            }
         }
 
         private DurabilityProvider GetDurabilityProvider(ServerCallContext context)
@@ -764,7 +735,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         /// <remarks>
         /// An already-formed <see cref="RpcException"/> is left to propagate unchanged (never re-wrapped),
-        /// and <see cref="OperationCanceledException"/> is left to propagate so gRPC surfaces
+        /// and backend availability exceptions reach the common gRPC interceptor for status translation.
+        /// An <see cref="OperationCanceledException"/> is left to propagate so gRPC surfaces
         /// <see cref="StatusCode.Cancelled"/> instead of an opaque <see cref="StatusCode.Unknown"/>.
         /// </remarks>
         private static async Task InvokeControlPlaneOperationAsync(Func<Task> operation)
@@ -788,7 +760,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // Thrown when the InstanceId does not match any existing orchestration
                 throw new RpcException(new Status(StatusCode.NotFound, $"ArgumentException: {ex.Message}"));
             }
-            catch (Exception ex) when (ex is not RpcException && ex is not OperationCanceledException)
+            catch (Exception ex) when (ex is not OrchestrationServiceUnavailableException &&
+                ex is not RpcException && ex is not OperationCanceledException)
             {
                 // Any other unexpected exceptions. RpcException and cancellation are excluded above so a
                 // client cancellation/deadline surfaces as StatusCode.Cancelled rather than Unknown.

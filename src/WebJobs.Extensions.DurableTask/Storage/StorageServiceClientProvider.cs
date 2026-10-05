@@ -11,12 +11,13 @@ using Microsoft.Extensions.Configuration;
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage
 {
     /// <inheritdoc cref="IStorageServiceClientProvider{TClient, TClientOptions}"/>
-    internal abstract class StorageServiceClientProvider<TClient, TClientOptions, TConnectionOptions> : IStorageServiceClientProvider<TClient, TClientOptions>
+    internal abstract class StorageServiceClientProvider<TClient, TClientOptions, TConnectionOptions> : IStorageServiceClientProvider<TClient, TClientOptions>, IStorageTokenCredentialProvider
         where TClientOptions : ClientOptions
         where TConnectionOptions : StorageServiceConnectionOptions
     {
         private readonly IConfigurationSection connectionSection;
         private readonly AzureComponentFactory componentFactory;
+        private readonly Lazy<TokenCredential> tokenCredential;
 
         protected StorageServiceClientProvider(IConfigurationSection connectionSection, AzureComponentFactory componentFactory)
         {
@@ -26,7 +27,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage
             // That section is "connectionSection."
             this.connectionSection = connectionSection ?? throw new ArgumentNullException(nameof(connectionSection));
             this.componentFactory = componentFactory ?? throw new ArgumentNullException(nameof(componentFactory));
+            this.tokenCredential = new Lazy<TokenCredential>(() => this.componentFactory.CreateTokenCredential(this.connectionSection));
         }
+
+        public TokenCredential TokenCredential => this.tokenCredential.Value;
 
         public TClient CreateClient(TClientOptions options)
         {
@@ -45,7 +49,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Storage
             // ctor parameters. However, Azure Functions requires a way to disambiguate these URIs in the same section.
             // Therefore, it uses the names "BlobServiceUri," "QueueServiceUri," and "TableServiceUri."
             Uri? serviceUri = this.connectionSection.Get<TConnectionOptions>()?.ServiceUri;
-            TokenCredential tokenCredential = this.componentFactory.CreateTokenCredential(this.connectionSection);
+            TokenCredential tokenCredential = this.TokenCredential;
 
             return serviceUri != null
                 ? this.CreateClient(serviceUri, tokenCredential, options)

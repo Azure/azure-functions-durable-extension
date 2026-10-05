@@ -26,7 +26,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly INameResolver nameResolver;
         private readonly ILoggerFactory loggerFactory;
         private readonly bool inConsumption; // If true, optimize defaults for consumption
-        private readonly MigrationMode? migrationMode;
+        private readonly bool isMigrationActive;
         private AzureStorageDurabilityProvider defaultStorageProvider;
 
         // Must wait to get settings until we have validated taskhub name.
@@ -56,7 +56,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.clientProviderFactory = clientProviderFactory ?? throw new ArgumentNullException(nameof(clientProviderFactory));
             this.nameResolver = nameResolver ?? throw new ArgumentNullException(nameof(nameResolver));
             this.loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
-            this.migrationMode = ResolveMigrationMode(this.nameResolver.Resolve(MigrationStateSettingName));
+            this.isMigrationActive = ResolveMigrationActive(this.nameResolver.Resolve(MigrationStateSettingName));
 
             this.azureStorageOptions = new AzureStorageOptions();
             this.inConsumption = platformInfo.IsInConsumptionPlan();
@@ -160,14 +160,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.EnsureDefaultClientSettingsInitialized();
             if (this.defaultStorageProvider == null)
             {
-                var defaultService = new AzureStorageOrchestrationService(this.defaultSettings);
+                var defaultService = new AzureStorageOrchestrationService(this.defaultSettings, this.isMigrationActive);
                 ILogger logger = this.loggerFactory.CreateLogger(LoggerName);
                 this.defaultStorageProvider = new AzureStorageDurabilityProvider(
                     defaultService,
                     this.clientProviderFactory,
                     this.DefaultConnectionName,
                     this.azureStorageOptions,
-                    this.migrationMode,
                     logger);
             }
 
@@ -206,11 +205,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 ILogger logger = this.loggerFactory.CreateLogger(LoggerName);
                 innerClient = new AzureStorageDurabilityProvider(
-                    new AzureStorageOrchestrationService(settings),
+                    new AzureStorageOrchestrationService(settings, this.isMigrationActive),
                     this.clientProviderFactory,
                     connectionName,
                     this.azureStorageOptions,
-                    this.migrationMode,
                     logger);
             }
 
@@ -283,26 +281,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return settings;
         }
 
-        private static MigrationMode? ResolveMigrationMode(string migrationState)
+        private static bool ResolveMigrationActive(string migrationState)
         {
             if (string.IsNullOrWhiteSpace(migrationState))
             {
-                return null;
+                return false;
             }
 
             if (string.Equals(migrationState, "Started", StringComparison.OrdinalIgnoreCase))
             {
-                return MigrationMode.MigrationStarted;
-            }
-
-            if (string.Equals(migrationState, "Ending", StringComparison.OrdinalIgnoreCase))
-            {
-                return MigrationMode.MigrationEnding;
+                return true;
             }
 
             throw new InvalidOperationException(
                 $"The '{MigrationStateSettingName}' app setting has unsupported value '{migrationState}'. " +
-                "Supported values are 'Started' and 'Ending'.");
+                "Use 'Started' to enable migration.");
         }
 
         public void SetUseSeparateQueueForEntityWorkItems(bool newValue)

@@ -4,6 +4,7 @@
 #nullable enable
 using System;
 using System.Threading.Tasks;
+using DurableTask.AzureStorage;
 using Grpc.Core;
 using Grpc.Core.Interceptors;
 
@@ -31,6 +32,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc
             {
                 return await continuation(request, context);
             }
+            catch (OrchestrationServiceUnavailableException exception)
+            {
+                throw new RpcException(new Status(StatusCode.Unavailable, exception.Message));
+            }
             catch (Exception exception) when (ShouldLog(exception, context))
             {
                 this.LogException(context, exception);
@@ -47,6 +52,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc
             try
             {
                 await continuation(request, responseStream, context);
+            }
+            catch (OrchestrationServiceUnavailableException exception)
+            {
+                throw new RpcException(new Status(StatusCode.Unavailable, exception.Message));
             }
             catch (Exception exception) when (ShouldLog(exception, context))
             {

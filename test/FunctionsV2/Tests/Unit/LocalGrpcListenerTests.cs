@@ -10,6 +10,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using DurableTask.AzureStorage;
 using DurableTask.Core;
 using DurableTask.Core.History;
 using Google.Protobuf.WellKnownTypes;
@@ -21,6 +22,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
+using Moq.Language.Flow;
 using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
@@ -78,43 +80,175 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await this.GrpcListener_StartAndStopSuccessfully(internalMode);
         }
 
+        // This test covers the methods that have distinct try-catch blocks, and must make sure not to catch the OrchestrationServiceUnavailableException
+        // since the gRPC interceptor already handles it
+        [Theory]
+        [InlineData("StartInstance")]
+        [InlineData("RaiseEvent")]
+        [InlineData("TerminateInstance")]
+        [InlineData("RewindInstance")]
+        [InlineData("RestartInstance")]
+        [InlineData("PurgeInstances")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task TestGrpcListener_MapsBackendUnavailable(string method)
+        {
+            const string InstanceId = "test-instance";
+            const string Message = "The selected backend is ending migration.";
+            var unavailable = new OrchestrationServiceUnavailableException(Message);
+            var serviceClient = new Mock<IOrchestrationServiceClient>();
+            serviceClient.Setup(c => c.GetOrchestrationStateAsync(InstanceId, It.IsAny<string>())).ThrowsAsync(unavailable);
+            serviceClient.Setup(c => c.GetOrchestrationStateAsync(InstanceId, It.IsAny<bool>())).ThrowsAsync(unavailable);
+            serviceClient.Setup(c => c.SendTaskOrchestrationMessageAsync(It.IsAny<TaskMessage>())).ThrowsAsync(unavailable);
+            Mock<DurabilityProvider> provider = CreateDurabilityProviderMock(new Mock<IOrchestrationService>().Object, serviceClient.Object);
+            provider.Setup(p => p.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>(), It.IsAny<CancellationToken>())).ThrowsAsync(unavailable);
+            RpcException error = await this.InvokeFailingRpcAsync("BackendUnavailable", provider.Object, async client =>
+            {
+                switch (method)
+                {
+                    case "StartInstance": await client.StartInstanceAsync(new P.CreateInstanceRequest { InstanceId = InstanceId, Name = "Test" }); break;
+                    case "RaiseEvent": await client.RaiseEventAsync(new P.RaiseEventRequest { InstanceId = InstanceId, Name = "event" }); break;
+                    case "TerminateInstance": await client.TerminateInstanceAsync(new P.TerminateRequest { InstanceId = InstanceId }); break;
+                    case "RewindInstance": await client.RewindInstanceAsync(new P.RewindInstanceRequest { InstanceId = InstanceId }); break;
+                    case "RestartInstance": await client.RestartInstanceAsync(new P.RestartInstanceRequest { InstanceId = InstanceId }); break;
+                    case "PurgeInstances": await client.PurgeInstancesAsync(new P.PurgeInstancesRequest { InstanceId = InstanceId }); break;
+                    default: throw new InvalidOperationException(method);
+                }
+            });
+            Assert.Equal(StatusCode.Unavailable, error.StatusCode);
+            Assert.Equal(Message, error.Status.Detail);
+            Assert.DoesNotContain(this.loggerProvider.GetAllLogMessages(), m => m.Level == LogLevel.Warning && m.FormattedMessage.Contains(Message));
+        }
+
+        // Verify the unary gRPC interceptor maps the OrchestrationServiceUnavailableException to status code Unavailable
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task TaskHubGrpcServer_RejectsEveryOperationalRpcExceptHello_WhenMigrationIsEnding()
+        public async Task TestGrpcListener_MapsUnavailableDuringWait()
         {
-            var nameResolver = new SimpleNameResolver(new Dictionary<string, string>
+            const string InstanceId = "test-instance";
+            var entered = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var ending = new TaskCompletionSource<OrchestrationState>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var serviceClient = new Mock<IOrchestrationServiceClient>();
+            serviceClient.Setup(c => c.WaitForOrchestrationAsync(InstanceId, It.IsAny<string>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()))
+                .Returns(() =>
+                {
+                    entered.TrySetResult(true);
+                    return ending.Task;
+                });
+            DurabilityProvider provider = CreateDurabilityProvider(new Mock<IOrchestrationService>().Object, serviceClient.Object);
+            RpcException error = await this.InvokeFailingRpcAsync("EndingDuringWait", provider, async client =>
             {
-                { AzureStorageDurabilityProviderFactory.MigrationStateSettingName, "Ending" },
+                using AsyncUnaryCall<P.GetInstanceResponse> call = client.WaitForInstanceCompletionAsync(new P.GetInstanceRequest { InstanceId = InstanceId });
+                await entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+                ending.SetException(new OrchestrationServiceUnavailableException("Migration ended during the wait."));
+                await call.ResponseAsync;
             });
-            using DurableTaskExtension extension = this.CreateExtension(
-                new DurableTaskOptions { HubName = "MigrationEnding" },
-                WorkerRuntimeType.DotNetIsolated,
-                nameResolver);
-            var server = new TaskHubGrpcServer(extension);
-            Empty helloResponse = await server.Hello(new Empty(), context: null);
-            MethodInfo[] rpcMethods = typeof(TaskHubGrpcServer).GetMethods(
-                BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
-                .Where(method => method.Name != nameof(TaskHubGrpcServer.Hello))
-                .ToArray();
+            Assert.Equal(StatusCode.Unavailable, error.StatusCode);
+        }
 
-            Assert.NotNull(helloResponse);
-            Assert.NotEmpty(rpcMethods);
-            foreach (MethodInfo method in rpcMethods)
+        // Verify the streaming gRPC interceptor maps the OrchestrationServiceUnavailableException to status code Unavailable
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task TestGrpcListener_MapsUnavailableDuringHistoryEnumeration()
+        {
+            const string InstanceId = "test-instance";
+            var serviceClient = new Mock<IOrchestrationServiceClient>();
+            serviceClient.Setup(c => c.GetOrchestrationStateAsync(InstanceId, It.IsAny<bool>())).ReturnsAsync(
+            [
+                new ()
+                {
+                    Name = "Test",
+                    CreatedTime = DateTime.UtcNow,
+                    LastUpdatedTime = DateTime.UtcNow,
+                    OrchestrationInstance = new OrchestrationInstance { InstanceId = InstanceId, ExecutionId = "execution" },
+                    OrchestrationStatus = OrchestrationStatus.Running,
+                },
+            ]);
+            Mock<DurabilityProvider> provider = CreateDurabilityProviderMock(new Mock<IOrchestrationService>().Object, serviceClient.Object);
+            provider.Setup(p => p.StreamOrchestrationHistoryAsync(InstanceId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(EndingHistory());
+            RpcException error = await this.InvokeFailingRpcAsync("EndingDuringStream", provider.Object, async client =>
             {
-                object[] arguments = method.GetParameters().Select(_ => (object)null).ToArray();
-                Exception exception;
-                try
+                using AsyncServerStreamingCall<P.HistoryChunk> call = client.StreamInstanceHistory(new P.StreamInstanceHistoryRequest { InstanceId = InstanceId });
+                while (await call.ResponseStream.MoveNext(default))
                 {
-                    Task invocation = (Task)method.Invoke(server, arguments);
-                    exception = await Record.ExceptionAsync(() => invocation);
                 }
-                catch (TargetInvocationException invocationException)
+            });
+            Assert.Equal(StatusCode.Unavailable, error.StatusCode);
+            Assert.Equal("Migration ended during history enumeration.", error.Status.Detail);
+
+            static async IAsyncEnumerable<HistoryEvent> EndingHistory()
+            {
+                yield return new TaskCompletedEvent(1, 0, "result");
+                await Task.Yield();
+                throw new OrchestrationServiceUnavailableException("Migration ended during history enumeration.");
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task TestGrpcListener_UsesRequestedBackendsAvailability(bool defaultIsEnding)
+        {
+            // Give the default and requested hubs opposite availability to catch checks against the wrong hub.
+            const string InstanceId = "test-instance";
+            using DurableTaskExtension source = this.CreateExtension("DefaultHub");
+            AzureStorageDurabilityProvider defaultProvider = Assert.IsType<AzureStorageDurabilityProvider>(source.DefaultDurabilityProvider);
+
+            // Set the default hub to ending to confirm that the requested hub (when it is not meant to be ending) is used for the call
+            // and does not throw any exceptions
+            if (defaultIsEnding)
+            {
+                object service = typeof(AzureStorageDurabilityProvider).GetField("serviceClient", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(defaultProvider);
+                service.GetType().GetMethod("EnterMigrationEnding", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(service, null);
+            }
+
+            var serviceClient = new Mock<IOrchestrationServiceClient>();
+            ISetup<IOrchestrationServiceClient, Task<OrchestrationState>> getState = serviceClient.Setup(c => c.GetOrchestrationStateAsync(InstanceId, It.IsAny<string>()));
+            if (defaultIsEnding)
+            {
+                getState.ReturnsAsync((OrchestrationState)null);
+            }
+            else
+            {
+                getState.ThrowsAsync(new OrchestrationServiceUnavailableException("Requested hub unavailable."));
+            }
+
+            DurabilityProvider requestedProvider = CreateDurabilityProvider(new Mock<IOrchestrationService>().Object, serviceClient.Object);
+            using DurableTaskExtension extension = this.CreateExtension("DefaultHub", defaultProvider, attribute =>
+            {
+                Assert.Equal("RequestedHub", attribute.TaskHub);
+                Assert.Equal("RequestedConnection", attribute.ConnectionName);
+                return requestedProvider;
+            });
+            ILocalGrpcListener listener = LocalGrpcListener.Create(extension, LocalGrpcListenerMode.AspNetCore);
+            try
+            {
+                await listener.StartAsync(default);
+                using var channel = GrpcChannel.ForAddress(listener.ListenAddress);
+                var client = new P.TaskHubSidecarService.TaskHubSidecarServiceClient(channel);
+                Assert.NotNull(await client.HelloAsync(new Empty()));
+
+                // Explicitly pass the non-default task hub to the call
+                var headers = new Metadata { { "Durable-TaskHub", "RequestedHub" }, { "Durable-ConnectionName", "RequestedConnection" } };
+                using AsyncUnaryCall<P.GetInstanceResponse> call = client.GetInstanceAsync(new P.GetInstanceRequest { InstanceId = InstanceId }, headers);
+
+                // If the default task hub is ending, then the requested task hub should not throw the exception.
+                // Otherwise if the default task hub is healthy, then the requested task hub should throw the exception.
+                if (defaultIsEnding)
                 {
-                    exception = invocationException.InnerException;
+                    Assert.False((await call.ResponseAsync).Exists);
+                }
+                else
+                {
+                    Assert.Equal(StatusCode.Unavailable, (await Assert.ThrowsAsync<RpcException>(() => call.ResponseAsync)).StatusCode);
                 }
 
-                RpcException rpcException = Assert.IsType<RpcException>(exception);
-                Assert.Equal(StatusCode.Unavailable, rpcException.StatusCode);
+                serviceClient.Verify(c => c.GetOrchestrationStateAsync(InstanceId, It.IsAny<string>()), Times.Once);
+            }
+            finally
+            {
+                await listener.StopAsync(default);
             }
         }
 
@@ -1028,7 +1162,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 platformInformationService: TestHelpers.GetMockPlatformInformationService(language: runtimeType));
         }
 
-        private DurableTaskExtension CreateExtension(string hubName, DurabilityProvider durabilityProvider)
+        private DurableTaskExtension CreateExtension(string hubName, DurabilityProvider durabilityProvider, Func<DurableClientAttribute, DurabilityProvider> selectProvider = null)
         {
             var options = new DurableTaskOptions { HubName = hubName };
             var wrappedOptions = new OptionsWrapper<DurableTaskOptions>(options);
@@ -1037,7 +1171,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             serviceFactory.Setup(factory => factory.GetDurabilityProvider()).Returns(durabilityProvider);
             serviceFactory
                 .Setup(factory => factory.GetDurabilityProvider(It.IsAny<DurableClientAttribute>()))
-                .Returns(durabilityProvider);
+                .Returns((DurableClientAttribute attribute) => selectProvider?.Invoke(attribute) ?? durabilityProvider);
 
             var loggerFactory = new LoggerFactory(new[] { this.loggerProvider });
             return new DurableTaskExtension(
