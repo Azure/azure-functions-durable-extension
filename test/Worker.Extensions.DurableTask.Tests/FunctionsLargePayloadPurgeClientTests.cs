@@ -3,9 +3,9 @@
 
 using Grpc.Core;
 using Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
-using Microsoft.DurableTask.AzureBlobPayloads;
 using Microsoft.DurableTask.Client;
 using Microsoft.DurableTask.Client.Grpc.Internal;
+using Microsoft.DurableTask.LargePayloadPurge.Abstractions;
 using Moq;
 using P = Microsoft.DurableTask.Protobuf.LargePayloads;
 
@@ -16,11 +16,14 @@ public class FunctionsLargePayloadPurgeClientTests
     [Fact]
     public void ClientFacadeLivesInContractsAndBaseWorkerDoesNotReferenceBlobImplementation()
     {
-        Assert.Equal("Microsoft.DurableTask.AzureBlobPayloads", typeof(IOrchestrationServiceLargePayloadPurgeClient).Namespace);
-        Assert.Equal("Microsoft.DurableTask.AzureBlobPayloads.IOrchestrationServiceLargePayloadPurgeClient",
+        Assert.Equal("Microsoft.DurableTask.LargePayloadPurge.Abstractions", typeof(IOrchestrationServiceLargePayloadPurgeClient).Namespace);
+        Assert.Equal("Microsoft.DurableTask.LargePayloadPurge.Abstractions.IOrchestrationServiceLargePayloadPurgeClient",
             typeof(IOrchestrationServiceLargePayloadPurgeClient).FullName);
-        Assert.Equal("Microsoft.DurableTask.AzureBlobPayloads", typeof(ILargePayloadPurgeClient).Namespace);
+        Assert.Equal("Microsoft.DurableTask.LargePayloadPurge.Abstractions", typeof(ILargePayloadPurgeClient).Namespace);
         Assert.Null(typeof(ILargePayloadPurgeClient).Assembly.GetType("DurableTask.LargePayloadPurge.IOrchestrationServiceLargePayloadPurgeClient"));
+        Assert.Null(typeof(ILargePayloadPurgeClient).Assembly.GetType("DurableTask.LargePayloadPurge.ILargePayloadPurgeClient"));
+        Assert.Null(typeof(ILargePayloadPurgeClient).Assembly.GetType("Microsoft.DurableTask.AzureBlobPayloads.IOrchestrationServiceLargePayloadPurgeClient"));
+        Assert.Null(typeof(ILargePayloadPurgeClient).Assembly.GetType("Microsoft.DurableTask.AzureBlobPayloads.ILargePayloadPurgeClient"));
         Assert.Same(typeof(IOrchestrationServiceLargePayloadPurgeClient).Assembly, typeof(ILargePayloadPurgeClient).Assembly);
         Assert.Equal(
             "Microsoft.DurableTask.LargePayloadPurge.Abstractions, Version=0.1.0.0, Culture=neutral, PublicKeyToken=6a4c0315c2d1d937",

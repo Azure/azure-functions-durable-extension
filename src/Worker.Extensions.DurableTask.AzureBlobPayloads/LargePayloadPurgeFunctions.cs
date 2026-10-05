@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.AzureBlobPayloads;
 using Microsoft.DurableTask.Client;
+using Microsoft.DurableTask.LargePayloadPurge.Abstractions;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;

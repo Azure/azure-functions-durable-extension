@@ -12,7 +12,7 @@ using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Query;
 using Microsoft.Azure.WebJobs.Host.Scale;
-using Microsoft.DurableTask.AzureBlobPayloads;
+using Microsoft.DurableTask.LargePayloadPurge.Abstractions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using LargePayloadPurgeResult = Microsoft.DurableTask.Client.LargePayloadPurgeResult;

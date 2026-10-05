@@ -10,6 +10,7 @@ using Microsoft.Azure.Functions.Worker.Invocation;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.AzureBlobPayloads;
 using Microsoft.DurableTask.Client;
+using Microsoft.DurableTask.LargePayloadPurge.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;

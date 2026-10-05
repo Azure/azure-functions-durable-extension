@@ -6,8 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Grpc.Core;
-using Microsoft.DurableTask.AzureBlobPayloads;
 using Microsoft.DurableTask.Client;
+using Microsoft.DurableTask.LargePayloadPurge.Abstractions;
 using LP = Microsoft.DurableTask.Protobuf.LargePayloads;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask

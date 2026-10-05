@@ -7,10 +7,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core.History;
 using Microsoft.DurableTask;
-using Microsoft.DurableTask.AzureBlobPayloads;
 using Microsoft.DurableTask.Client;
 using Microsoft.DurableTask.Client.Entities;
 using Microsoft.DurableTask.Client.Grpc.Internal;
+using Microsoft.DurableTask.LargePayloadPurge.Abstractions;
 
 namespace Microsoft.Azure.Functions.Worker;
 

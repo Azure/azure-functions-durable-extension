@@ -6,8 +6,8 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
-using Microsoft.DurableTask.AzureBlobPayloads;
 using Microsoft.DurableTask.Client;
+using Microsoft.DurableTask.LargePayloadPurge.Abstractions;
 using Moq;
 using Xunit;
 
@@ -20,15 +20,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public void StandaloneCapabilityUsesCanonicalSdkModels()
         {
             Type capability = typeof(IOrchestrationServiceLargePayloadPurgeClient);
-            Assert.Equal("Microsoft.DurableTask.AzureBlobPayloads", capability.Namespace);
-            Assert.Equal("Microsoft.DurableTask.AzureBlobPayloads.IOrchestrationServiceLargePayloadPurgeClient", capability.FullName);
+            Assert.Equal("Microsoft.DurableTask.LargePayloadPurge.Abstractions", capability.Namespace);
+            Assert.Equal("Microsoft.DurableTask.LargePayloadPurge.Abstractions.IOrchestrationServiceLargePayloadPurgeClient", capability.FullName);
             Assert.Null(capability.Assembly.GetType("DurableTask.LargePayloadPurge.IOrchestrationServiceLargePayloadPurgeClient"));
+            Assert.Null(capability.Assembly.GetType("DurableTask.LargePayloadPurge.ILargePayloadPurgeClient"));
+            Assert.Null(capability.Assembly.GetType("Microsoft.DurableTask.AzureBlobPayloads.IOrchestrationServiceLargePayloadPurgeClient"));
+            Assert.Null(capability.Assembly.GetType("Microsoft.DurableTask.AzureBlobPayloads.ILargePayloadPurgeClient"));
             Assert.Equal(
                 "Microsoft.DurableTask.LargePayloadPurge.Abstractions, Version=0.1.0.0, Culture=neutral, PublicKeyToken=6a4c0315c2d1d937",
                 capability.Assembly.FullName);
             Type shared = Assert.Single(capability.GetInterfaces());
             Assert.Equal(typeof(ILargePayloadPurgeClient), shared);
-            Assert.Equal("Microsoft.DurableTask.AzureBlobPayloads", shared.Namespace);
+            Assert.Equal("Microsoft.DurableTask.LargePayloadPurge.Abstractions", shared.Namespace);
             Assert.Same(capability.Assembly, shared.Assembly);
             Assert.Equal(nameof(IOrchestrationServiceLargePayloadPurgeClient.SetLargePayloadAutoPurgeAsync), Assert.Single(capability.GetMethods()).Name);
             Assert.Equal(2, shared.GetMethods().Length);
