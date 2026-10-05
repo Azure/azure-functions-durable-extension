@@ -11,7 +11,6 @@ using DurableTask.Core.Entities;
 using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Query;
-using DurableTask.LargePayloadPurge;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.DurableTask.AzureBlobPayloads;
 using Newtonsoft.Json;

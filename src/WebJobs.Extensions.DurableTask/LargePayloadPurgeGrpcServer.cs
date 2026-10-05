@@ -5,8 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using DurableTask.LargePayloadPurge;
 using Grpc.Core;
+using Microsoft.DurableTask.AzureBlobPayloads;
 using Microsoft.DurableTask.Client;
 using LP = Microsoft.DurableTask.Protobuf.LargePayloads;
 

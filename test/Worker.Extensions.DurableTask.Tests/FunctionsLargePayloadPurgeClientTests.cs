@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using Grpc.Core;
-using DurableTask.LargePayloadPurge;
 using Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 using Microsoft.DurableTask.AzureBlobPayloads;
 using Microsoft.DurableTask.Client;
@@ -17,6 +16,11 @@ public class FunctionsLargePayloadPurgeClientTests
     [Fact]
     public void ClientFacadeLivesInContractsAndBaseWorkerDoesNotReferenceBlobImplementation()
     {
+        Assert.Equal("Microsoft.DurableTask.AzureBlobPayloads", typeof(IOrchestrationServiceLargePayloadPurgeClient).Namespace);
+        Assert.Equal("Microsoft.DurableTask.AzureBlobPayloads.IOrchestrationServiceLargePayloadPurgeClient",
+            typeof(IOrchestrationServiceLargePayloadPurgeClient).FullName);
+        Assert.Equal("Microsoft.DurableTask.AzureBlobPayloads", typeof(ILargePayloadPurgeClient).Namespace);
+        Assert.Null(typeof(ILargePayloadPurgeClient).Assembly.GetType("DurableTask.LargePayloadPurge.IOrchestrationServiceLargePayloadPurgeClient"));
         Assert.Same(typeof(IOrchestrationServiceLargePayloadPurgeClient).Assembly, typeof(ILargePayloadPurgeClient).Assembly);
         Assert.Equal(
             "Microsoft.DurableTask.LargePayloadPurge.Abstractions, Version=0.1.0.0, Culture=neutral, PublicKeyToken=6a4c0315c2d1d937",
