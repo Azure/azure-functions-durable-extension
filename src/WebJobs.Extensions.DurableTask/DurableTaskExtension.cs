@@ -228,6 +228,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             };
             if (this.hasLargePayloadPurgeFunction)
             {
+                // Core exposes this generic infrastructure hook only to the signed Functions host;
+                // the SDK-owned orchestration identity remains defined and validated here.
                 versioningSettings.ExcludedOrchestrationNames.Add(LargePayloadPurgeOrchestratorName);
             }
 
