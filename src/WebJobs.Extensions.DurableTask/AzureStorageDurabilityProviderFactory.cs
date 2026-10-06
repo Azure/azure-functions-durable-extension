@@ -1,7 +1,8 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using DurableTask.AzureStorage;
 using DurableTask.Core;
@@ -12,7 +13,7 @@ using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
-    internal class AzureStorageDurabilityProviderFactory : IDurabilityProviderFactory
+    internal class AzureStorageDurabilityProviderFactory : IDurabilityProviderFactory, IDisposable
     {
         private const string LoggerName = "Host.Triggers.DurableTask.AzureStorage";
         internal const string MigrationStateSettingName = "DURABLETASK_MIGRATION_STATE";
@@ -27,7 +28,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly ILoggerFactory loggerFactory;
         private readonly bool inConsumption; // If true, optimize defaults for consumption
         private readonly bool isMigrationActive;
+        private readonly object serviceLifetimeLock = new object();
+        private readonly List<AzureStorageOrchestrationService> ownedServices = new List<AzureStorageOrchestrationService>();
         private AzureStorageDurabilityProvider defaultStorageProvider;
+        private bool disposed;
 
         // Must wait to get settings until we have validated taskhub name.
         private bool useSeparateQueueForEntityWorkItems;
@@ -157,30 +161,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public virtual DurabilityProvider GetDurabilityProvider()
         {
-            this.EnsureDefaultClientSettingsInitialized();
-            if (this.defaultStorageProvider == null)
+            lock (this.serviceLifetimeLock)
             {
-                var defaultService = new AzureStorageOrchestrationService(this.defaultSettings, this.isMigrationActive);
-                ILogger logger = this.loggerFactory.CreateLogger(LoggerName);
-                this.defaultStorageProvider = new AzureStorageDurabilityProvider(
-                    defaultService,
-                    this.clientProviderFactory,
-                    this.DefaultConnectionName,
-                    this.azureStorageOptions,
-                    logger);
-            }
+                this.ThrowIfDisposed();
+                this.EnsureDefaultClientSettingsInitialized();
+                if (this.defaultStorageProvider == null)
+                {
+                    var defaultService = this.CreateOwnedService(this.defaultSettings);
+                    ILogger logger = this.loggerFactory.CreateLogger(LoggerName);
+                    this.defaultStorageProvider = new AzureStorageDurabilityProvider(
+                        defaultService,
+                        this.clientProviderFactory,
+                        this.DefaultConnectionName,
+                        this.azureStorageOptions,
+                        logger);
+                }
 
-            return this.defaultStorageProvider;
+                return this.defaultStorageProvider;
+            }
         }
 
         public virtual DurabilityProvider GetDurabilityProvider(DurableClientAttribute attribute)
         {
-            if (!attribute.ExternalClient)
+            lock (this.serviceLifetimeLock)
             {
-                this.EnsureDefaultClientSettingsInitialized();
-            }
+                this.ThrowIfDisposed();
+                if (!attribute.ExternalClient)
+                {
+                    this.EnsureDefaultClientSettingsInitialized();
+                }
 
-            return this.GetAzureStorageStorageProvider(attribute);
+                return this.GetAzureStorageStorageProvider(attribute);
+            }
         }
 
         private AzureStorageDurabilityProvider GetAzureStorageStorageProvider(DurableClientAttribute attribute)
@@ -205,7 +217,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 ILogger logger = this.loggerFactory.CreateLogger(LoggerName);
                 innerClient = new AzureStorageDurabilityProvider(
-                    new AzureStorageOrchestrationService(settings, this.isMigrationActive),
+                    this.CreateOwnedService(settings),
                     this.clientProviderFactory,
                     connectionName,
                     this.azureStorageOptions,
@@ -213,6 +225,45 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             return innerClient;
+        }
+
+        /// <summary>
+        /// Releases worker and client services when the owning host is disposed.
+        /// </summary>
+        public void Dispose()
+        {
+            lock (this.serviceLifetimeLock)
+            {
+                if (this.disposed)
+                {
+                    return;
+                }
+
+                this.disposed = true;
+                foreach (AzureStorageOrchestrationService service in this.ownedServices)
+                {
+                    service.Dispose();
+                }
+
+                this.ownedServices.Clear();
+            }
+        }
+
+        private AzureStorageOrchestrationService CreateOwnedService(AzureStorageOrchestrationServiceSettings settings)
+        {
+            // Called under serviceLifetimeLock. HTTP clients can outlive the task hub worker,
+            // so the DI-owned factory, rather than worker StopAsync, owns final disposal.
+            var service = new AzureStorageOrchestrationService(settings, this.isMigrationActive);
+            this.ownedServices.Add(service);
+            return service;
+        }
+
+        private void ThrowIfDisposed()
+        {
+            if (this.disposed)
+            {
+                throw new ObjectDisposedException(nameof(AzureStorageDurabilityProviderFactory));
+            }
         }
 
         internal AzureStorageOrchestrationServiceSettings GetAzureStorageOrchestrationServiceSettings(

@@ -405,6 +405,54 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             Assert.Equal("Storage", provider.ConnectionName);
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void Dispose_IsIdempotentAndPreventsProviderAccess(bool createProviders)
+        {
+            using var factory = new AzureStorageDurabilityProviderFactory(
+                new OptionsWrapper<DurableTaskOptions>(new DurableTaskOptions()),
+                new TestStorageServiceClientProviderFactory(),
+                new SimpleNameResolver(),
+                NullLoggerFactory.Instance,
+                TestHelpers.GetMockPlatformInformationService());
+
+            if (createProviders)
+            {
+                factory.GetDurabilityProvider();
+                factory.GetDurabilityProvider(new DurableClientAttribute { ExternalClient = true, TaskHub = "OtherHub" });
+            }
+
+            // Disposal is safe both before first use and after creating worker and client providers.
+            // We call it twice to confirm its idempotent
+            factory.Dispose();
+            factory.Dispose();
+
+            // Neither cached providers nor newly requested clients may escape a disposed factory.
+            Assert.Throws<ObjectDisposedException>(() => factory.GetDurabilityProvider());
+            Assert.Throws<ObjectDisposedException>(() => factory.GetDurabilityProvider(new DurableClientAttribute()));
+            Assert.Throws<ObjectDisposedException>(() => factory.GetDurabilityProvider(
+                new DurableClientAttribute { ExternalClient = true, TaskHub = "OtherHub" }));
+            Assert.Throws<ObjectDisposedException>(() => factory.GetDurabilityProvider(
+                new DurableClientAttribute { ExternalClient = true, TaskHub = "NewHub" }));
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void HostDisposal_DisposesRegisteredFactory()
+        {
+            using IHost host = new HostBuilder()
+                .ConfigureWebJobs(builder => builder.AddDurableTask())
+                .Build();
+            IDurabilityProviderFactory factory = host.Services.GetRequiredService<IDurabilityProviderFactory>();
+
+            host.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => factory.GetDurabilityProvider());
+            Assert.Throws<ObjectDisposedException>(() => factory.GetDurabilityProvider(new DurableClientAttribute()));
+        }
+
         private static DurableTaskOptions BindDurableTaskOptions(
             IDictionary<string, string> storageProviderSettings)
         {
