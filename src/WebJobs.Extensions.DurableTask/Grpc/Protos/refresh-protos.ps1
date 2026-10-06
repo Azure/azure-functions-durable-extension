@@ -43,7 +43,7 @@ foreach ($protoFile in $protoFiles) {
 }
 
 $versionsFile = Join-Path $PSScriptRoot 'versions.txt'
-@("# The following files were downloaded from branch $branch at $(Get-Date -Format "yyyy-MM-dd HH:mm:ss" -AsUTC) UTC") +
+@("# Upstream source commit for each currently imported proto.") +
     @($protoFiles | ForEach-Object {
         "https://raw.githubusercontent.com/microsoft/durabletask-protobuf/$commitId/protos/$($_.SourcePath)"
     }) | Set-Content -Path $versionsFile

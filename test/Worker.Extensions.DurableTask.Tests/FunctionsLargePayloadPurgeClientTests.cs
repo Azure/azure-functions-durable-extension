@@ -25,9 +25,9 @@ public class FunctionsLargePayloadPurgeClientTests
         Assert.Null(typeof(ILargePayloadPurgeClient).Assembly.GetType("Microsoft.DurableTask.AzureBlobPayloads.IOrchestrationServiceLargePayloadPurgeClient"));
         Assert.Null(typeof(ILargePayloadPurgeClient).Assembly.GetType("Microsoft.DurableTask.AzureBlobPayloads.ILargePayloadPurgeClient"));
         Assert.Same(typeof(IOrchestrationServiceLargePayloadPurgeClient).Assembly, typeof(ILargePayloadPurgeClient).Assembly);
-        Assert.Equal(
-            "Microsoft.DurableTask.LargePayloadPurge.Abstractions, Version=0.1.0.0, Culture=neutral, PublicKeyToken=6a4c0315c2d1d937",
-            typeof(ILargePayloadPurgeClient).Assembly.FullName);
+        Assert.Equal("Microsoft.DurableTask.LargePayloadPurge.Abstractions", typeof(ILargePayloadPurgeClient).Assembly.GetName().Name);
+        Assert.Equal(typeof(LargePayloadTombstone).Assembly.GetName().Version, typeof(ILargePayloadPurgeClient).Assembly.GetName().Version);
+        Assert.Equal("6A4C0315C2D1D937", Convert.ToHexString(typeof(ILargePayloadPurgeClient).Assembly.GetName().GetPublicKeyToken()));
         Assert.Equal(typeof(ILargePayloadPurgeClient), Assert.Single(typeof(IOrchestrationServiceLargePayloadPurgeClient).GetInterfaces()));
         Assert.Equal(2, typeof(ILargePayloadPurgeClient).Assembly.GetExportedTypes().Length);
         Assert.DoesNotContain(typeof(FunctionsDurableClientProvider).Assembly.GetReferencedAssemblies(),

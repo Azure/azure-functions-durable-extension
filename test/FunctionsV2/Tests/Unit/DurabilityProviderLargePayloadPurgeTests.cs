@@ -26,9 +26,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Null(capability.Assembly.GetType("DurableTask.LargePayloadPurge.ILargePayloadPurgeClient"));
             Assert.Null(capability.Assembly.GetType("Microsoft.DurableTask.AzureBlobPayloads.IOrchestrationServiceLargePayloadPurgeClient"));
             Assert.Null(capability.Assembly.GetType("Microsoft.DurableTask.AzureBlobPayloads.ILargePayloadPurgeClient"));
-            Assert.Equal(
-                "Microsoft.DurableTask.LargePayloadPurge.Abstractions, Version=0.1.0.0, Culture=neutral, PublicKeyToken=6a4c0315c2d1d937",
-                capability.Assembly.FullName);
+            Assert.Equal("Microsoft.DurableTask.LargePayloadPurge.Abstractions", capability.Assembly.GetName().Name);
+            Assert.Equal(typeof(LargePayloadTombstone).Assembly.GetName().Version, capability.Assembly.GetName().Version);
+            Assert.Equal("6A4C0315C2D1D937", Convert.ToHexString(capability.Assembly.GetName().GetPublicKeyToken()));
             Type shared = Assert.Single(capability.GetInterfaces());
             Assert.Equal(typeof(ILargePayloadPurgeClient), shared);
             Assert.Equal("Microsoft.DurableTask.LargePayloadPurge.Abstractions", shared.Namespace);
