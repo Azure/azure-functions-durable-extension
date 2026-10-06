@@ -31,6 +31,7 @@
 
 ### Bug Fixes
 
+- Preserved orchestration tags when .NET isolated entities schedule new orchestrations. Requires the corresponding Durable Task SDK and Core tag-support updates (https://github.com/microsoft/durabletask-dotnet/issues/807).
 - Fixed missing `FailureDetails` in .NET isolated `GetAllInstancesAsync` results when `OrchestrationQuery.FetchInputsAndOutputs` is enabled. Query results now preserve available exception types, messages, stack traces, inner failures, and custom properties. (#2047)
 - The `/makeprimary` HTTP API now returns HTTP 400 with an actionable error when app leases are disabled, instead of returning HTTP 500. (#3534)
 - Fixed a poison loop where dispatching a disabled-but-still-deployed activity or entity function caused in-flight orchestrations to retry indefinitely (e.g. throwing `ArgumentNullException('executor')` on the activity dispatch path) instead of failing gracefully. Such registered-but-inactive functions are now treated as unavailable and fail deterministically. (#3471)
