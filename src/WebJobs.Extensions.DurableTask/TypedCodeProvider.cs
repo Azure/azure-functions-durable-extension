@@ -2,8 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.IO;
 using System.Reflection;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -27,6 +26,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public const string TypedDurableOrchestrationStarter = "TypedDurableOrchestrationStarter";
         public const string ITypedDurableOrchestrationStarter = "ITypedDurableOrchestrationStarter";
 
+        private const string TypedDurableOrchestrationContextFullName =
+            Namespace + "." + TypedDurableOrchestrationContext;
+
+        private const string TypedDurableClientFullName =
+            Namespace + "." + TypedDurableClient;
+
+        private const string TypedDurableOrchestrationCallerFullName =
+            Namespace + "." + TypedDurableOrchestrationCaller;
+
+        private const string TypedDurableActivityCallerFullName =
+            Namespace + "." + TypedDurableActivityCaller;
+
+        private const string TypedDurableOrchestrationStarterFullName =
+            Namespace + "." + TypedDurableOrchestrationStarter;
+
         private Type typedDurableOrchestrationContextType;
         private Type typedDurableClientType;
 
@@ -42,26 +56,80 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public void Initialize()
         {
-            var types = AppDomain.CurrentDomain.GetAssemblies().SelectMany(t =>
+            this.Initialize(AppDomain.CurrentDomain.GetAssemblies());
+        }
+
+        internal void Initialize(Assembly[] assemblies)
+        {
+            this.typedDurableOrchestrationContextType = null;
+            this.typedDurableClientType = null;
+            this.typedDurableOrchestrationCallerType = null;
+            this.typedDurableActivityCallerType = null;
+            this.typedDurableOrchestrationStarterType = null;
+            this.IsInitialized = false;
+
+            foreach (Assembly assembly in assemblies)
             {
+                Type typedDurableOrchestrationContextType = this.typedDurableOrchestrationContextType;
+                Type typedDurableClientType = this.typedDurableClientType;
+                Type typedDurableOrchestrationCallerType = this.typedDurableOrchestrationCallerType;
+                Type typedDurableActivityCallerType = this.typedDurableActivityCallerType;
+                Type typedDurableOrchestrationStarterType = this.typedDurableOrchestrationStarterType;
+
                 try
                 {
-                    return t.DefinedTypes;
+                    typedDurableOrchestrationContextType ??= assembly.GetType(
+                        TypedDurableOrchestrationContextFullName,
+                        throwOnError: false,
+                        ignoreCase: false);
+                    typedDurableClientType ??= assembly.GetType(
+                        TypedDurableClientFullName,
+                        throwOnError: false,
+                        ignoreCase: false);
+                    typedDurableOrchestrationCallerType ??= assembly.GetType(
+                        TypedDurableOrchestrationCallerFullName,
+                        throwOnError: false,
+                        ignoreCase: false);
+                    typedDurableActivityCallerType ??= assembly.GetType(
+                        TypedDurableActivityCallerFullName,
+                        throwOnError: false,
+                        ignoreCase: false);
+                    typedDurableOrchestrationStarterType ??= assembly.GetType(
+                        TypedDurableOrchestrationStarterFullName,
+                        throwOnError: false,
+                        ignoreCase: false);
                 }
-                catch
+                catch (Exception exception) when (IsAssemblyInspectionException(exception))
                 {
-                    return new List<TypeInfo>();
+                    continue;
                 }
-            }).ToList();
 
-            this.typedDurableOrchestrationContextType = types.FirstOrDefault(t => t.FullName == $"{Namespace}.{TypedDurableOrchestrationContext}");
-            this.typedDurableClientType = types.FirstOrDefault(t => t.FullName == $"{Namespace}.{TypedDurableClient}");
+                this.typedDurableOrchestrationContextType = typedDurableOrchestrationContextType;
+                this.typedDurableClientType = typedDurableClientType;
+                this.typedDurableOrchestrationCallerType = typedDurableOrchestrationCallerType;
+                this.typedDurableActivityCallerType = typedDurableActivityCallerType;
+                this.typedDurableOrchestrationStarterType = typedDurableOrchestrationStarterType;
 
-            this.typedDurableOrchestrationCallerType = types.FirstOrDefault(t => t.FullName == $"{Namespace}.{TypedDurableOrchestrationCaller}");
-            this.typedDurableActivityCallerType = types.FirstOrDefault(t => t.FullName == $"{Namespace}.{TypedDurableActivityCaller}");
-            this.typedDurableOrchestrationStarterType = types.FirstOrDefault(t => t.FullName == $"{Namespace}.{TypedDurableOrchestrationStarter}");
+                if (this.AreAllTypesResolved())
+                {
+                    this.IsInitialized = true;
+                    return;
+                }
+            }
+        }
 
-            this.IsInitialized = this.typedDurableOrchestrationContextType != null &&
+        private static bool IsAssemblyInspectionException(Exception exception)
+        {
+            return exception is FileNotFoundException ||
+                exception is FileLoadException ||
+                exception is BadImageFormatException ||
+                exception is TypeLoadException ||
+                exception is ReflectionTypeLoadException;
+        }
+
+        private bool AreAllTypesResolved()
+        {
+            return this.typedDurableOrchestrationContextType != null &&
                 this.typedDurableClientType != null &&
                 this.typedDurableOrchestrationCallerType != null &&
                 this.typedDurableActivityCallerType != null &&
