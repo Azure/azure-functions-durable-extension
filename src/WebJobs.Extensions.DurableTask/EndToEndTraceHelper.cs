@@ -28,15 +28,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private long sequenceNumber;
 
-        // Infrastructure-only callers do not need per-function logger creation.
-        public EndToEndTraceHelper(ILogger logger, bool traceReplayEvents, bool shouldTraceRawData = false)
+        private EndToEndTraceHelper(ILogger logger, bool traceReplayEvents, bool shouldTraceRawData = false)
         {
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.traceReplayEvents = traceReplayEvents;
             this.shouldTraceRawData = shouldTraceRawData;
         }
 
-        public EndToEndTraceHelper(
+        private EndToEndTraceHelper(
             ILoggerFactory loggerFactory,
             bool traceReplayEvents,
             bool shouldTraceRawData = false,
@@ -77,6 +76,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
 #pragma warning disable SA1117 // Parameters should be on same line or separate lines
+
+        // Infrastructure-only helpers cannot emit per-function logs.
+        public static EndToEndTraceHelper CreateHostOnly(
+            ILogger logger,
+            bool traceReplayEvents,
+            bool shouldTraceRawData = false)
+        {
+            return new EndToEndTraceHelper(logger, traceReplayEvents, shouldTraceRawData);
+        }
+
+        // The resolver returns registered spelling, or null to select the shared user category.
+        public static EndToEndTraceHelper CreateWithFunctionRegistry(
+            ILoggerFactory loggerFactory,
+            bool traceReplayEvents,
+            Func<string, string?> resolveFunctionName,
+            bool shouldTraceRawData = false)
+        {
+            if (resolveFunctionName == null)
+            {
+                throw new ArgumentNullException(nameof(resolveFunctionName));
+            }
+
+            return new EndToEndTraceHelper(loggerFactory, traceReplayEvents, shouldTraceRawData, resolveFunctionName);
+        }
+
+        // Clients without a local function registry route all per-function logs to the shared user category.
+        public static EndToEndTraceHelper CreateWithSharedUserCategory(
+            ILoggerFactory loggerFactory,
+            bool traceReplayEvents,
+            bool shouldTraceRawData = false)
+        {
+            return new EndToEndTraceHelper(loggerFactory, traceReplayEvents, shouldTraceRawData);
+        }
 
         internal void SanitizeString(string? rawPayload, out string iloggerString, out string durableKustoTableString)
         {
@@ -1222,6 +1254,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private long GetNextSequenceNumber()
         {
+            // Interlocked.Increment returns the incremented value; subtract one to preserve
+            // the zero-based numbering of sequenceNumber++ while allocating numbers atomically.
             return Interlocked.Increment(ref this.sequenceNumber) - 1;
         }
 

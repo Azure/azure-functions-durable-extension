@@ -785,7 +785,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
 
             var mockLogger = new Mock<ILogger>();
-            var traceHelper = new Mock<EndToEndTraceHelper>(mockLogger.Object, false, false).Object;
+            var traceHelper = EndToEndTraceHelper.CreateHostOnly(mockLogger.Object, false, false);
 
             var helper = new EventGridLifeCycleNotificationHelper(options, mockNameResolver.Object, traceHelper);
 
@@ -809,7 +809,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var options = new DurableTaskOptions();
 
             var mockLogger = new Mock<ILogger>();
-            var traceHelper = new Mock<EndToEndTraceHelper>(mockLogger.Object, false, false).Object;
+            var traceHelper = EndToEndTraceHelper.CreateHostOnly(mockLogger.Object, false, false);
 
             var helper = new EventGridLifeCycleNotificationHelper(options, mockNameResolver.Object, traceHelper);
 
@@ -835,7 +835,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var options = new DurableTaskOptions();
 
             var mockLogger = new Mock<ILogger>();
-            var traceHelper = new Mock<EndToEndTraceHelper>(mockLogger.Object, false, false).Object;
+            var traceHelper = EndToEndTraceHelper.CreateHostOnly(mockLogger.Object, false, false);
 
             var helper = new EventGridLifeCycleNotificationHelper(options, mockNameResolver.Object, traceHelper);
 
@@ -871,7 +871,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
 
             var mockLogger = new Mock<ILogger>();
-            var traceHelper = new EndToEndTraceHelper(mockLogger.Object, false, false);
+            var traceHelper = EndToEndTraceHelper.CreateHostOnly(mockLogger.Object, false, false);
 
             var helper = new EventGridLifeCycleNotificationHelper(options, mockNameResolver.Object, traceHelper);
 

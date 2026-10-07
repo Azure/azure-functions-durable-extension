@@ -133,11 +133,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             ILogger logger = loggerFactory.CreateLogger(LoggerCategoryName);
 
-            this.TraceHelper = new EndToEndTraceHelper(
+            this.TraceHelper = EndToEndTraceHelper.CreateWithFunctionRegistry(
                 loggerFactory,
                 this.Options.Tracing.TraceReplayEvents,
-                this.Options.Tracing.TraceInputsAndOutputs,
-                this.ResolveFunctionName);
+                this.ResolveRegisteredFunctionName,
+                this.Options.Tracing.TraceInputsAndOutputs);
             this.LifeCycleNotificationHelper = lifeCycleNotificationHelper ?? this.CreateLifeCycleNotificationHelper();
             this.durabilityProviderFactory = GetDurabilityProviderFactory(this.Options, logger, orchestrationServiceFactories);
             this.defaultDurabilityProvider = this.durabilityProviderFactory.GetDurabilityProvider();
@@ -1537,8 +1537,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        private string ResolveFunctionName(string name)
+        private string ResolveRegisteredFunctionName(string name)
         {
+            // Return the registered spelling for consistent logger categories, or null so unknown
+            // names share a fallback category instead of creating unbounded cached logger categories.
             this.registeredFunctionNames.TryGetValue(new FunctionName(name), out string registeredName);
             return registeredName;
         }

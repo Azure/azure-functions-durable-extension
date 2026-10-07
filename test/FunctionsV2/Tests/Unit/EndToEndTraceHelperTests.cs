@@ -32,6 +32,31 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             this.output = output;
         }
 
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void FactoryMethods_RejectNullLoggingDependencies()
+        {
+            Assert.Equal(
+                "logger",
+                Assert.Throws<ArgumentNullException>(() => EndToEndTraceHelper.CreateHostOnly(null!, false)).ParamName);
+            Assert.Equal(
+                "loggerFactory",
+                Assert.Throws<ArgumentNullException>(() => EndToEndTraceHelper.CreateWithSharedUserCategory(null!, false)).ParamName);
+            Assert.Equal(
+                "loggerFactory",
+                Assert.Throws<ArgumentNullException>(() => EndToEndTraceHelper.CreateWithFunctionRegistry(null!, false, name => name)).ParamName);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void RegistryAwareFactory_RequiresAResolver()
+        {
+            Assert.Equal(
+                "resolveFunctionName",
+                Assert.Throws<ArgumentNullException>(() =>
+                    EndToEndTraceHelper.CreateWithFunctionRegistry(NullLoggerFactory.Instance, false, null!)).ParamName);
+        }
+
         [Theory]
         [InlineData(true, "DO NOT LOG ME")]
         [InlineData(false, "DO NOT LOG ME")]
@@ -44,7 +69,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         {
             // set up trace helper
             var nullLogger = new NullLogger<EndToEndTraceHelper>();
-            var traceHelper = new EndToEndTraceHelper(
+            var traceHelper = EndToEndTraceHelper.CreateHostOnly(
                 logger: nullLogger,
                 traceReplayEvents: false, // has not effect on sanitizer
                 shouldTraceRawData: shouldTraceRawData);
@@ -87,7 +112,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         {
             // set up trace helper
             var nullLogger = new NullLogger<EndToEndTraceHelper>();
-            var traceHelper = new EndToEndTraceHelper(
+            var traceHelper = EndToEndTraceHelper.CreateHostOnly(
                 logger: nullLogger,
                 traceReplayEvents: false, // has not effect on sanitizer
                 shouldTraceRawData: shouldTraceRawData);
@@ -146,7 +171,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             // Arrange
             var testLogger = new TestLogger(this.output, category: "UnitTest");
             var loggerFactory = Mock.Of<ILoggerFactory>(factory => factory.CreateLogger(It.IsAny<string>()) == testLogger);
-            var traceHelper = new EndToEndTraceHelper(
+            var traceHelper = EndToEndTraceHelper.CreateWithSharedUserCategory(
                 loggerFactory: loggerFactory,
                 traceReplayEvents: false);
 
@@ -173,7 +198,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         {
             var testLogger = new TestLogger(this.output, category: "UnitTest");
             var loggerFactory = Mock.Of<ILoggerFactory>(factory => factory.CreateLogger(It.IsAny<string>()) == testLogger);
-            var traceHelper = new EndToEndTraceHelper(loggerFactory, traceReplayEvents: false);
+            var traceHelper = EndToEndTraceHelper.CreateWithSharedUserCategory(loggerFactory, traceReplayEvents: false);
 
             traceHelper.FunctionScheduled(
                 hubName: "TestHub",
@@ -225,7 +250,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         {
             // Arrange
             var testLogger = new TestLogger(this.output, category: "UnitTest");
-            var traceHelper = new EndToEndTraceHelper(
+            var traceHelper = EndToEndTraceHelper.CreateHostOnly(
                 logger: testLogger,
                 traceReplayEvents: false);
 
@@ -249,7 +274,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         {
             // Arrange
             var testLogger = new TestLogger(this.output, category: "UnitTest");
-            var traceHelper = new EndToEndTraceHelper(
+            var traceHelper = EndToEndTraceHelper.CreateHostOnly(
                 logger: testLogger,
                 traceReplayEvents: false);
 
@@ -270,7 +295,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         {
             // Arrange
             var testLogger = new TestLogger(this.output, category: "UnitTest");
-            var traceHelper = new EndToEndTraceHelper(
+            var traceHelper = EndToEndTraceHelper.CreateHostOnly(
                 logger: testLogger,
                 traceReplayEvents: false);
 
@@ -295,11 +320,11 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
                 "FirstFunction",
                 "SecondFunction",
             };
-            var helper = new EndToEndTraceHelper(
+            var helper = EndToEndTraceHelper.CreateWithFunctionRegistry(
                 factory,
                 traceReplayEvents: true,
-                shouldTraceRawData: true,
-                resolveFunctionName: name => knownFunctions.TryGetValue(name, out string? registeredName) ? registeredName : null);
+                resolveFunctionName: name => knownFunctions.TryGetValue(name, out string? registeredName) ? registeredName : null,
+                shouldTraceRawData: true);
             var error = new InvalidOperationException("Synthetic error");
             Action<string>[] events =
             {
@@ -362,7 +387,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         public void InfrastructureEvents_KeepTheHostCategory()
         {
             using ILoggerFactory factory = this.CreateLoggerFactory(out TestLoggerProvider provider);
-            var helper = new EndToEndTraceHelper(factory.CreateLogger(TestHelpers.LogCategory), traceReplayEvents: false);
+            var helper = EndToEndTraceHelper.CreateHostOnly(factory.CreateLogger(TestHelpers.LogCategory), traceReplayEvents: false);
             var error = new InvalidOperationException("Synthetic infrastructure error");
             helper.ExtensionInformationalEvent("hub", "", "", "Initialization", writeToUserLogs: true);
             helper.ExtensionInformationalEvent("hub", "", "", "EventSource only", writeToUserLogs: false);
@@ -377,6 +402,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             TestLogger logger = Assert.Single(provider.CreatedLoggers);
             Assert.Equal(TestHelpers.LogCategory, logger.Category);
             Assert.Equal(8, logger.LogMessages.Count);
+            // The earlier "EventSource only" event uses writeToUserLogs: false, so it must not appear in ILogger output.
             Assert.DoesNotContain(logger.LogMessages, message => message.FormattedMessage.Contains("EventSource only", StringComparison.Ordinal));
         }
 
@@ -390,11 +416,11 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             foreach (FunctionType type in new[] { FunctionType.Activity, FunctionType.Orchestrator, FunctionType.Entity })
             {
                 using ILoggerFactory factory = this.CreateLoggerFactory(out TestLoggerProvider provider);
-                var helper = new EndToEndTraceHelper(
+                var helper = EndToEndTraceHelper.CreateWithFunctionRegistry(
                     factory,
                     traceReplayEvents: false,
-                    shouldTraceRawData: traceRaw,
-                    resolveFunctionName: name => name);
+                    resolveFunctionName: name => name,
+                    shouldTraceRawData: traceRaw);
                 string functionName = type + "Function";
                 foreach (string? payload in new[] { null, "", "\"SYNTHETIC_CONTENT\"", "{\"value\":\"SYNTHETIC_CONTENT\"}", "[\"SYNTHETIC_CONTENT\"]", "42", "null" })
                 {
@@ -433,11 +459,11 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         public void UserCategories_PreserveReplayFiltering(bool traceReplay, bool replay, int expectedCount)
         {
             using ILoggerFactory factory = this.CreateLoggerFactory(out TestLoggerProvider provider);
-            var helper = new EndToEndTraceHelper(
+            var helper = EndToEndTraceHelper.CreateWithFunctionRegistry(
                 factory,
                 traceReplay,
-                shouldTraceRawData: true,
-                resolveFunctionName: name => name);
+                resolveFunctionName: name => name,
+                shouldTraceRawData: true);
             helper.FunctionStarting("hub", "Orchestrator", "instance", "input", FunctionType.Orchestrator, replay);
             helper.FunctionCompleted("hub", "Orchestrator", "instance", "output", false, FunctionType.Orchestrator, replay);
             Assert.Equal(expectedCount, provider.GetAllLogMessages().Count());
@@ -453,11 +479,11 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         public void InvalidFunctionCategory_StillUsesAUserCategory(string? functionName)
         {
             using ILoggerFactory factory = this.CreateLoggerFactory(out TestLoggerProvider provider);
-            var helper = new EndToEndTraceHelper(
+            var helper = EndToEndTraceHelper.CreateWithFunctionRegistry(
                 factory,
                 false,
-                shouldTraceRawData: true,
-                resolveFunctionName: name => name);
+                resolveFunctionName: name => name,
+                shouldTraceRawData: true);
             helper.FunctionCompleted("hub", functionName!, "instance", "SYNTHETIC_CONTENT", false, FunctionType.Activity, false);
             LogMessage message = Assert.Single(provider.GetAllLogMessages());
             Assert.Equal(LogCategories.CreateFunctionUserCategory("DurableTask"), message.Category);
@@ -470,11 +496,11 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         public void UnregisteredFunctionCategories_UseTheSharedFallback()
         {
             using ILoggerFactory factory = this.CreateLoggerFactory(out TestLoggerProvider provider);
-            var helper = new EndToEndTraceHelper(
+            var helper = EndToEndTraceHelper.CreateWithFunctionRegistry(
                 factory,
                 false,
-                shouldTraceRawData: true,
-                resolveFunctionName: name => name == "KnownFunction" ? name : null);
+                resolveFunctionName: name => name == "KnownFunction" ? name : null,
+                shouldTraceRawData: true);
 
             helper.FunctionCompleted("hub", "KnownFunction", "instance", "output", false, FunctionType.Activity, false);
             foreach (int index in Enumerable.Range(0, 100))
@@ -498,7 +524,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         public void RegistrylessHelper_UsesTheSharedFallback()
         {
             using ILoggerFactory factory = this.CreateLoggerFactory(out TestLoggerProvider provider);
-            var helper = new EndToEndTraceHelper(factory, false);
+            var helper = EndToEndTraceHelper.CreateWithSharedUserCategory(factory, false);
 
             helper.FunctionCompleted("hub", "ExternalFunction", "instance", "output", false, FunctionType.Activity, false);
 
@@ -563,7 +589,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         public void HostOnlyHelper_CannotEmitFunctionPayloads()
         {
             using ILoggerFactory factory = this.CreateLoggerFactory(out TestLoggerProvider provider);
-            var helper = new EndToEndTraceHelper(factory.CreateLogger(TestHelpers.LogCategory), false, shouldTraceRawData: true);
+            var helper = EndToEndTraceHelper.CreateHostOnly(factory.CreateLogger(TestHelpers.LogCategory), false, shouldTraceRawData: true);
             Assert.Throws<InvalidOperationException>(() =>
                 helper.FunctionCompleted("hub", "Activity", "instance", "SYNTHETIC_CONTENT", false, FunctionType.Activity, false));
             Assert.Empty(provider.GetAllLogMessages());
@@ -574,7 +600,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         public async Task ConcurrentFunctions_UseTheirOwnCategories()
         {
             using ILoggerFactory factory = this.CreateLoggerFactory(out TestLoggerProvider provider);
-            var helper = new EndToEndTraceHelper(factory, false, resolveFunctionName: name => name);
+            var helper = EndToEndTraceHelper.CreateWithFunctionRegistry(factory, false, resolveFunctionName: name => name);
             await Task.WhenAll(Enumerable.Range(0, 1000).Select(index => Task.Run(() =>
                 helper.FunctionCompleted("hub", "Function" + (index % 3), "instance", "output", false, FunctionType.Activity, false))));
 
@@ -595,7 +621,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         public void DebugEntityMessages_UseTheOriginatingFunctionCategory()
         {
             using ILoggerFactory factory = this.CreateLoggerFactory(out TestLoggerProvider provider);
-            var helper = new EndToEndTraceHelper(factory, false, resolveFunctionName: name => name);
+            var helper = EndToEndTraceHelper.CreateWithFunctionRegistry(factory, false, resolveFunctionName: name => name);
             helper.DeliveringEntityMessage("EntityFunction", "instance", "execution", 1, "event", "SYNTHETIC_CONTENT");
             helper.SendingEntityMessage("OrchestratorFunction", "instance", "execution", "target", "event", "SYNTHETIC_CONTENT");
 #if DEBUG
@@ -614,7 +640,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
         public void DurableTestCollector_MergesCategoriesWithoutApplicationMessages()
         {
             using ILoggerFactory factory = this.CreateLoggerFactory(out TestLoggerProvider provider);
-            var helper = new EndToEndTraceHelper(factory, false, resolveFunctionName: name => name);
+            var helper = EndToEndTraceHelper.CreateWithFunctionRegistry(factory, false, resolveFunctionName: name => name);
             helper.FunctionStarting("hub", "Second", "instance", "input", FunctionType.Orchestrator, false);
             factory.CreateLogger(LogCategories.CreateFunctionUserCategory("Second")).LogInformation("Application message for instance");
             helper.FunctionStarting("hub", "First", "instance", "input", FunctionType.Activity, false);
