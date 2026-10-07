@@ -41,7 +41,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             serviceCollection.TryAddSingleton<IStorageServiceClientProviderFactory, StorageServiceClientProviderFactory>();
             serviceCollection.AddAzureClientsCore();
             serviceCollection.TryAddSingleton<IDurabilityProviderFactory, AzureStorageDurabilityProviderFactory>();
-            serviceCollection.TryAddSingleton<IDurableClientFactory, DurableClientFactory>();
+            RegisterDurableClientFactory(serviceCollection);
             serviceCollection.TryAddSingleton<IMessageSerializerSettingsFactory, MessageSerializerSettingsFactory>();
 #pragma warning disable CS0612, CS0618 // Type or member is obsolete
             serviceCollection.TryAddSingleton<IConnectionStringResolver, StandardConnectionStringProvider>();
@@ -90,7 +90,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             serviceCollection.TryAddSingleton<IErrorSerializerSettingsFactory, ErrorSerializerSettingsFactory>();
             serviceCollection.TryAddSingleton<IApplicationLifetimeWrapper, HostLifecycleService>();
             serviceCollection.AddSingleton<ITelemetryActivator>(TelemetryActivator.Create);
-            serviceCollection.TryAddSingleton<IDurableClientFactory, DurableClientFactory>();
+            serviceCollection.TryAddSingleton(new DurableTaskHostRegistration());
+            RegisterDurableClientFactory(serviceCollection);
 #pragma warning disable CS0612, CS0618 // Type or member is obsolete
             serviceCollection.TryAddSingleton<IConnectionStringResolver, WebJobsConnectionStringProvider>();
             serviceCollection.AddSingleton<IPlatformInformation, DefaultPlatformInformation>();
@@ -216,6 +217,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             builder.Services.Configure(configure);
 
             return builder;
+        }
+
+        private static void RegisterDurableClientFactory(IServiceCollection services)
+        {
+            services.TryAddSingleton<IDurableClientFactory>(provider =>
+            {
+                var factory = ActivatorUtilities.CreateInstance<DurableClientFactory>(provider);
+
+                // Resolve the host context after all registrations, regardless of which API was called first.
+                factory.IsInFunctionsHost = provider.GetService<DurableTaskHostRegistration>() != null;
+                return factory;
+            });
+        }
+
+        private sealed class DurableTaskHostRegistration
+        {
         }
     }
 }
