@@ -104,7 +104,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private IDurableClient GetDurableClient(string taskHubName, string connectionName)
         {
-            if (string.Equals(this.TaskHubName, taskHubName, StringComparison.OrdinalIgnoreCase)
+            if (this.DurabilityProvider.TaskHubNameMatches(this.TaskHubName, taskHubName)
                 && string.Equals(this.attribute.ConnectionName, connectionName, StringComparison.OrdinalIgnoreCase))
             {
                 return this;
@@ -358,7 +358,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private bool ClientReferencesCurrentApp(DurableClient client)
         {
-            return !client.attribute.ExternalClient &&
+            return this.config != null &&
+                !client.attribute.ExternalClient &&
                 this.TaskHubMatchesCurrentApp(client) &&
                 this.ConnectionNameMatchesCurrentApp(client);
         }
@@ -374,12 +375,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private bool TaskHubMatchesCurrentApp(DurableClient client)
         {
             var taskHubName = this.durableTaskOptions.HubName;
-            return client.TaskHubName.Equals(taskHubName);
+            return this.config.DefaultDurabilityProvider.TaskHubNameMatches(client.TaskHubName, taskHubName);
         }
 
         private bool ConnectionNameMatchesCurrentApp(DurableClient client)
         {
-            return this.DurabilityProvider.ConnectionNameMatches(client.DurabilityProvider);
+            return this.config.DefaultDurabilityProvider.ConnectionNameMatches(client.DurabilityProvider);
         }
 
         /// <inheritdoc />
