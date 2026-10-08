@@ -1,0 +1,10 @@
+<Project>
+  <Target Name="UseLocalPurgeHostPackage" BeforeTargets="CollectPackageReferences"
+          Condition="'$(MSBuildProjectFile)' == 'WorkerExtensions.csproj' and '$(DurableTaskHostPackageVersion)' != ''">
+    <ItemGroup>
+      <PackageReference Condition="'%(PackageReference.Identity)' == 'Microsoft.Azure.WebJobs.Extensions.DurableTask'">
+        <Version>$(DurableTaskHostPackageVersion)</Version>
+      </PackageReference>
+    </ItemGroup>
+  </Target>
+</Project>
