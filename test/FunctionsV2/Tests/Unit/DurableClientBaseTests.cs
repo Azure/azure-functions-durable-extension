@@ -331,12 +331,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal("original-source-instance", tags[DurableClient.SourceInstanceIdTag]);
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(null)]
+        [InlineData("original-source-instance")]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task RestartWithOptionsAsync_AllowsSameInstanceIdWithoutCloneMetadata()
+        public async Task RestartWithOptionsAsync_SameInstanceIdPreservesCloneMetadata(string sourceInstanceId)
         {
             const string InstanceId = "same-instance";
             const string FunctionName = "RestartedOrchestrator";
+            var tags = sourceInstanceId == null
+                ? null
+                : new Dictionary<string, string>
+                {
+                    [DurableClient.SourceInstanceIdTag] = sourceInstanceId,
+                    ["custom"] = "value",
+                };
             ExecutionStartedEvent capturedEvent = null;
             var serviceClient = new Mock<IOrchestrationServiceClient>();
             serviceClient
@@ -348,6 +357,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         {
                             Name = FunctionName,
                             Input = "null",
+                            Tags = tags,
                             OrchestrationInstance = new OrchestrationInstance { InstanceId = InstanceId },
                             OrchestrationStatus = OrchestrationStatus.Completed,
                         },
@@ -380,7 +390,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.NotNull(capturedEvent);
             Assert.Equal(InstanceId, capturedEvent.OrchestrationInstance.InstanceId);
             Assert.Equal("2.0", capturedEvent.Version);
-            Assert.Null(capturedEvent.Tags);
+            if (sourceInstanceId == null)
+            {
+                Assert.Null(capturedEvent.Tags);
+            }
+            else
+            {
+                Assert.Equal(2, capturedEvent.Tags.Count);
+                Assert.Equal(sourceInstanceId, capturedEvent.Tags[DurableClient.SourceInstanceIdTag]);
+                Assert.Equal("value", capturedEvent.Tags["custom"]);
+                Assert.Equal(sourceInstanceId, tags[DurableClient.SourceInstanceIdTag]);
+                Assert.Equal("value", tags["custom"]);
+            }
         }
 
         [Fact]

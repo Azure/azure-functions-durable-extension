@@ -170,8 +170,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             result.Actions = result.Actions.ToList();
             foreach (OrchestratorAction action in result.Actions)
             {
-                if (action is CreateSubOrchestrationAction subOrchestrationAction &&
-                    subOrchestrationAction.Tags?.ContainsKey(DurableClient.SourceInstanceIdTag) == true)
+                IDictionary<string, string>? tags = action switch
+                {
+                    CreateSubOrchestrationAction subOrchestrationAction => subOrchestrationAction.Tags,
+                    OrchestrationCompleteOrchestratorAction completeAction => completeAction.Tags,
+                    _ => null,
+                };
+                if (tags?.ContainsKey(DurableClient.SourceInstanceIdTag) == true)
                 {
                     throw new ArgumentException(
                         $"The tag key '{DurableClient.SourceInstanceIdTag}' is reserved for internal use.",

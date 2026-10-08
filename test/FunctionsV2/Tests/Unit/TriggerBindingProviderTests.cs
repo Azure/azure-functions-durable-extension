@@ -200,8 +200,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(isReplay ? 0 : 1, request.NewEvents.Count);
             if (!hasParent && !string.IsNullOrEmpty(sourceInstanceId))
             {
-                Assert.True(request.Properties.ContainsKey("sourceInstanceId"));
-                Assert.Equal(sourceInstanceId, request.Properties["sourceInstanceId"].StringValue);
+                Assert.True(request.Properties.TryGetValue("sourceInstanceId", out var sourceInstanceProperty));
+                Assert.Equal(sourceInstanceId, sourceInstanceProperty.StringValue);
             }
             else
             {
