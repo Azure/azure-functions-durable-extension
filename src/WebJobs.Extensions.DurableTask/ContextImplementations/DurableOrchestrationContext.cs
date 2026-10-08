@@ -67,6 +67,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal string ParentInstanceId { get; set; }
 
+        internal string SourceInstanceId { get; set; }
+
         internal OrchestrationContext InnerContext { get; set; }
 
         internal bool IsReplaying
@@ -147,6 +149,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         /// <inheritdoc />
         string IDurableOrchestrationContext.ParentInstanceId => this.ParentInstanceId;
+
+        /// <inheritdoc />
+        string IDurableOrchestrationContext.SourceInstanceId => this.SourceInstanceId;
 
         protected List<EntityId> ContextLocks { get; set; }
 
