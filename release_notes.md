@@ -41,6 +41,8 @@
 
 ### Breaking Changes
 
+- Per-function Durable execution logs now use `Function.<functionName>.User` instead of `Host.Triggers.DurableTask`; infrastructure diagnostics remain under the host category. Update category-specific `host.json` logging filters and telemetry queries, alerts, or dashboards as needed. (#3562)
+
 ### Dependency Updates
 
 - Remove LegacyLocalGrpcListener and the dependency on Grpc.Core (https://github.com/Azure/azure-functions-durable-extension/pull/3236)
