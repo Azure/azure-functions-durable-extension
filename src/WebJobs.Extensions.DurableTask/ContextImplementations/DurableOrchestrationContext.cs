@@ -1312,6 +1312,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (!this.IsReplaying)
             {
                 this.Config.TraceHelper.SendingEntityMessage(
+                    this.Name,
                     this.InstanceId,
                     this.ExecutionId,
                     target.InstanceId,

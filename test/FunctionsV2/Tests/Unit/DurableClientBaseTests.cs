@@ -897,7 +897,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         {
             var logger = new TestLogger(this.output, category: "UnitTest");
             var options = new DurableTaskOptions { HubName = "TestTaskHub" };
-            var traceHelper = new EndToEndTraceHelper(logger, traceReplayEvents: false);
+            var loggerFactory = Mock.Of<ILoggerFactory>(factory => factory.CreateLogger(It.IsAny<string>()) == logger);
+            var traceHelper = EndToEndTraceHelper.CreateWithSharedUserCategory(loggerFactory, traceReplayEvents: false);
             var storageProvider = new DurabilityProvider(
                 "test",
                 new Mock<IOrchestrationService>().Object,
@@ -929,7 +930,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             DurableTaskOptions durableTaskOptions = new DurableTaskOptions();
             DurableClientAttribute attribute = new DurableClientAttribute(durableClientOptions);
             MessagePayloadDataConverter messagePayloadDataConverter = new MessagePayloadDataConverter(new JsonSerializerSettings(), true);
-            var traceHelper = new EndToEndTraceHelper(new NullLogger<EndToEndTraceHelper>(), durableTaskOptions.Tracing.TraceReplayEvents);
+            var traceHelper = EndToEndTraceHelper.CreateWithSharedUserCategory(NullLoggerFactory.Instance, durableTaskOptions.Tracing.TraceReplayEvents);
 
             var durableOrchestrationClient = (IDurableOrchestrationClient)new DurableClient(storageProvider, null, attribute, messagePayloadDataConverter, traceHelper, durableTaskOptions);
             return durableOrchestrationClient;
