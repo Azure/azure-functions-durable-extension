@@ -168,14 +168,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private void SetResultInternal(OrchestratorExecutionResult result)
         {
             result.Actions = result.Actions.ToList();
-            foreach (OrchestratorAction action in result.Actions)
-            {
-                IDictionary<string, string>? tags = action switch
+            foreach (IDictionary<string, string>? tags in result.Actions.Select(action => action switch
                 {
                     CreateSubOrchestrationAction subOrchestrationAction => subOrchestrationAction.Tags,
                     OrchestrationCompleteOrchestratorAction completeAction => completeAction.Tags,
                     _ => null,
-                };
+                }))
+            {
                 if (tags?.ContainsKey(DurableClient.SourceInstanceIdTag) == true)
                 {
                     throw new ArgumentException(
