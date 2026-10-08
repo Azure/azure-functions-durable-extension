@@ -402,6 +402,7 @@ namespace WebJobs.Extensions.DurableTask.Tests.V2
             TestLogger logger = Assert.Single(provider.CreatedLoggers);
             Assert.Equal(TestHelpers.LogCategory, logger.Category);
             Assert.Equal(8, logger.LogMessages.Count);
+
             // The earlier "EventSource only" event uses writeToUserLogs: false, so it must not appear in ILogger output.
             Assert.DoesNotContain(logger.LogMessages, message => message.FormattedMessage.Contains("EventSource only", StringComparison.Ordinal));
         }
