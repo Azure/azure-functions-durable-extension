@@ -52,6 +52,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Gets the instance ID of the orchestration from which the current orchestration was cloned.
         /// </summary>
         /// <remarks>
+        /// Restarting a top-level clone with the same instance ID preserves its original source instance ID.
+        /// Sub-orchestrations return <c>null</c>, even when their parent was created as a clone.
         /// This value is available only when the configured durability provider persists orchestration tags.
         /// Providers that do not persist tags return <c>null</c>. For example,
         /// Microsoft.DurableTask.SqlServer 1.5.2 does not persist orchestration tags.

@@ -31,14 +31,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         private const string AssemblyNotLoadedMessage = "Could not load file or assembly";
 
         [Theory]
-        [InlineData(false, OrchestrationStatus.ContinuedAsNew)]
-        [InlineData(true, OrchestrationStatus.ContinuedAsNew)]
-        [InlineData(false, OrchestrationStatus.Completed)]
-        [InlineData(true, OrchestrationStatus.Completed)]
-        [InlineData(false, OrchestrationStatus.Failed)]
-        [InlineData(true, OrchestrationStatus.Failed)]
+        [InlineData(false, OrchestrationStatus.ContinuedAsNew, false)]
+        [InlineData(true, OrchestrationStatus.ContinuedAsNew, false)]
+        [InlineData(false, OrchestrationStatus.ContinuedAsNew, true)]
+        [InlineData(true, OrchestrationStatus.ContinuedAsNew, true)]
+        [InlineData(false, OrchestrationStatus.Completed, false)]
+        [InlineData(true, OrchestrationStatus.Completed, false)]
+        [InlineData(false, OrchestrationStatus.Completed, true)]
+        [InlineData(true, OrchestrationStatus.Completed, true)]
+        [InlineData(false, OrchestrationStatus.Failed, false)]
+        [InlineData(true, OrchestrationStatus.Failed, false)]
+        [InlineData(false, OrchestrationStatus.Failed, true)]
+        [InlineData(true, OrchestrationStatus.Failed, true)]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void RemoteResult_RejectsReservedCompletionTag(bool useJson, OrchestrationStatus status)
+        public void RemoteResult_RejectsReservedCompletionTag(bool useJson, OrchestrationStatus status, bool completionFirst)
         {
             var context = new RemoteOrchestratorContext(
                 new OrchestrationRuntimeState(),
@@ -56,15 +62,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 },
             };
             protoAction.CompleteOrchestration.Tags.Add(DurableClient.SourceInstanceIdTag, "forged-source");
-            var actions = new OrchestratorAction[]
+            var actions = new List<OrchestratorAction>();
+            if (completionFirst)
             {
-                new OrchestrationCompleteOrchestratorAction
+                actions.Add(new OrchestrationCompleteOrchestratorAction
                 {
                     OrchestrationStatus = OrchestrationStatus.Completed,
                     Result = "first-output",
-                },
-                ProtobufUtils.ToOrchestratorAction(protoAction),
-            };
+                });
+            }
+
+            actions.Add(ProtobufUtils.ToOrchestratorAction(protoAction));
 
             ArgumentException exception = Assert.Throws<ArgumentException>(() =>
             {
