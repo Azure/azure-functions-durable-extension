@@ -68,6 +68,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly AsyncLock taskHubLock = new AsyncLock();
         private readonly object protocolLockObject = new ();
         private readonly object taskHubWorkerInitLock = new ();
+        private readonly HashSet<string> reportedSdkNames = new (StringComparer.OrdinalIgnoreCase);
 #pragma warning disable CS0169
         private readonly ITelemetryActivator telemetryActivator;
 #pragma warning restore CS0169
@@ -493,20 +494,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     {
                         // This happens when the customer is using a durability provider/provider factory that does not yet support SetUseSeparateQueueForEntityWorkItems.
                         // It only represents a real problem when the customer is also using a language config that requires configuring gRPC during function indexing,
-                        // like for the gRPC-based Python SDK. Eventually, this method will be implemented on all durability provider SDKs and should never appear.
+                        // like the newer Python and JavaScript SDKs. Eventually, this method will be implemented on all durability provider SDKs and should never appear.
                         this.TraceHelper.ExtensionWarningEvent(this.Options.HubName, string.Empty, string.Empty, $"Could not set UseSeparateQueueForEntityWorkItems: {ex}");
                     }
                 }
             }
         }
 
-        internal void ConfigureForGrpcProtocol()
+        internal void ConfigureForGrpcProtocol(string durableSdkName = null, string durableSdkVersion = null)
         {
             lock (this.protocolLockObject)
             {
                 if (this.OutOfProcProtocol != OutOfProcOrchestrationProtocol.MiddlewarePassthrough)
                 {
                     this.OutOfProcProtocol = OutOfProcOrchestrationProtocol.MiddlewarePassthrough;
+
+                    string normalizedSdkName = durableSdkName?.Trim();
+                    string normalizedSdkVersion = durableSdkVersion?.Trim();
+                    if (!string.IsNullOrEmpty(normalizedSdkName) &&
+                        !string.IsNullOrEmpty(normalizedSdkVersion) &&
+                        this.reportedSdkNames.Add(normalizedSdkName))
+                    {
+                        this.TraceHelper.SdkUsageDetected(
+                            this.Options.HubName,
+                            normalizedSdkName,
+                            normalizedSdkVersion);
+                    }
+
                     if (this.localGrpcListener is null)
                     {
                         this.localGrpcListener = LocalGrpcListener.Create(this, this.Options.GrpcListenerMode);
@@ -525,7 +539,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     {
                         // This happens when the customer is using a durability provider/provider factory that does not yet support SetUseSeparateQueueForEntityWorkItems.
                         // It only represents a real problem when the customer is also using a language config that requires configuring gRPC during function indexing,
-                        // like for the gRPC-based Python SDK. Eventually, this method will be implemented on all durability provider SDKs and should never appear.
+                        // like the newer Python and JavaScript SDKs. Eventually, this method will be implemented on all durability provider SDKs and should never appear.
                         this.TraceHelper.ExtensionWarningEvent(this.Options.HubName, string.Empty, string.Empty, $"Could not set UseSeparateQueueForEntityWorkItems: {ex}");
                     }
                 }
@@ -1389,7 +1403,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // this normally needs to be done before the listeners start. Thankfully, even though DurableClient doesn't have
                 // an equivalent to the AttributeBindingProviders used by the trigger types for this, the durable client only case
                 // does not start the listeners, so we can defer initializing the task hub until first execution.
-                this.ConfigureForGrpcProtocol();
+                this.ConfigureForGrpcProtocol(attribute.DurableSdkName, attribute.DurableSdkVersion);
             }
 
             // We must ensure the TaskHubWorker exists so that we know we have started the appropriate server.
