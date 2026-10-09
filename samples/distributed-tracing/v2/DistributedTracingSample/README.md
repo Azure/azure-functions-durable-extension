@@ -11,6 +11,18 @@ The second version of distributed tracing for Durable Functions is in preview.
 ### Enabling Distributed Tracing V2
 To use Distributed Tracing V2, all you will need to do is update your app's host.json and add an environment variable for the Application Insights resource.
 
+#### Minimum package versions
+
+Use at least the following package versions for Distributed Tracing V2 support:
+
+| Storage provider | Package | Minimum version |
+| --- | --- | --- |
+| Azure Storage | `Microsoft.Azure.WebJobs.Extensions.DurableTask` | `2.11.1` |
+| Microsoft SQL Server | `Microsoft.DurableTask.SqlServer.AzureFunctions` | `1.2.0` |
+| Netherite | `Microsoft.Azure.DurableTask.Netherite.AzureFunctions` | `1.4.1` |
+
+The Azure Storage provider is included with `Microsoft.Azure.WebJobs.Extensions.DurableTask`. Version `2.11.0` contained the initial preview implementation but is unlisted, so `2.11.1` is the documented minimum. Use the latest stable versions when possible.
+
 #### Update host.json
 To use Distributed Tracing V2, please update your host.json settings to include the following settings: `DistributedTracingEnabled` and `Version`. The sample app's host.json is already updated with this information.
 
