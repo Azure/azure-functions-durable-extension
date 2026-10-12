@@ -55,6 +55,35 @@ func extensions install -p Microsoft.Azure.WebJobs.Extensions.DurableTask -v <la
 
 Durable Functions is also available in supported [extension bundles](https://docs.microsoft.com/azure/azure-functions/functions-bindings-register#extension-bundles). Note that extension bundles are only supported for non-.NET languages.
 
+## Backend completion failures
+
+A successful orchestrator or activity invocation does not mean its results have been committed to orchestration history. The storage provider completes the work item after the function invocation returns. A permanent failure at this stage can mark the orchestration `Failed` even if the last invocation log says the function completed or the orchestrator yielded. This applies across languages.
+
+For Durable Task Scheduler (DTS), the completion request includes new history, scheduled activity inputs, timers, messages, and custom status. Individually small activity results can still produce an oversized request when an orchestrator schedules another activity with their aggregated results. The provider can replace the oversized episode with a terminal, non-retriable failure. Events from the rejected episode might therefore be absent from persisted history despite successful activity invocation logs.
+
+Monitor persisted orchestration status and failure details, not just function invocation logs or invocation-level lifecycle notifications. A failure generated during backend completion occurs outside the orchestrator's execution boundary and cannot currently be caught by compensation code inside that same orchestrator. Backend-generated failures do not automatically run the extension's normal orchestrator-failure lifecycle notifications. Applications that require notification or compensation for these failures need an independent observer of terminal orchestration status.
+
+DTS provider diagnostics use the `DurableTask.AzureManagedBackend` logging category. Keep Error-level logs enabled for this category in `host.json`:
+
+```json
+{
+  "version": "2.0",
+  "logging": {
+    "logLevel": {
+      "DurableTask.AzureManagedBackend": "Error"
+    }
+  }
+}
+```
+
+Use a provider or extension bundle version that includes completion-failure reporting; changing log levels alone cannot make an older provider emit a missing error log. The `OrchestrationCompletionRejected` Error event identifies the instance ID, execution ID and function name when available, task hub, original serialized request size in bytes, limit type and size in bytes, and rejection reason. It does not include application payload contents or storage exception response bodies. Application Insights visibility also depends on the host's telemetry configuration and sampling.
+
+`SizeLimitType` distinguishes the aggregate `CompletionRequest` limit from the configured `ExternalizedPayload` limit for each individual payload. The latter is not an aggregate request limit. Permanent externalization failures can also result from Blob Storage access errors, so use the rejection reason to distinguish storage access failures from size violations.
+
+This event reports rejection of the original completion, not proof that the replacement terminal failure was committed. Inspect persisted status and any subsequent backend submission errors to determine the final outcome.
+
+To reduce request size, batch the work or configure [supported large-payload externalization](https://learn.microsoft.com/azure/durable-task/scheduler/durable-task-scheduler-large-payloads). Externalization does not remove all backend request limits.
+
 ## Contributing
 
 Many features of Durable Functions have been voluntarily contributed by the community, and we always welcome such contributions. If you are interested in contributing, please take a look at our [CONTRIBUTING](./CONTRIBUTING.md) guide.
