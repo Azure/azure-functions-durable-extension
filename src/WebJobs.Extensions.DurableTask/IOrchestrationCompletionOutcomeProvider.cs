@@ -31,6 +31,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Return an outcome only after receiving a valid acknowledgement. Set
         /// <see cref="OrchestrationCompletionOutcome.IsAuthoritative"/> only when the backend explicitly reports
         /// its accepted outcome, including any backend-generated replacement. Logging a rejection is not an acknowledgement.
+        /// Acknowledgement follows the backend's existing durability semantics, without an added synchronous persistence guarantee.
         /// The extension uses this result for best-effort post-acknowledgement reporting, not durable notification delivery.
         /// </remarks>
         Task<OrchestrationCompletionOutcome?> CompleteTaskOrchestrationWorkItemWithOutcomeAsync(
