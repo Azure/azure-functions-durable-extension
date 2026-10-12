@@ -71,7 +71,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (trigger.LargePayloadPurge)
             {
-                this.config.RegisterLargePayloadPurgeOrchestration(name);
+                this.config.ValidateLargePayloadPurgeOrchestration(name);
             }
 
             this.config.RegisterOrchestrator(orchestratorName, null);

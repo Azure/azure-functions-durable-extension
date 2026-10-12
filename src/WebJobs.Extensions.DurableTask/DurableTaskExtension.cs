@@ -83,7 +83,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private DurabilityProvider defaultDurabilityProvider;
         private TaskHubWorker taskHubWorker;
         private bool isTaskHubWorkerStarted;
-        private bool hasLargePayloadPurgeFunction;
         private HttpClient durableHttpClient;
         private EventSourceListener eventSourceListener;
 
@@ -226,13 +225,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 MatchStrategy = this.Options.VersionMatchStrategy, // The default value for this is to no-op on versioning.
                 FailureStrategy = this.Options.VersionFailureStrategy, // The default value for this is to ignore work if there is a mismatch.
             };
-            if (this.hasLargePayloadPurgeFunction)
-            {
-                // Core exposes this generic infrastructure hook only to the signed Functions host;
-                // the SDK-owned orchestration identity remains defined and validated here.
-                versioningSettings.ExcludedOrchestrationNames.Add(LargePayloadPurgeOrchestratorName);
-            }
-
             var newTaskHubWorker = new TaskHubWorker(this.defaultDurabilityProvider, this, this, loggerFactory: this.loggerFactory, versioningSettings: versioningSettings);
 
             // Add middleware to the DTFx dispatcher so that we can inject our own logic
@@ -1422,22 +1414,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        internal void RegisterLargePayloadPurgeOrchestration(string name)
+        internal void ValidateLargePayloadPurgeOrchestration(string name)
         {
             if (!string.Equals(name, LargePayloadPurgeOrchestratorName, StringComparison.Ordinal) ||
                 this.PlatformInformationService.GetWorkerRuntimeType() != WorkerRuntimeType.DotNetIsolated)
             {
                 throw new InvalidOperationException("The largePayloadPurge marker is reserved for the SDK's .NET isolated BlobPurgeJobOrchestrator function.");
-            }
-
-            lock (this.taskHubWorkerInitLock)
-            {
-                if (this.taskHubWorker != null)
-                {
-                    throw new InvalidOperationException("The SDK payload purge function must be indexed before the task hub worker is initialized.");
-                }
-
-                this.hasLargePayloadPurgeFunction = true;
             }
         }
 

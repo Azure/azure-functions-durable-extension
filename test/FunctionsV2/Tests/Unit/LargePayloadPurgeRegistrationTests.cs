@@ -21,17 +21,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public void Marker_RejectsNonSdkNamesAndOtherRuntimes(string name, WorkerRuntimeType runtime)
         {
             using var extension = CreateExtension(runtime);
-            Assert.Throws<InvalidOperationException>(() => extension.RegisterLargePayloadPurgeOrchestration(name));
+            Assert.Throws<InvalidOperationException>(() => extension.ValidateLargePayloadPurgeOrchestration(name));
         }
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void Marker_RequiresIndexingBeforeWorkerInitialization()
+        public void Marker_AcceptsCanonicalIsolatedNameWithoutWorkerLifecycleCoupling()
         {
             using var extension = CreateExtension(WorkerRuntimeType.DotNetIsolated);
-            extension.RegisterLargePayloadPurgeOrchestration("BlobPurgeJobOrchestrator");
+            extension.ValidateLargePayloadPurgeOrchestration("BlobPurgeJobOrchestrator");
             extension.EnsureTaskHubWorker();
-            Assert.Throws<InvalidOperationException>(() => extension.RegisterLargePayloadPurgeOrchestration("BlobPurgeJobOrchestrator"));
+            extension.ValidateLargePayloadPurgeOrchestration("BlobPurgeJobOrchestrator");
             ((TestHostShutdownNotificationService)extension.HostLifetimeService).SignalShutdown();
         }
 
