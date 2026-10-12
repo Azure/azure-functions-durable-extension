@@ -111,6 +111,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         public virtual string EventSourceName { get; set; }
 
+        internal Func<OrchestrationCompletionOutcome, OrchestrationRuntimeState, Task> CompletionHandler { get; set; }
+
         /// <inheritdoc/>
         public int TaskOrchestrationDispatcherCount => this.GetOrchestrationService().TaskOrchestrationDispatcherCount;
 
@@ -184,7 +186,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         }
 
         /// <inheritdoc/>
-        public Task CompleteTaskOrchestrationWorkItemAsync(
+        public async Task CompleteTaskOrchestrationWorkItemAsync(
             TaskOrchestrationWorkItem workItem,
             OrchestrationRuntimeState newOrchestrationRuntimeState,
             IList<TaskMessage> outboundMessages,
@@ -193,7 +195,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             TaskMessage continuedAsNewMessage,
             OrchestrationState orchestrationState)
         {
-            return this.GetOrchestrationService().CompleteTaskOrchestrationWorkItemAsync(
+            if (this is IOrchestrationCompletionOutcomeProvider outcomeProvider)
+            {
+                var completionHandler = this.CompletionHandler;
+                OrchestrationCompletionOutcome outcome = await outcomeProvider.CompleteTaskOrchestrationWorkItemWithOutcomeAsync(
+                    workItem,
+                    newOrchestrationRuntimeState,
+                    outboundMessages,
+                    orchestratorMessages,
+                    timerMessages,
+                    continuedAsNewMessage,
+                    orchestrationState);
+                if (outcome != null && completionHandler != null)
+                {
+                    await completionHandler(outcome, newOrchestrationRuntimeState);
+                }
+
+                return;
+            }
+
+            await this.GetOrchestrationService().CompleteTaskOrchestrationWorkItemAsync(
                 workItem,
                 newOrchestrationRuntimeState,
                 outboundMessages,

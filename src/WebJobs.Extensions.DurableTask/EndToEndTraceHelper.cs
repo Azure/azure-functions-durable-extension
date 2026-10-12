@@ -182,6 +182,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
+        internal void OrchestrationCompletionAcknowledged(string hubName, string functionName, OrchestrationCompletionOutcome outcome)
+        {
+            this.logger.LogInformation(
+                "Orchestration completion acknowledged. InstanceId: {instanceId}. ExecutionId: {executionId}. Function: {functionName}. HubName: {hubName}. CompletionIdentity: {completionIdentity}. RuntimeStatus: {runtimeStatus}. IsAuthoritative: {isAuthoritative}. IsProviderGeneratedFailure: {isProviderGeneratedFailure}. RequestSizeBytes: {requestSizeBytes}. SizeLimitBytes: {sizeLimitBytes}. SizeLimitType: {sizeLimitType}.",
+                outcome.InstanceId, outcome.ExecutionId, functionName, hubName, outcome.CompletionIdentity,
+                outcome.RuntimeStatus, outcome.IsAuthoritative, outcome.IsProviderGeneratedFailure,
+                outcome.RequestSizeBytes, outcome.SizeLimitBytes, outcome.SizeLimitType);
+        }
+
         public void ExtensionWarningEvent(string hubName, string functionName, string instanceId, string message)
         {
             EtwEventSource.Instance.ExtensionWarningEvent(

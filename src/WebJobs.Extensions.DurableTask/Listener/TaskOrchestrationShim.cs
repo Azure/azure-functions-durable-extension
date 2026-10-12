@@ -108,27 +108,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             string serializedOutput = this.context.GetSerializedOutput();
 
-            this.Config.TraceHelper.FunctionCompleted(
-                this.context.HubName,
-                this.context.Name,
-                this.context.InstanceId,
-                serializedOutput,
-                this.context.ContinuedAsNew,
-                FunctionType.Orchestrator,
-                this.context.IsReplaying);
-            status = OrchestrationRuntimeStatus.Completed;
-
-            if (!this.context.IsReplaying)
+            if (!this.config.UsesCompletionOutcomes)
             {
-                this.context.AddDeferredTask(() => this.Config.LifeCycleNotificationHelper.OrchestratorCompletedAsync(
+                this.Config.TraceHelper.FunctionCompleted(
                     this.context.HubName,
                     this.context.Name,
                     this.context.InstanceId,
+                    serializedOutput,
                     this.context.ContinuedAsNew,
-                    this.context.IsReplaying));
+                    FunctionType.Orchestrator,
+                    this.context.IsReplaying);
+                status = OrchestrationRuntimeStatus.Completed;
+
+                if (!this.context.IsReplaying)
+                {
+                    this.context.AddDeferredTask(() => this.Config.LifeCycleNotificationHelper.OrchestratorCompletedAsync(
+                        this.context.HubName,
+                        this.context.Name,
+                        this.context.InstanceId,
+                        this.context.ContinuedAsNew,
+                        this.context.IsReplaying));
+                }
+
+                DurableTaskExtension.TagActivityWithOrchestrationStatus(status, this.context.InstanceId);
             }
 
-            DurableTaskExtension.TagActivityWithOrchestrationStatus(status, this.context.InstanceId);
             return serializedOutput;
         }
 
@@ -197,7 +201,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     this.context.OrchestrationException =
                         ExceptionDispatchInfo.Capture(orchestrationException);
 
-                    DurableTaskExtension.TagActivityWithOrchestrationStatus(OrchestrationRuntimeStatus.Failed, this.context.InstanceId);
+                    if (!this.config.UsesCompletionOutcomes)
+                    {
+                        DurableTaskExtension.TagActivityWithOrchestrationStatus(OrchestrationRuntimeStatus.Failed, this.context.InstanceId);
+                    }
 
                     throw orchestrationException;
                 }
@@ -210,6 +217,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private void TraceAndSendExceptionNotification(Exception exception)
         {
+            if (this.config.UsesCompletionOutcomes)
+            {
+                return;
+            }
+
             string exceptionDetails = exception.Message;
             if (exception is OrchestrationFailureException orchestrationFailureException)
             {
