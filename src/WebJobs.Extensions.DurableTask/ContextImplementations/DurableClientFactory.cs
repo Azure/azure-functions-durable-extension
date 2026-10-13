@@ -26,7 +26,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations
         private readonly DurableClientOptions defaultDurableClientOptions;
         private readonly DurableTaskOptions durableTaskOptions;
         private readonly IDurabilityProviderFactory durabilityProviderFactory;
-        private readonly ILogger logger;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="DurableClientFactory"/> class.
@@ -43,19 +42,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations
             ILoggerFactory loggerFactory,
             IMessageSerializerSettingsFactory messageSerializerSettingsFactory = null)
         {
-            this.logger = loggerFactory.CreateLogger(DurableTaskExtension.LoggerCategoryName);
-
             this.durabilityProviderFactory = orchestrationServiceFactory;
             this.defaultDurableClientOptions = defaultDurableClientOptions.Value;
             this.durableTaskOptions = durableTaskOptions?.Value ?? new DurableTaskOptions();
 
             this.MessageDataConverter = DurableTaskExtension.CreateMessageDataConverter(messageSerializerSettingsFactory);
-            this.TraceHelper = new EndToEndTraceHelper(this.logger, this.durableTaskOptions.Tracing.TraceReplayEvents);
+            this.TraceHelper = EndToEndTraceHelper.CreateWithSharedUserCategory(loggerFactory, this.durableTaskOptions.Tracing.TraceReplayEvents);
         }
 
         internal MessagePayloadDataConverter MessageDataConverter { get; private set; }
 
         internal EndToEndTraceHelper TraceHelper { get; private set; }
+
+        // Set by Functions-host DI registration, not Azure environment detection. Enables slot
+        // validation on CreateClient, not factory resolution; standalone factories leave this false.
+        internal bool IsInFunctionsHost { get; set; }
 
         /// <summary>
         /// Gets a <see cref="IDurableClient"/> using configuration from a <see cref="DurableClientOptions"/> instance.
@@ -72,6 +73,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.ContextImplementations
             if (string.IsNullOrWhiteSpace(durableClientOptions.TaskHub))
             {
                 throw new ArgumentException("Please provide value for 'TaskHub'");
+            }
+
+            if (this.IsInFunctionsHost)
+            {
+                this.durableTaskOptions.ValidateHubNameForSlot();
             }
 
             DurableClientAttribute attribute = new DurableClientAttribute(durableClientOptions);

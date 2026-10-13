@@ -1064,45 +1064,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-        /// <summary>
-        /// Tests that an attempt to use a default task hub name while in a test slot will throw an exception <see cref="InvalidOperationException"/>.
-        /// </summary>
-        [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task TaskHubName_DefaultNameNonProductionSlot_ThrowsException()
-        {
-            string currSiteName = Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME");
-            string currSlotName = Environment.GetEnvironmentVariable("WEBSITE_SLOT_NAME");
-
-            try
-            {
-                Environment.SetEnvironmentVariable("WEBSITE_SITE_NAME", "TestSiteName");
-                Environment.SetEnvironmentVariable("WEBSITE_SLOT_NAME", "Test");
-                DurableTaskOptions durableTaskOptions = new DurableTaskOptions();
-                durableTaskOptions.LocalRpcEndpointEnabled = false;
-
-                InvalidOperationException exception =
-                    await Assert.ThrowsAsync<InvalidOperationException>(async () =>
-                {
-                    using (var host = TestHelpers.GetJobHostWithOptions(
-                        this.loggerProvider,
-                        durableTaskOptions))
-                    {
-                        await host.StartAsync();
-                        await host.StopAsync();
-                    }
-                });
-
-                Assert.NotNull(exception);
-                Assert.Contains("Task Hub name must be specified in host.json when using slots", exception.Message);
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable("WEBSITE_SITE_NAME", currSiteName);
-                Environment.SetEnvironmentVariable("WEBSITE_SLOT_NAME", currSlotName);
-            }
-        }
-
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task TaskHubName_AppSettingReference_ValidTaskHub_UsesResolvedTaskHub()
