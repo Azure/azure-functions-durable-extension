@@ -223,7 +223,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 orchestratorResult = context.GetResult();
 
-                if (context.OrchestratorCompleted)
+                if (context.OrchestratorCompleted && !this.extension.UsesCompletionOutcomes)
                 {
                     this.TraceHelper.FunctionCompleted(
                         this.Options.HubName,
@@ -258,7 +258,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             isReplay: false);
                     }
                 }
-                else
+                else if (!context.OrchestratorCompleted)
                 {
                     this.TraceHelper.FunctionAwaited(
                         this.Options.HubName,
@@ -274,40 +274,46 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 orchestratorResult = context.GetResult();
 
-                this.TraceHelper.FunctionFailed(
-                     this.Options.HubName,
-                     functionName.Name,
-                     instance.InstanceId,
-                     exception,
-                     FunctionType.Orchestrator,
-                     isReplay: false);
+                if (!this.extension.UsesCompletionOutcomes)
+                {
+                    this.TraceHelper.FunctionFailed(
+                        this.Options.HubName,
+                        functionName.Name,
+                        instance.InstanceId,
+                        exception,
+                        FunctionType.Orchestrator,
+                        isReplay: false);
 
-                await this.LifeCycleNotificationHelper.OrchestratorFailedAsync(
-                    this.Options.HubName,
-                    functionName.Name,
-                    instance.InstanceId,
-                    exception?.Message ?? string.Empty,
-                    isReplay: false);
+                    await this.LifeCycleNotificationHelper.OrchestratorFailedAsync(
+                        this.Options.HubName,
+                        functionName.Name,
+                        instance.InstanceId,
+                        exception?.Message ?? string.Empty,
+                        isReplay: false);
+                }
             }
             else
             {
                 // the function failed for some other reason
                 string exceptionDetails = functionResult.Exception?.ToString() ?? "Framework-internal message: exception details could not be extracted";
 
-                this.TraceHelper.FunctionFailed(
-                    this.Options.HubName,
-                    functionName.Name,
-                    instance.InstanceId,
-                    functionResult.Exception,
-                    FunctionType.Orchestrator,
-                    isReplay: false);
+                if (!this.extension.UsesCompletionOutcomes)
+                {
+                    this.TraceHelper.FunctionFailed(
+                        this.Options.HubName,
+                        functionName.Name,
+                        instance.InstanceId,
+                        functionResult.Exception,
+                        FunctionType.Orchestrator,
+                        isReplay: false);
 
-                await this.LifeCycleNotificationHelper.OrchestratorFailedAsync(
-                    this.Options.HubName,
-                    functionName.Name,
-                    instance.InstanceId,
-                    exceptionDetails,
-                    isReplay: false);
+                    await this.LifeCycleNotificationHelper.OrchestratorFailedAsync(
+                        this.Options.HubName,
+                        functionName.Name,
+                        instance.InstanceId,
+                        exceptionDetails,
+                        isReplay: false);
+                }
 
                 orchestratorResult = OrchestratorExecutionResult.ForFailure(
                     message: $"Function '{functionName}' failed with an unhandled exception.",

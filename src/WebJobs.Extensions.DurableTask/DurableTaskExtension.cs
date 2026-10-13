@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using DurableTask.AzureStorage;
 using DurableTask.Core;
 using DurableTask.Core.Command;
+using DurableTask.Core.Common;
 using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Middleware;
@@ -142,6 +143,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.LifeCycleNotificationHelper = lifeCycleNotificationHelper ?? this.CreateLifeCycleNotificationHelper();
             this.durabilityProviderFactory = GetDurabilityProviderFactory(this.Options, logger, orchestrationServiceFactories);
             this.defaultDurabilityProvider = this.durabilityProviderFactory.GetDurabilityProvider();
+            this.defaultDurabilityProvider.CompletionHandler = this.HandleOrchestrationCompletionAsync;
             this.isOptionsConfigured = true;
 
             if (durableHttpMessageHandlerFactory == null)
@@ -203,6 +205,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         internal DurableTaskOptions Options { get; }
 
         internal DurabilityProvider DefaultDurabilityProvider => this.defaultDurabilityProvider;
+
+        internal bool UsesCompletionOutcomes => this.defaultDurabilityProvider is IOrchestrationCompletionOutcomeProvider;
 
         internal HttpApiHandler HttpApiHandler { get; private set; }
 
@@ -626,6 +630,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc />
         public void Dispose()
         {
+            if (this.defaultDurabilityProvider.CompletionHandler == this.HandleOrchestrationCompletionAsync)
+            {
+                this.defaultDurabilityProvider.CompletionHandler = null;
+            }
+
             this.HttpApiHandler?.Dispose();
             this.eventSourceListener?.Dispose();
         }
@@ -850,7 +859,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             // therefore has to be raised from the dispatch middleware, which is the closest common ancestor of
             // every orchestration work item. https://github.com/Azure/azure-functions-durable-extension/issues/286
             ExecutionTerminatedEvent terminatedEvent = GetTerminationEventOrNull(orchestrationRuntimeState);
-            if (terminatedEvent != null)
+            if (terminatedEvent != null && !this.UsesCompletionOutcomes)
             {
                 context.AddDeferredTask(() => this.LifeCycleNotificationHelper.OrchestratorTerminatedAsync(
                     context.HubName,
@@ -968,6 +977,101 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             await context.RunDeferredTasks();
+        }
+
+        private async Task HandleOrchestrationCompletionAsync(
+            OrchestrationCompletionOutcome outcome,
+            OrchestrationRuntimeState proposedState)
+        {
+            string functionName = outcome.FunctionName ?? proposedState.Name ?? string.Empty;
+            try
+            {
+                using Activity completionActivity = Correlation.TraceHelper.StartActivityForOrchestrationCompletion(functionName, outcome);
+                this.TraceHelper.OrchestrationCompletionAcknowledged(this.Options.HubName, functionName, outcome);
+                if (!outcome.IsAuthoritative &&
+                    (outcome.RuntimeStatus == OrchestrationStatus.Completed ||
+                     outcome.RuntimeStatus == OrchestrationStatus.ContinuedAsNew ||
+                     outcome.RuntimeStatus == OrchestrationStatus.Canceled ||
+                     outcome.RuntimeStatus == OrchestrationStatus.Failed ||
+                     outcome.RuntimeStatus == OrchestrationStatus.Terminated))
+                {
+                    this.TraceHelper.ExtensionWarningEvent(
+                        this.Options.HubName,
+                        functionName,
+                        outcome.InstanceId,
+                        "The backend acknowledged completion without returning its accepted outcome. Terminal reporting uses the submitted outcome for compatibility; upgrade the backend for authoritative completion reporting.");
+                }
+
+                switch (outcome.RuntimeStatus)
+                {
+                    case OrchestrationStatus.Completed:
+                    case OrchestrationStatus.ContinuedAsNew:
+                    case OrchestrationStatus.Canceled:
+                        bool continuedAsNew = outcome.RuntimeStatus == OrchestrationStatus.ContinuedAsNew;
+                        string output = proposedState.NewEvents.OfType<ExecutionCompletedEvent>().LastOrDefault()?.Result;
+                        this.TraceHelper.FunctionCompleted(
+                            this.Options.HubName,
+                            functionName,
+                            outcome.InstanceId,
+                            output,
+                            continuedAsNew,
+                            FunctionType.Orchestrator,
+                            isReplay: false,
+                            runtimeStatus: (OrchestrationRuntimeStatus)outcome.RuntimeStatus);
+                        await this.LifeCycleNotificationHelper.OrchestratorCompletedAsync(
+                            this.Options.HubName, functionName, outcome.InstanceId, continuedAsNew, isReplay: false);
+                        break;
+                    case OrchestrationStatus.Failed:
+                        string reason = outcome.ReportingReason ?? outcome.FailureDetails?.ErrorMessage
+                            ?? "The backend acknowledged a failed orchestration completion.";
+                        if (outcome.IsProviderGeneratedFailure)
+                        {
+                            this.TraceHelper.FunctionFailed(
+                                this.Options.HubName,
+                                functionName,
+                                outcome.InstanceId,
+                                reason,
+                                sanitizedReason: reason,
+                                FunctionType.Orchestrator,
+                                isReplay: false);
+                        }
+                        else
+                        {
+                            this.TraceHelper.FunctionFailed(
+                                this.Options.HubName,
+                                functionName,
+                                outcome.InstanceId,
+                                new OrchestrationFailureException(reason)
+                                {
+                                    Details = outcome.FailureDetails == null ? reason : JsonConvert.SerializeObject(outcome.FailureDetails),
+                                },
+                                FunctionType.Orchestrator,
+                                isReplay: false);
+                        }
+
+                        await this.LifeCycleNotificationHelper.OrchestratorFailedAsync(
+                            this.Options.HubName, functionName, outcome.InstanceId, reason, isReplay: false);
+                        break;
+                    case OrchestrationStatus.Terminated:
+                        string terminationReason = outcome.ReportingReason ?? GetTerminationEventOrNull(proposedState)?.Input ?? string.Empty;
+                        this.TraceHelper.FunctionTerminated(this.Options.HubName, functionName, outcome.InstanceId, terminationReason);
+                        await this.LifeCycleNotificationHelper.OrchestratorTerminatedAsync(
+                            this.Options.HubName,
+                            functionName,
+                            outcome.InstanceId,
+                            terminationReason);
+                        break;
+                }
+            }
+            catch (Exception exception) when (!Utils.IsFatal(exception))
+            {
+                // Completion was already acknowledged. Reporting failures must not abandon the work item.
+                this.TraceHelper.ExtensionWarningEvent(
+                    this.Options.HubName,
+                    functionName,
+                    outcome.InstanceId,
+                    $"Reporting acknowledged completion '{outcome.CompletionIdentity}' failed with {exception.GetType().FullName}. The completed work item will not be retried.");
+            }
         }
 
         /// <summary>

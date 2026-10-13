@@ -13,6 +13,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         public const string Entity = "entity";
 
         public const string CreateOrchestration = "create_orchestration";
+        public const string OrchestrationCompletion = "orchestration_completion";
         public const string OrchestrationEvent = "orchestration_event";
 
         public const string CallEntity = "call_entity";

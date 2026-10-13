@@ -55,6 +55,43 @@ func extensions install -p Microsoft.Azure.WebJobs.Extensions.DurableTask -v <la
 
 Durable Functions is also available in supported [extension bundles](https://docs.microsoft.com/azure/azure-functions/functions-bindings-register#extension-bundles). Note that extension bundles are only supported for non-.NET languages.
 
+## Backend completion failures
+
+A successful orchestrator or activity invocation does not mean its results have been committed to orchestration history. The storage provider completes the work item after the function invocation returns. A permanent failure at this stage can mark the orchestration `Failed` even if the last invocation log says the function completed or the orchestrator yielded. This applies across languages.
+
+For Durable Task Scheduler (DTS), the completion request includes new history, scheduled activity inputs, timers, messages, and custom status. Individually small activity results can still produce an oversized request when an orchestrator schedules another activity with their aggregated results. The provider can replace the oversized episode with a terminal, non-retriable failure. Events from the rejected episode might therefore be absent from persisted history despite successful activity invocation logs.
+
+Providers implementing the optional `IOrchestrationCompletionOutcomeProvider` contract report the completion outcome after backend acknowledgement. For these providers, the extension defers terminal orchestration logs, completion telemetry, and lifecycle notifications until acknowledgement. A provider-generated replacement failure then produces `FunctionFailed` and the normal `Failed` lifecycle notification, rather than a premature `Completed` notification. Providers without this capability retain their existing invocation-time reporting.
+
+With Distributed Tracing V2 enabled, acknowledged status is recorded on a separate `orchestration_completion:<functionName>` dependency span, not by rewriting a stopped function-invocation activity or tagging an unrelated dispatcher activity. The span carries instance/execution IDs, accepted status, completion identity, and authority/failure-origin metadata. An accepted `Canceled` outcome retains the existing `Completed` lifecycle notification for compatibility, while completion logs and spans record its actual `Canceled` status.
+
+An outcome is authoritative only when the backend explicitly returns its accepted status. When an older backend sends an empty acknowledgement, the provider returns the acknowledged **submitted** outcome with `IsAuthoritative = false`. The extension warns when reporting a non-authoritative terminal outcome; this fallback cannot detect independent server-side replacement. Full handling therefore requires the updated extension, a provider adapter implementing the contract, and a backend supporting accepted-outcome responses. Updating a centrally referenced SDK package or a log filter alone does not upgrade application providers or extension bundles.
+
+Acknowledgement follows the backend's existing completion and durability semantics; this contract does not add a synchronous database-persistence guarantee. Lifecycle delivery after acknowledgement is best-effort: reporting errors are logged but must not retry an already completed work item, and a host crash between acknowledgement and notification can lose the notification. Monitor persisted orchestration status and failure details as the source of truth. A failure generated during backend completion still occurs outside the orchestrator's execution boundary and cannot be caught by compensation code inside that same orchestrator. Applications needing guaranteed notification or compensation require an independent observer of terminal orchestration status.
+
+The extension's structured acknowledgement log includes the instance and execution IDs, a non-secret completion identity, runtime status, `IsAuthoritative`, `IsProviderGeneratedFailure`, and available size diagnostics. Provider-generated failure reasons must exclude application payloads, raw storage response bodies, and work-item authorization tokens.
+
+DTS provider diagnostics use the `DurableTask.AzureManagedBackend` logging category. Keep Error-level logs enabled for this category in `host.json`:
+
+```json
+{
+  "version": "2.0",
+  "logging": {
+    "logLevel": {
+      "DurableTask.AzureManagedBackend": "Error"
+    }
+  }
+}
+```
+
+Use a provider or extension bundle version that includes completion-failure reporting; changing log levels alone cannot make an older provider emit a missing error log. The `OrchestrationCompletionRejected` Error event identifies the instance ID, execution ID and function name when available, task hub, original serialized request size in bytes, limit type and size in bytes, and rejection reason. It does not include application payload contents or storage exception response bodies. Application Insights visibility also depends on the host's telemetry configuration and sampling.
+
+`SizeLimitType` distinguishes the aggregate `CompletionRequest` limit from the configured `ExternalizedPayload` limit for each individual payload. The latter is not an aggregate request limit. Permanent externalization failures can also result from Blob Storage access errors, so use the rejection reason to distinguish storage access failures from size violations.
+
+This event reports rejection of the original completion, not proof that the replacement terminal failure was committed. Inspect persisted status and any subsequent backend submission errors to determine the final outcome.
+
+To reduce request size, batch the work or configure [supported large-payload externalization](https://learn.microsoft.com/azure/durable-task/scheduler/durable-task-scheduler-large-payloads). Externalization does not remove all backend request limits.
+
 ## Contributing
 
 Many features of Durable Functions have been voluntarily contributed by the community, and we always welcome such contributions. If you are interested in contributing, please take a look at our [CONTRIBUTING](./CONTRIBUTING.md) guide.
