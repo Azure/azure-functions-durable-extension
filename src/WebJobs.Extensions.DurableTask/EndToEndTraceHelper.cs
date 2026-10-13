@@ -386,7 +386,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             bool continuedAsNew,
             FunctionType functionType,
             bool isReplay,
-            int taskEventId = -1)
+            int taskEventId = -1,
+            OrchestrationRuntimeStatus runtimeStatus = OrchestrationRuntimeStatus.Completed)
         {
             this.SanitizeString(output, out string loggerOutput, out string sanitizedOutput);
 
@@ -407,7 +408,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 this.GetFunctionLogger(functionName).LogInformation(
                     "{instanceId}: Function '{functionName} ({functionType})' completed. ContinuedAsNew: {continuedAsNew}. IsReplay: {isReplay}. Output: {output}. State: {state}. RuntimeStatus: {runtimeStatus}. HubName: {hubName}. AppName: {appName}. SlotName: {slotName}. ExtensionVersion: {extensionVersion}. SequenceNumber: {sequenceNumber}. TaskEventId: {taskEventId}",
-                    instanceId, functionName, functionType, continuedAsNew, isReplay, loggerOutput, FunctionState.Completed, OrchestrationRuntimeStatus.Completed, hubName,
+                    instanceId, functionName, functionType, continuedAsNew, isReplay, loggerOutput, FunctionState.Completed, runtimeStatus, hubName,
                     LocalAppName, LocalSlotName, ExtensionVersion, this.GetNextSequenceNumber(), taskEventId);
             }
         }

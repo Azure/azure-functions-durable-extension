@@ -3,6 +3,7 @@
 
 #nullable enable
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -10,10 +11,15 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.Common;
 using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Middleware;
 using Google.Protobuf;
+using Microsoft.ApplicationInsights.Channel;
+using Microsoft.ApplicationInsights.DataContracts;
+using Microsoft.ApplicationInsights.Extensibility;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
 using Microsoft.Extensions.Logging;
@@ -39,34 +45,66 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData(OrchestrationStatus.ContinuedAsNew, "ContinuedAsNew")]
         [InlineData(OrchestrationStatus.Failed, "Failed:safe rejection")]
         [InlineData(OrchestrationStatus.Terminated, "Terminated:safe rejection")]
+        [InlineData(OrchestrationStatus.Canceled, "Completed")]
         [InlineData(OrchestrationStatus.Running, null)]
         [InlineData(OrchestrationStatus.Suspended, null)]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task Completion_ReportsAcceptedOutcomeOnlyAfterAcknowledgement(OrchestrationStatus status, string? expected)
         {
             using var fixture = new Fixture(this.output);
-            using var activity = new Activity("completion-test").Start();
-            DurableTaskExtension.TagActivityWithOrchestrationStatus(OrchestrationRuntimeStatus.Running, "instance");
+            var completedActivities = new ConcurrentQueue<Activity>();
+            using var listener = new ActivityListener
+            {
+                ShouldListenTo = source => source.Name == "WebJobs.Extensions.DurableTask",
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData,
+                ActivityStopped = activity =>
+                {
+                    if (activity.GetTagItem(Schema.Task.Operation)?.Equals(TraceActivityConstants.OrchestrationCompletion) == true)
+                    {
+                        completedActivities.Enqueue(activity);
+                    }
+                },
+            };
+            ActivitySource.AddActivityListener(listener);
+            using var dispatcherActivity = new Activity("dispatcher-test").Start();
+            dispatcherActivity.SetTag("DurableFunctionsRuntimeStatus", "dispatcher-status");
             OrchestrationRuntimeState state = await fixture.InvokePassthroughAsync(P.OrchestrationStatus.Completed);
             Assert.Empty(fixture.Notifications.Events);
             Assert.DoesNotContain(fixture.Logs.GetAllLogMessages(), IsTerminalLog);
+            Assert.Same(dispatcherActivity, Activity.Current);
+            Activity invocationActivity = Assert.IsType<Activity>(fixture.InvocationActivity);
+            Assert.NotSame(invocationActivity, Activity.Current);
+            Assert.Empty(completedActivities);
 
             Task completion = fixture.CompleteAsync(state);
             Assert.Equal(1, fixture.Provider.CompletionCalls);
             Assert.Empty(fixture.Notifications.Events);
-            Assert.Equal("Running", activity.GetTagItem("DurableFunctionsRuntimeStatus"));
+            Assert.Equal("dispatcher-status", dispatcherActivity.GetTagItem("DurableFunctionsRuntimeStatus"));
 
             fixture.Provider.Acknowledgement.SetResult(CreateOutcome(status));
             await completion;
 
-            Assert.Equal(status.ToString(), activity.GetTagItem("DurableFunctionsRuntimeStatus"));
-            Assert.Single(activity.Tags, tag => tag.Key == "DurableFunctionsRuntimeStatus");
+            Activity completionActivity = Assert.Single(completedActivities);
+            Assert.Equal(ActivityKind.Internal, completionActivity.Kind);
+            Assert.NotSame(invocationActivity, completionActivity);
+            Assert.NotSame(dispatcherActivity, completionActivity);
+            Assert.Equal(status.ToString(), completionActivity.GetTagItem(Schema.Task.Status));
+            Assert.Equal(status.ToString(), completionActivity.GetTagItem("DurableFunctionsRuntimeStatus"));
+            Assert.Equal("completion", completionActivity.GetTagItem("durabletask.completion.identity"));
+            Assert.Equal("dispatcher-status", dispatcherActivity.GetTagItem("DurableFunctionsRuntimeStatus"));
+            Assert.Equal("invocation-status", invocationActivity.GetTagItem("DurableFunctionsRuntimeStatus"));
             Assert.Equal(expected == null ? Array.Empty<string>() : new[] { expected }, fixture.Notifications.Events);
             fixture.Service.VerifyNoOtherCalls();
             LogMessage acknowledgement = Assert.Single(fixture.Logs.GetAllLogMessages(), message =>
                 message.FormattedMessage.Contains("Orchestration completion acknowledged"));
             Assert.Equal("completion", acknowledgement.State.Single(field => field.Key == "completionIdentity").Value);
             Assert.Equal(true, acknowledgement.State.Single(field => field.Key == "isAuthoritative").Value);
+            if (status == OrchestrationStatus.Completed || status == OrchestrationStatus.ContinuedAsNew || status == OrchestrationStatus.Canceled)
+            {
+                LogMessage completed = Assert.Single(fixture.Logs.GetAllLogMessages(), message => message.FormattedMessage.Contains("State: Completed"));
+                Assert.Equal((OrchestrationRuntimeStatus)status, completed.State.Single(field => field.Key == "runtimeStatus").Value);
+            }
+
             if (status == OrchestrationStatus.Failed)
             {
                 LogMessage failed = Assert.Single(fixture.Logs.GetAllLogMessages(), message => message.Level == LogLevel.Error);
@@ -88,6 +126,47 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Empty(fixture.Notifications.Events);
             Assert.DoesNotContain(fixture.Logs.GetAllLogMessages(), IsTerminalLog);
             fixture.Service.VerifyNoOtherCalls();
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task Completion_ExportsSeparateDependencyWhenInvocationActivityHasStopped()
+        {
+            using var fixture = new Fixture(this.output);
+            OrchestrationRuntimeState state = await fixture.InvokePassthroughAsync(P.OrchestrationStatus.Completed);
+            Assert.Null(Activity.Current);
+            var telemetry = new ConcurrentQueue<ITelemetry>();
+            using var configuration = TelemetryConfiguration.CreateDefault();
+            configuration.ConnectionString = "InstrumentationKey=00000000-0000-0000-0000-000000000001";
+            configuration.TelemetryChannel = new NoOpTelemetryChannel { OnSend = telemetry.Enqueue };
+            await using var module = new WebJobsTelemetryModule();
+            module.Initialize(configuration);
+            Task completion = fixture.CompleteAsync(state);
+            Assert.Empty(telemetry);
+            fixture.Provider.Acknowledgement.SetResult(CreateOutcome(OrchestrationStatus.Failed));
+
+            await completion;
+
+            DependencyTelemetry dependency = Assert.Single(telemetry.OfType<DependencyTelemetry>(), item =>
+                item.Name == "orchestration_completion:TestOrchestrator");
+            Assert.False(dependency.Success);
+            Assert.Equal("Failed", dependency.Properties[Schema.Task.Status]);
+            Assert.Equal("completion", dependency.Properties["durabletask.completion.identity"]);
+            Assert.DoesNotContain(telemetry, item => item is RequestTelemetry);
+            Assert.Null(Activity.Current);
+            Assert.Equal("invocation-status", fixture.InvocationActivity!.GetTagItem("DurableFunctionsRuntimeStatus"));
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task Passthrough_FatalInvocationErrorAbortsInsteadOfReportingTerminalFailure()
+        {
+            using var fixture = new Fixture(this.output);
+            SessionAbortedException exception = await Assert.ThrowsAsync<SessionAbortedException>(() => fixture.InvokePassthroughAsync(
+                P.OrchestrationStatus.Completed, invocationException: new OutOfMemoryException("simulated fatal invocation error")));
+            Assert.Contains("simulated fatal invocation error", exception.Message);
+            Assert.Empty(fixture.Notifications.Events);
+            Assert.DoesNotContain(fixture.Logs.GetAllLogMessages(), IsTerminalLog);
         }
 
         [Fact]
@@ -131,13 +210,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Single(fixture.Logs.GetAllLogMessages(), message => message.Level == LogLevel.Error);
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(OrchestrationStatus.Completed)]
+        [InlineData(OrchestrationStatus.Canceled)]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task Completion_LegacyBackendAcknowledgementUsesExplicitCompatibilityFallback()
+        public async Task Completion_LegacyBackendAcknowledgementUsesExplicitCompatibilityFallback(OrchestrationStatus status)
         {
             using var fixture = new Fixture(this.output);
             fixture.Provider.Acknowledgement.SetResult(new OrchestrationCompletionOutcome(
-                "instance", "execution", "TestOrchestrator", "completion", OrchestrationStatus.Completed, isAuthoritative: false));
+                "instance", "execution", "TestOrchestrator", "completion", status, isAuthoritative: false));
 
             await fixture.CompleteAsync(CreateState());
 
@@ -210,13 +291,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
+        [InlineData(false, OrchestrationStatus.Completed)]
+        [InlineData(true, OrchestrationStatus.Completed)]
+        [InlineData(false, OrchestrationStatus.Canceled)]
+        [InlineData(true, OrchestrationStatus.Canceled)]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task Passthrough_ExistingProviderStillReportsCompletionBeforeSubmission(bool supportsOutcomes)
+        public async Task Passthrough_ExistingProviderStillReportsCompletionBeforeSubmission(bool supportsOutcomes, OrchestrationStatus status)
         {
             using var fixture = new Fixture(this.output, supportsOutcomes);
-            await fixture.InvokePassthroughAsync(P.OrchestrationStatus.Completed);
+            await fixture.InvokePassthroughAsync(status == OrchestrationStatus.Canceled ? P.OrchestrationStatus.Canceled : P.OrchestrationStatus.Completed);
             Assert.Equal(supportsOutcomes ? Array.Empty<string>() : new[] { "Completed" }, fixture.Notifications.Events);
             Assert.Equal(!supportsOutcomes, fixture.Logs.GetAllLogMessages().Any(IsTerminalLog));
             Assert.DoesNotContain(fixture.Logs.GetAllLogMessages(), message => message.FormattedMessage.Contains("State: Awaited"));
@@ -369,6 +452,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             public TestLoggerProvider Logs { get; }
 
+            public Activity? InvocationActivity { get; private set; }
+
             public Task CompleteAsync(OrchestrationRuntimeState state) =>
                 this.ActiveProvider.CompleteTaskOrchestrationWorkItemAsync(
                     new TaskOrchestrationWorkItem { InstanceId = "instance", OrchestrationRuntimeState = state },
@@ -379,7 +464,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     null!,
                     null!);
 
-            public async Task<OrchestrationRuntimeState> InvokePassthroughAsync(P.OrchestrationStatus status, bool hasTerminationEvent = false)
+            public async Task<OrchestrationRuntimeState> InvokePassthroughAsync(
+                P.OrchestrationStatus status,
+                bool hasTerminationEvent = false,
+                Exception? invocationException = null)
             {
                 var response = new P.OrchestratorResponse();
                 response.Actions.Add(new P.OrchestratorAction
@@ -398,14 +486,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 executor.Setup(value => value.TryExecuteAsync(It.IsAny<TriggeredFunctionData>(), It.IsAny<CancellationToken>()))
                     .Returns(async (TriggeredFunctionData input, CancellationToken _) =>
                     {
+                        using var invocationActivity = new Activity("function-invocation-test").Start();
+                        invocationActivity.SetTag("DurableFunctionsRuntimeStatus", "invocation-status");
+                        this.InvocationActivity = invocationActivity;
                         try
                         {
 #pragma warning disable CS0618
-                            await input.InvokeHandler(() => Task.FromResult<object>(encoded));
+                            await input.InvokeHandler(() => invocationException == null
+                                ? Task.FromResult<object>(encoded)
+                                : Task.FromException<object>(invocationException));
 #pragma warning restore CS0618
                             return new FunctionResult(true);
                         }
-                        catch (Exception exception)
+                        catch (Exception exception) when (!Utils.IsFatal(exception))
                         {
                             return new FunctionResult(false, exception);
                         }

@@ -986,11 +986,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string functionName = outcome.FunctionName ?? proposedState.Name ?? string.Empty;
             try
             {
-                TagActivityWithOrchestrationStatus((OrchestrationRuntimeStatus)outcome.RuntimeStatus, outcome.InstanceId);
+                using Activity completionActivity = Correlation.TraceHelper.StartActivityForOrchestrationCompletion(functionName, outcome);
                 this.TraceHelper.OrchestrationCompletionAcknowledged(this.Options.HubName, functionName, outcome);
                 if (!outcome.IsAuthoritative &&
                     (outcome.RuntimeStatus == OrchestrationStatus.Completed ||
                      outcome.RuntimeStatus == OrchestrationStatus.ContinuedAsNew ||
+                     outcome.RuntimeStatus == OrchestrationStatus.Canceled ||
                      outcome.RuntimeStatus == OrchestrationStatus.Failed ||
                      outcome.RuntimeStatus == OrchestrationStatus.Terminated))
                 {
@@ -1005,6 +1006,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     case OrchestrationStatus.Completed:
                     case OrchestrationStatus.ContinuedAsNew:
+                    case OrchestrationStatus.Canceled:
                         bool continuedAsNew = outcome.RuntimeStatus == OrchestrationStatus.ContinuedAsNew;
                         string output = proposedState.NewEvents.OfType<ExecutionCompletedEvent>().LastOrDefault()?.Result;
                         this.TraceHelper.FunctionCompleted(
@@ -1014,7 +1016,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             output,
                             continuedAsNew,
                             FunctionType.Orchestrator,
-                            isReplay: false);
+                            isReplay: false,
+                            runtimeStatus: (OrchestrationRuntimeStatus)outcome.RuntimeStatus);
                         await this.LifeCycleNotificationHelper.OrchestratorCompletedAsync(
                             this.Options.HubName, functionName, outcome.InstanceId, continuedAsNew, isReplay: false);
                         break;
@@ -1881,9 +1884,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (activity != null)
             {
                 string statusStr = Enum.GetName(status.GetType(), status);
-                activity.SetTag("DurableFunctionsType", functionsType);
-                activity.SetTag("DurableFunctionsInstanceId", instanceId);
-                activity.SetTag("DurableFunctionsRuntimeStatus", statusStr);
+                activity.AddTag("DurableFunctionsType", functionsType);
+                activity.AddTag("DurableFunctionsInstanceId", instanceId);
+                activity.AddTag("DurableFunctionsRuntimeStatus", statusStr);
             }
         }
     }

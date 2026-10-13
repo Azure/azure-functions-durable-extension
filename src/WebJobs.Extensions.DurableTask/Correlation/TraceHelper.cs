@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using DurableTask.Core;
 using DurableTask.Core.History;
 using DurableTask.Core.Tracing;
 
@@ -17,6 +18,37 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         private const string Source = "WebJobs.Extensions.DurableTask";
 
         private static readonly ActivitySource ActivityTraceSource = new ActivitySource(Source);
+
+        internal static Activity? StartActivityForOrchestrationCompletion(string functionName, OrchestrationCompletionOutcome outcome)
+        {
+            Activity? activity = ActivityTraceSource.StartActivity(
+                $"{TraceActivityConstants.OrchestrationCompletion}:{functionName}",
+                ActivityKind.Internal);
+            if (activity == null)
+            {
+                return null;
+            }
+
+            string runtimeStatus = outcome.RuntimeStatus.ToString();
+            activity.SetTag(Schema.Task.Type, TraceActivityConstants.Orchestration);
+            activity.SetTag(Schema.Task.Operation, TraceActivityConstants.OrchestrationCompletion);
+            activity.SetTag(Schema.Task.Name, functionName);
+            activity.SetTag(Schema.Task.InstanceId, outcome.InstanceId);
+            activity.SetTag(Schema.Task.ExecutionId, outcome.ExecutionId);
+            activity.SetTag(Schema.Task.Status, runtimeStatus);
+            activity.SetTag("DurableFunctionsType", "Orchestrator");
+            activity.SetTag("DurableFunctionsInstanceId", outcome.InstanceId);
+            activity.SetTag("DurableFunctionsRuntimeStatus", runtimeStatus);
+            activity.SetTag("durabletask.completion.identity", outcome.CompletionIdentity);
+            activity.SetTag("durabletask.completion.is_authoritative", outcome.IsAuthoritative);
+            activity.SetTag("durabletask.completion.is_provider_generated_failure", outcome.IsProviderGeneratedFailure);
+            if (outcome.RuntimeStatus == OrchestrationStatus.Failed)
+            {
+                activity.SetStatus(ActivityStatusCode.Error);
+            }
+
+            return activity;
+        }
 
         internal static Activity? StartActivityForNewOrchestration(ExecutionStartedEvent startEvent, ActivityContext parentTraceContext, DateTimeOffset? startTime = default)
         {
