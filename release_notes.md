@@ -10,21 +10,30 @@
 ### Bug Fixes
 
 - Check if function invocation already has an executor before registering durable executor. (#3265)
+- Improved .NET isolated activity input deserialization diagnostics for both function-style and class-based activities. Failures now identify the activity and target type and preserve the original serializer error as the inner failure. (#3531)
 
 ### Breaking Changes
 
+- For .NET isolated function-style and class-based activities, input deserialization failures now use `System.InvalidOperationException` as the top-level `TaskFailureDetails.ErrorType`; the original serializer exception type is preserved in `InnerFailure`. (#3531)
+
 ### Dependency Updates
+
+- Updated `Microsoft.DurableTask.Client.Grpc`, `Microsoft.DurableTask.Worker.Grpc`, and `Microsoft.DurableTask.Abstractions` to 1.26.0, including the fix for external-event loss after canceled waits in the isolated worker.
 
 ## Microsoft.Azure.WebJobs.Extensions.DurableTask
 
 ### New Features
 
 - Allow overriding orchestration version when starting orchestrations via APIs in PowerShell, Python, and Node.js (https://github.com/Azure/azure-functions-durable-extension/pull/3213)
+- Added `IServiceCollection.AddDurableTaskTelemetryInitializer` overloads for explicitly enriching distributed tracing V2 requests and dependencies with Application Insights telemetry initializers or service-provider factories. Host initializers and processors are not inherited automatically. (#1792)
 - Added `ClientOperationReceived` trace event to `DurableFunctionsEvents` for correlating out-of-process worker invocations with orchestration events. The event includes `FunctionInvocationId`, `OperationType`, and `InstanceId` fields for cross-log correlation. (#3317)
 - Existing extension-generated `FunctionScheduled` trace events now include a `TargetInstanceId` field for entity, sub-orchestration, and Durable Client scheduling paths when the target ID is known. Sub-orchestrations without an explicit ID report the target as not supplied because DTFx generates it downstream. This change does not add `FunctionScheduled` events to modern gRPC worker middleware paths, which do not currently emit that event. (#1496)
 
 ### Bug Fixes
 
+- Fixed startup failures in non-production deployment slots when the Durable extension is referenced but no Durable bindings are used. Non-default task hub names are still required when indexing Durable bindings or using Durable clients and workers. (#2352)
+- Fixed missing `FailureDetails` in .NET isolated `GetAllInstancesAsync` results when `OrchestrationQuery.FetchInputsAndOutputs` is enabled. Query results now preserve available exception types, messages, stack traces, inner failures, and custom properties. (#2047)
+- The `/makeprimary` HTTP API now returns HTTP 400 with an actionable error when app leases are disabled, instead of returning HTTP 500. (#3534)
 - Fixed a poison loop where dispatching a disabled-but-still-deployed activity or entity function caused in-flight orchestrations to retry indefinitely (e.g. throwing `ArgumentNullException('executor')` on the activity dispatch path) instead of failing gracefully. Such registered-but-inactive functions are now treated as unavailable and fail deterministically. (#3471)
 - Fixed the Event Grid `Terminated` lifecycle notification never being published when an orchestration is terminated. It is now raised from the orchestration dispatch middleware, which covers both the in-process/legacy out-of-proc path and the middleware-passthrough path. Previously no notification was sent at all on the former, and the latter incorrectly published a `Completed` notification. (#286)
 - Fixed empty Application Insights operation names for Distributed Tracing V2 orchestration and activity telemetry when instance ID suffixes are disabled. (#3156)
@@ -32,6 +41,12 @@
 
 ### Breaking Changes
 
+- Per-function Durable execution logs now use `Function.<functionName>.User` instead of `Host.Triggers.DurableTask`; infrastructure diagnostics remain under the host category. Update category-specific `host.json` logging filters and telemetry queries, alerts, or dashboards as needed. (#3562)
+
 ### Dependency Updates
 
 - Remove LegacyLocalGrpcListener and the dependency on Grpc.Core (https://github.com/Azure/azure-functions-durable-extension/pull/3236)
+- Removed the production dependency on `Microsoft.Azure.WebJobs.Logging.ApplicationInsights` to reduce the extension's transitive dependencies while preserving Microsoft Entra authentication for distributed tracing.
+- Updated the Azure Managed SDK references to 1.10.2 for DTS sovereign-cloud token audiences and per-connection authority hosts, including the Functions scale extension and E2E apps.
+- Updated `Grpc.Net.Client` to 2.80.0 and `Microsoft.Bcl.AsyncInterfaces` to 10.0.9 to meet the Azure Managed SDK 1.10.2 dependency requirements.
+- Updated `Microsoft.Azure.DurableTask.AzureStorage` to 2.10.0 and `Microsoft.Azure.DurableTask.Core` to 3.10.0.

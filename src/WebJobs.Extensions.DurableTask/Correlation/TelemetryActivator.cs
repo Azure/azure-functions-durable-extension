@@ -2,7 +2,10 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Security.Authentication;
+using System.Threading;
 using System.Threading.Tasks;
 using Azure.Identity;
 using DurableTask.ApplicationInsights;
@@ -11,10 +14,9 @@ using DurableTask.Core.Settings;
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.Channel;
 using Microsoft.ApplicationInsights.Extensibility;
-using Microsoft.Azure.WebJobs.Logging.ApplicationInsights;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using ApplicationInsightsTokenCredentialOptions = Microsoft.Azure.WebJobs.Logging.ApplicationInsights.TokenCredentialOptions;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 {
@@ -23,9 +25,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
     /// </summary>
     public class TelemetryActivator : ITelemetryActivator, IAsyncDisposable, IDisposable
     {
+        private const string AuthorizationKey = "Authorization";
+        private const string ClientIdKey = "ClientId";
+        private const string AadAuthorizationValue = "AAD";
+
         private readonly DurableTaskOptions options;
         private readonly INameResolver nameResolver;
         private readonly TelemetryConfiguration hostTelemetryConfiguration;
+        private readonly IServiceProvider serviceProvider;
+        private readonly IReadOnlyList<DurableTaskTelemetryInitializerRegistration> initializerRegistrations;
+        private readonly Lazy<IReadOnlyList<ITelemetryInitializer>> durableTelemetryInitializers;
         private EndToEndTraceHelper endToEndTraceHelper;
         private TelemetryClient telemetryClient;
 
@@ -35,7 +44,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         /// <param name="options">DurableTask options.</param>
         /// <param name="nameResolver">Name resolver used for environment variables.</param>
         public TelemetryActivator(IOptions<DurableTaskOptions> options, INameResolver nameResolver)
-            : this(options, nameResolver, hostTelemetryConfiguration: null)
+            : this(
+                options,
+                nameResolver,
+                hostTelemetryConfiguration: null,
+                serviceProvider: null,
+                initializerRegistrations: Array.Empty<DurableTaskTelemetryInitializerRegistration>())
         {
         }
 
@@ -49,10 +63,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             IOptions<DurableTaskOptions> options,
             INameResolver nameResolver,
             TelemetryConfiguration hostTelemetryConfiguration)
+            : this(
+                options,
+                nameResolver,
+                hostTelemetryConfiguration,
+                serviceProvider: null,
+                initializerRegistrations: Array.Empty<DurableTaskTelemetryInitializerRegistration>())
+        {
+        }
+
+        internal TelemetryActivator(
+            IOptions<DurableTaskOptions> options,
+            INameResolver nameResolver,
+            TelemetryConfiguration hostTelemetryConfiguration,
+            IServiceProvider serviceProvider,
+            IReadOnlyList<DurableTaskTelemetryInitializerRegistration> initializerRegistrations)
         {
             this.options = options.Value;
             this.nameResolver = nameResolver;
             this.hostTelemetryConfiguration = hostTelemetryConfiguration;
+            this.serviceProvider = serviceProvider;
+            this.initializerRegistrations = initializerRegistrations ??
+                throw new ArgumentNullException(nameof(initializerRegistrations));
+            this.durableTelemetryInitializers = new Lazy<IReadOnlyList<ITelemetryInitializer>>(
+                this.ResolveDurableTelemetryInitializers,
+                LazyThreadSafetyMode.ExecutionAndPublication);
         }
 
         /// <summary>
@@ -70,6 +105,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         /// assert which credential was applied without reaching into Application Insights internals.
         /// </summary>
         internal TelemetryConfiguration TelemetryConfiguration { get; private set; }
+
+        internal static TelemetryActivator Create(IServiceProvider serviceProvider)
+        {
+            if (serviceProvider == null)
+            {
+                throw new ArgumentNullException(nameof(serviceProvider));
+            }
+
+            return new TelemetryActivator(
+                serviceProvider.GetRequiredService<IOptions<DurableTaskOptions>>(),
+                serviceProvider.GetRequiredService<INameResolver>(),
+                serviceProvider.GetService<TelemetryConfiguration>(),
+                serviceProvider,
+                serviceProvider.GetServices<DurableTaskTelemetryInitializerRegistration>().ToArray());
+        }
 
         /// <inheritdoc/>
         public async ValueTask DisposeAsync()
@@ -104,7 +154,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         /// </summary>
         public void Initialize(ILogger logger)
         {
-            this.endToEndTraceHelper = new EndToEndTraceHelper(logger, this.options.Tracing.TraceReplayEvents);
+            this.endToEndTraceHelper = EndToEndTraceHelper.CreateHostOnly(logger, this.options.Tracing.TraceReplayEvents);
 
             if (this.options.Tracing.DistributedTracingEnabled)
             {
@@ -205,10 +255,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
 
         private TelemetryConfiguration SetupTelemetryConfiguration()
         {
+            IReadOnlyList<ITelemetryInitializer> durableInitializers =
+                this.options.Tracing.Version == Options.DurableDistributedTracingVersion.V2
+                    ? this.durableTelemetryInitializers.Value
+                    : Array.Empty<ITelemetryInitializer>();
+
             TelemetryConfiguration config = TelemetryConfiguration.CreateDefault();
             if (this.OnSend != null)
             {
                 config.TelemetryChannel = new NoOpTelemetryChannel { OnSend = this.OnSend };
+            }
+
+            foreach (ITelemetryInitializer initializer in durableInitializers)
+            {
+                config.TelemetryInitializers.Add(initializer);
             }
 
             config.TelemetryInitializers.Add(new DurableTaskInstanceIdTelemetryInitializer(this.options.Tracing.IncludeInstanceIdInOperationName));
@@ -268,13 +328,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             {
                 try
                 {
-                    ApplicationInsightsTokenCredentialOptions tokenCredentialOptions =
-                        ApplicationInsightsTokenCredentialOptions.ParseAuthenticationString(resolvedAuthenticationString);
-                    bool userAssignedIdentity = tokenCredentialOptions.ClientId != null;
+                    string managedIdentityClientId = ParseManagedIdentityClientId(resolvedAuthenticationString);
+                    bool userAssignedIdentity = managedIdentityClientId != null;
                     bool reusedHostChannel = ApplyEntraAuthentication(
                         config,
                         this.hostTelemetryConfiguration,
-                        tokenCredentialOptions,
+                        managedIdentityClientId,
                         preserveExistingChannel: this.OnSend != null);
                     if (this.hostTelemetryConfiguration != null && !reusedHostChannel && this.OnSend == null)
                     {
@@ -311,6 +370,76 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
             return config;
         }
 
+        private IReadOnlyList<ITelemetryInitializer> ResolveDurableTelemetryInitializers()
+        {
+            var initializers = new ITelemetryInitializer[this.initializerRegistrations.Count];
+            for (int i = 0; i < this.initializerRegistrations.Count; i++)
+            {
+                ITelemetryInitializer initializer = this.initializerRegistrations[i].Factory(this.serviceProvider);
+                if (initializer == null)
+                {
+                    throw new InvalidOperationException(
+                        $"The Durable telemetry initializer factory at index {i} returned null.");
+                }
+
+                initializers[i] = initializer;
+            }
+
+            return initializers;
+        }
+
+        /// <summary>
+        /// Parses the authentication string using the host's semantics without depending on its logging integration.
+        /// </summary>
+        /// <param name="authenticationString">The Application Insights authentication string.</param>
+        /// <returns>The user-assigned identity's client ID, or null for the system-assigned identity.</returns>
+        internal static string ParseManagedIdentityClientId(string authenticationString)
+        {
+            if (string.IsNullOrWhiteSpace(authenticationString))
+            {
+                throw new ArgumentNullException(nameof(authenticationString));
+            }
+
+            bool authorizationProvided = false;
+            string clientId = null;
+            foreach (string token in authenticationString.Split(';'))
+            {
+                int separator = token.IndexOf('=');
+                if (separator < 0)
+                {
+                    continue;
+                }
+
+                string key = token.Substring(0, separator).Trim();
+                string value = token.Substring(separator + 1).Trim();
+                if (key.Equals(AuthorizationKey, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!value.Equals(AadAuthorizationValue, StringComparison.OrdinalIgnoreCase))
+                    {
+                        throw new InvalidCredentialException($"Application Insights authentication requires {AuthorizationKey}={AadAuthorizationValue}.");
+                    }
+
+                    authorizationProvided = true;
+                }
+                else if (key.Equals(ClientIdKey, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!Guid.TryParse(value, out _))
+                    {
+                        throw new FormatException("The Application Insights authentication client ID must be a GUID.");
+                    }
+
+                    clientId = value;
+                }
+            }
+
+            if (!authorizationProvided)
+            {
+                throw new InvalidCredentialException($"Application Insights authentication requires an {AuthorizationKey} key.");
+            }
+
+            return clientId;
+        }
+
         /// <summary>
         /// Enables Microsoft Entra authenticated ingestion for the private Durable telemetry
         /// configuration.
@@ -326,7 +455,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         /// </remarks>
         /// <param name="durableConfiguration">The private Durable telemetry configuration.</param>
         /// <param name="hostConfiguration">The host telemetry configuration, if available.</param>
-        /// <param name="tokenCredentialOptions">The parsed authentication string.</param>
+        /// <param name="managedIdentityClientId">The user-assigned identity's client ID, or null for the system-assigned identity.</param>
         /// <param name="preserveExistingChannel">
         /// True when the configuration already has a channel that must not be replaced, such as the
         /// test channel installed by <see cref="OnSend"/>.
@@ -335,7 +464,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         internal static bool ApplyEntraAuthentication(
             TelemetryConfiguration durableConfiguration,
             TelemetryConfiguration hostConfiguration,
-            ApplicationInsightsTokenCredentialOptions tokenCredentialOptions,
+            string managedIdentityClientId,
             bool preserveExistingChannel = false)
         {
             ITelemetryChannel hostChannel = hostConfiguration?.TelemetryChannel;
@@ -345,8 +474,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
                 return true;
             }
 
-            ManagedIdentityId managedIdentityId = tokenCredentialOptions.ClientId != null
-                ? ManagedIdentityId.FromUserAssignedClientId(tokenCredentialOptions.ClientId)
+            ManagedIdentityId managedIdentityId = managedIdentityClientId != null
+                ? ManagedIdentityId.FromUserAssignedClientId(managedIdentityClientId)
                 : ManagedIdentityId.SystemAssigned;
             durableConfiguration.SetAzureTokenCredential(new ManagedIdentityCredential(managedIdentityId));
             return false;

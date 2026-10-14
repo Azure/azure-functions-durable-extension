@@ -137,10 +137,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc
                     // window where the port can be taken (or become unbindable) in between, which
                     // surfaces as an unrecoverable SocketException. The port that was actually bound
                     // is read back from IServerAddressesFeature below.
-                    builder.UseKestrel(o => o.Listen(
-                        IPAddress.Parse(HostName),
-                        0,
-                        listenOptions => listenOptions.Protocols = HttpProtocols.Http2));
+                    builder.UseKestrel(o =>
+                    {
+                        o.Limits.MaxRequestBodySize = null;
+                        o.Listen(
+                            IPAddress.Parse(HostName),
+                            0,
+                            listenOptions => listenOptions.Protocols = HttpProtocols.Http2);
+                    });
 
                     builder.ConfigureServices(services =>
                     {

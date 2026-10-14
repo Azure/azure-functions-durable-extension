@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.DurableTask;
@@ -8,18 +10,27 @@ namespace FaultOrchestrators
 {
     public static class FaultyOrchestrators
     {
+        private const string StartFaultEventName = "StartFault";
+
+        private static string GetReplayEvidenceFilePath(string instanceId)
+        {
+            // Hash the full ID to avoid path separators, basename collisions, and filename-length limits.
+            string instanceIdHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(instanceId)));
+            string baseDirectory = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", ".."));
+            return Path.Combine(baseDirectory, $"replayEvidence-{instanceIdHash}");
+        }
+
         [Function(nameof(OOMOrchestrator))]
-        public static Task OOMOrchestrator(
+        public static async Task OOMOrchestrator(
             [OrchestrationTrigger] TaskOrchestrationContext context)
         {
+            // The driver must receive the instance ID before the worker can crash.
+            await context.WaitForExternalEvent<object>(StartFaultEventName);
+
             // this orchestrator is not deterministic, on purpose.
             // we use the non-determinism to force an OOM exception on only the first replay
             
-            // check if a file named "replayEvidence" exists in source code directory, create it if it does not.
-            // From experience, this code runs in `<sourceCodePath>/bin/output/`, so we store the file two directories above.
-            // We do this because the /bin/output/ directory gets overridden during the build process, which happens automatically
-            // when `func host start` is re-invoked.
-            string evidenceFile = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "replayEvidence");
+            string evidenceFile = GetReplayEvidenceFilePath(context.InstanceId);
             bool isTheFirstReplay = !File.Exists(evidenceFile);
             if (isTheFirstReplay)
             {
@@ -50,22 +61,20 @@ namespace FaultOrchestrators
             else {
                 // if it's not the first replay, delete the evidence file and return
                 File.Delete(evidenceFile);
-                return Task.CompletedTask;
+                return;
             }
         }
         
         [Function(nameof(ProcessExitOrchestrator))]
-        public static Task ProcessExitOrchestrator(
+        public static async Task ProcessExitOrchestrator(
             [OrchestrationTrigger] TaskOrchestrationContext context)
         {
+            await context.WaitForExternalEvent<object>(StartFaultEventName);
+
             // this orchestrator is not deterministic, on purpose.
             // we use the non-determinism to force a sudden process exit on only the first replay
             
-            // check if a file named "replayEvidence" exists in source code directory, create it if it does not.
-            // From experience, this code runs in `<sourceCodePath>/bin/output/`, so we store the file two directories above.
-            // We do this because the /bin/output/ directory gets overridden during the build process, which happens automatically
-            // when `func host start` is re-invoked.
-            string evidenceFile = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "replayEvidence");
+            string evidenceFile = GetReplayEvidenceFilePath(context.InstanceId);
             bool isTheFirstReplay = !File.Exists(evidenceFile);
             if (isTheFirstReplay)
             {
@@ -78,22 +87,20 @@ namespace FaultOrchestrators
             else {
                 // if it's not the first replay, delete the evidence file and return
                 File.Delete(evidenceFile);
-                return Task.CompletedTask;
+                return;
             }
         }
 
         [Function(nameof(TimeoutOrchestrator))]
-        public static Task TimeoutOrchestrator(
+        public static async Task TimeoutOrchestrator(
             [OrchestrationTrigger] TaskOrchestrationContext context)
         {
+            await context.WaitForExternalEvent<object>(StartFaultEventName);
+
             // this orchestrator is not deterministic, on purpose.
             // we use the non-determinism to force a timeout on only the first replay
             
-            // check if a file named "replayEvidence" exists in source code directory, create it if it does not.
-            // From experience, this code runs in `<sourceCodePath>/bin/output/`, so we store the file two directories above.
-            // We do this because the /bin/output/ directory gets overridden during the build process, which happens automatically
-            // when `func host start` is re-invoked.
-            string evidenceFile = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "replayEvidence");
+            string evidenceFile = GetReplayEvidenceFilePath(context.InstanceId);
             bool isTheFirstReplay = !File.Exists(evidenceFile);
 
             if (isTheFirstReplay)
@@ -112,7 +119,7 @@ namespace FaultOrchestrators
             else {
                 // if it's not the first replay, delete the evidence file and return
                 File.Delete(evidenceFile);
-                return Task.CompletedTask;
+                return;
             }
         }
 

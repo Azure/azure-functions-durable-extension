@@ -536,6 +536,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     LastUpdatedTimestamp = Timestamp.FromDateTime(state.LastUpdatedTime),
                     OrchestrationStatus = (P.OrchestrationStatus)state.OrchestrationStatus,
                     CustomStatus = state.Status,
+                    FailureDetails = request.Query?.FetchInputsAndOutputs == true ? GetFailureDetails(state.FailureDetails) : null,
                 };
 
                 response.OrchestrationState.Add(orchestrationState);

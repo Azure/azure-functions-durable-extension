@@ -42,7 +42,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             bool addDurableClientFactory,
             ITypeLocator typeLocator,
             Action<ScaleOptions> configureScaleOptions = null,
-            TelemetryConfiguration hostTelemetryConfiguration = null)
+            TelemetryConfiguration hostTelemetryConfiguration = null,
+            Action<ILoggingBuilder> configureLogging = null)
         {
             // Unless specified, use table partition management for tests as it makes the task hubs start up faster.
             // These tests run on a single task hub workers, so they don't test partition management anyways, and that is tested
@@ -57,6 +58,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     loggingBuilder =>
                     {
                         loggingBuilder.AddProvider(loggerProvider);
+                        configureLogging?.Invoke(loggingBuilder);
                     })
                 .ConfigureWebJobs(
                     webJobsBuilder =>
@@ -91,8 +93,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
                         if (hostTelemetryConfiguration != null)
                         {
-                            // Mirrors the Application Insights configuration the Functions host registers,
-                            // so DI can select the host-aware TelemetryActivator constructor.
+                            // Mirrors the host's Application Insights registration so the
+                            // TelemetryActivator.Create factory receives the host configuration.
                             serviceCollection.AddSingleton(hostTelemetryConfiguration);
                         }
 
@@ -100,10 +102,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         {
                             serviceCollection.AddSingleton<ITelemetryActivator>(serviceProvider =>
                             {
-                                // Let the container pick the constructor exactly as the production
-                                // AddSingleton<ITelemetryActivator, TelemetryActivator>() registration does.
-                                var telemetryActivator =
-                                    ActivatorUtilities.CreateInstance<TelemetryActivator>(serviceProvider);
+                                // Use the same factory as production's
+                                // AddSingleton<ITelemetryActivator>(TelemetryActivator.Create) registration.
+                                var telemetryActivator = TelemetryActivator.Create(serviceProvider);
                                 telemetryActivator.OnSend = onSend;
                                 return telemetryActivator;
                             });

@@ -21,9 +21,6 @@ public class IsReplayingTests
 
     [Fact]
     [Trait("Dotnet", "Skip")] // Replay behavior in dotnet ensures that orchestrator code only runs once per execution
-    [Trait("Python-DTS", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-python/issues/595
-    [Trait("Node-DTS", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-js/issues/677
-    [Trait("PowerShell-DTS", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-powershell/issues/106
     public async Task IsReplayingBasic_CompletesWithExpectedReplayFlags()
     {
         /**
@@ -62,9 +59,6 @@ public class IsReplayingTests
 
     [Fact]
     [Trait("Dotnet", "Skip")] // Replay behavior in dotnet ensures that orchestrator code only runs once per execution
-    [Trait("Python-DTS", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-python/issues/595
-    [Trait("Node-DTS", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-js/issues/677
-    [Trait("PowerShell-DTS", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-powershell/issues/106
     public async Task IsReplayingMultiActivity_SnapshotsShowReplayProgression()
     {
         /**
@@ -121,10 +115,6 @@ public class IsReplayingTests
 
     [Fact]
     [Trait("Dotnet", "Skip")] // Replay behavior in dotnet ensures that orchestrator code only runs once per execution
-    [Trait("Node", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-js/issues/564
-    [Trait("Python-DTS", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-python/issues/595
-    [Trait("Node-DTS", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-js/issues/677
-    [Trait("PowerShell-DTS", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-powershell/issues/106
     public async Task IsReplayingConditionalLog_OnlyCountsLiveExecutionPaths()
     {
         /**
@@ -176,9 +166,6 @@ public class IsReplayingTests
 
     [Fact]
     [Trait("Dotnet", "Skip")] // Replay behavior in dotnet ensures that orchestrator code only runs once per execution
-    [Trait("Python-DTS", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-python/issues/595
-    [Trait("Node-DTS", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-js/issues/677
-    [Trait("PowerShell-DTS", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-powershell/issues/106
     public async Task IsReplayingCounter_TracksReplayAndLiveCheckpoints()
     {
         /**
@@ -224,10 +211,6 @@ public class IsReplayingTests
 
     [Fact]
     [Trait("Dotnet", "Skip")] // Replay behavior in dotnet ensures that orchestrator code only runs once per execution
-    [Trait("Python-DTS", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-python/issues/595
-    [Trait("Node", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-js/issues/679
-    [Trait("Node-DTS", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-js/issues/677
-    [Trait("PowerShell-DTS", "Skip")] // Bug: https://github.com/Azure/azure-functions-durable-powershell/issues/106
     public async Task IsReplayingFanOutFanIn_ReportsReplayStateAroundParallelTasks()
     {
         /**

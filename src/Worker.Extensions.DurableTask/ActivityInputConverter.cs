@@ -47,7 +47,29 @@ internal class ActivityInputConverter : IInputConverter
             throw new InvalidOperationException($"Expected converter source to be a string, received {context.Source?.GetType()}.");
         }
 
-        object? value = this.options.DataConverter.Deserialize(source, context.TargetType);
-        return new(ConversionResult.Success(value));
+        try
+        {
+            object? value = this.options.DataConverter.Deserialize(source, context.TargetType);
+            return new(ConversionResult.Success(value));
+        }
+        catch (Exception exception)
+        {
+            string activityName = context.FunctionContext.FunctionDefinition.Name;
+            throw CreateDeserializationException(activityName, context.TargetType, exception);
+        }
+    }
+
+    internal static InvalidOperationException CreateDeserializationException(
+        string activityName,
+        Type destinationType,
+        Exception innerException)
+    {
+        string destinationTypeName = destinationType.FullName ?? destinationType.Name;
+        return new InvalidOperationException(
+            $"Failed to deserialize input for activity function '{activityName}' into type " +
+            $"'{destinationTypeName}'. Activity inputs must be JSON-serializable values. Pass concrete " +
+            "data transfer objects instead of interfaces or dependency-injected services, and ensure the " +
+            $"input matches the target type. The original error was: {innerException.Message}",
+            innerException);
     }
 }
