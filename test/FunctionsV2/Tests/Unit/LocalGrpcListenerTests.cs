@@ -363,6 +363,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task TestGrpcListener_StartInstanceRejectsReservedSourceInstanceTag()
+        {
+            Mock<DurabilityProvider> durabilityProvider = CreateDurabilityProviderMock(
+                new Mock<IOrchestrationService>().Object,
+                new Mock<IOrchestrationServiceClient>().Object);
+            var request = new P.CreateInstanceRequest { Name = "TestOrchestrator" };
+            request.Tags.Add(DurableClient.SourceInstanceIdTag, "forged-source");
+
+            RpcException rpcException = await this.InvokeFailingRpcAsync(
+                "ReservedSourceInstanceTag",
+                durabilityProvider.Object,
+                async client => await client.StartInstanceAsync(request).ResponseAsync);
+
+            Assert.Equal(StatusCode.InvalidArgument, rpcException.StatusCode);
+            Assert.Contains(DurableClient.SourceInstanceIdTag, rpcException.Status.Detail);
+            durabilityProvider.Verify(
+                provider => provider.CreateTaskOrchestrationAsync(
+                    It.IsAny<TaskMessage>(),
+                    It.IsAny<OrchestrationStatus[]>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Never);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task TestGrpcListener_UnknownOrchestrator_SchedulesInstance()
         {
             Mock<DurabilityProvider> durabilityProvider = CreateDurabilityProviderMock(
