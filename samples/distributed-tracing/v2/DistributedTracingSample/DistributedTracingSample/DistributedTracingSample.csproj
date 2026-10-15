@@ -10,7 +10,7 @@
     <PackageReference Include="Microsoft.NET.Sdk.Functions" />
   </ItemGroup>
   <ItemGroup>
-    <!-- In your project, add a reference to "Microsoft.Azure.WebJobs.Extensions.DurableTask" >= "2.11.0" instead -->
+    <!-- In your project, add a reference to "Microsoft.Azure.WebJobs.Extensions.DurableTask" >= "2.11.1" instead -->
     <ProjectReference Include="..\..\..\..\..\src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj" />
   </ItemGroup>
   <ItemGroup>
