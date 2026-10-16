@@ -1,2 +1,3 @@
-# The following files were downloaded from branch bcf5af6a22caa70601bfc909918ba5937484279f at 2026-04-29 19:41:11 UTC
+# Upstream source commit for each currently imported proto.
 https://raw.githubusercontent.com/microsoft/durabletask-protobuf/bcf5af6a22caa70601bfc909918ba5937484279f/protos/orchestrator_service.proto
+https://raw.githubusercontent.com/microsoft/durabletask-protobuf/882583c1177706e148c3b146d4b2ba1c1d242e4c/protos/durable-task-scheduler/large_payload_purge.proto

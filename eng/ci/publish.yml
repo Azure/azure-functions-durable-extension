@@ -114,5 +114,28 @@ extends:
             command: push
             nuGetFeedType: external
             publishFeedCredentials: 'DurableTask org NuGet API Key'
-            packagesToPush: '$(System.DefaultWorkingDirectory)/drop/Microsoft.Azure.Functions.Worker.Extensions.DurableTask.*.nupkg;!$(System.DefaultWorkingDirectory)/**/*.symbols.nupkg'
+            packagesToPush: '$(System.DefaultWorkingDirectory)/drop/Microsoft.Azure.Functions.Worker.Extensions.DurableTask.*.nupkg;!$(System.DefaultWorkingDirectory)/drop/Microsoft.Azure.Functions.Worker.Extensions.DurableTask.AzureBlobPayloads.*.nupkg;!$(System.DefaultWorkingDirectory)/**/*.symbols.nupkg'
             packageParentPath: $(System.DefaultWorkingDirectory) # This needs to be set to some prefix of the `packagesToPush` parameter.
+
+      # NuGet release (Microsoft.Azure.Functions.Worker.Extensions.DurableTask.AzureBlobPayloads)
+      - job: nugetRelease_Worker_Extensions_DurableTask_AzureBlobPayloads
+        displayName: NuGet Release (Microsoft.Azure.Functions.Worker.Extensions.DurableTask.AzureBlobPayloads)
+        dependsOn: nugetApproval
+        condition: succeeded('nugetApproval')
+        templateContext:
+          type: releaseJob
+          isProduction: true
+          inputs:
+          - input: pipelineArtifact
+            pipeline: officialPipeline
+            artifactName: drop
+            targetPath: $(System.DefaultWorkingDirectory)/drop
+        steps:
+        - task: 1ES.PublishNuget@1
+          displayName: 'NuGet push (Microsoft.Azure.Functions.Worker.Extensions.DurableTask.AzureBlobPayloads)'
+          inputs:
+            command: push
+            nuGetFeedType: external
+            publishFeedCredentials: 'DurableTask org NuGet API Key'
+            packagesToPush: '$(System.DefaultWorkingDirectory)/drop/Microsoft.Azure.Functions.Worker.Extensions.DurableTask.AzureBlobPayloads.*.nupkg;!$(System.DefaultWorkingDirectory)/**/*.symbols.nupkg'
+            packageParentPath: $(System.DefaultWorkingDirectory)

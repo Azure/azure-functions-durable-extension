@@ -8,6 +8,7 @@ using Grpc.Net.Client.Configuration;
 using Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 using Microsoft.DurableTask.Client;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
 
@@ -18,6 +19,73 @@ namespace Microsoft.Azure.Functions.Worker.Tests;
 /// </summary>
 public class FunctionsDurableClientProviderTests
 {
+    [Fact]
+    public void ClientFactoryDoesNotExposePurgeFacadeThroughOutParameters()
+    {
+        Assert.DoesNotContain(typeof(FunctionsDurableClientProvider).GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance),
+            method => method.Name == "GetClient" && method.GetParameters().Any(parameter => parameter.IsOut));
+    }
+
+    [Fact]
+    public async Task BoundClientsShareTransportButKeepBindingMetadataSeparate()
+    {
+        await using var provider = new FunctionsDurableClientProvider(
+            NullLoggerFactory.Instance, Options.Create(new DurableTaskClientOptions()));
+        var endpoint = new Uri("http://localhost:12345");
+        FunctionsDurableTaskClient first = provider.CreateBoundClient(endpoint, "hub", "connection", null, TimeSpan.FromMinutes(1), "?first", "http://first");
+        FunctionsDurableTaskClient second = provider.CreateBoundClient(endpoint, "hub", "connection", null, TimeSpan.FromMinutes(1), "?second", "http://second");
+
+        Assert.NotSame(first, second);
+        Assert.Equal("?first", first.QueryString);
+        Assert.Equal("http://first", first.HttpBaseUrl);
+        Assert.Equal("?second", second.QueryString);
+        Assert.Equal("http://second", second.HttpBaseUrl);
+        Assert.Same(ReadField(first, "inner"), ReadField(second, "inner"));
+        Assert.Same(ReadField(first, "purgeClient"), ReadField(second, "purgeClient"));
+        Assert.Same(ReadField(first, "inner"), provider.GetClient(endpoint, "hub", "connection", null, TimeSpan.FromMinutes(1)));
+
+        await first.DisposeAsync();
+        Assert.Same(ReadField(second, "inner"), provider.GetClient(endpoint, "hub", "connection", null, TimeSpan.FromMinutes(1)));
+    }
+
+    [Theory]
+    [InlineData("otherHub", "connection", "http://localhost:12345")]
+    [InlineData("hub", "otherConnection", "http://localhost:12345")]
+    [InlineData("hub", "connection", "http://localhost:12346")]
+    public async Task BoundClientTransportIsScopedToEndpointHubAndConnection(string hub, string connection, string address)
+    {
+        await using var provider = new FunctionsDurableClientProvider(
+            NullLoggerFactory.Instance, Options.Create(new DurableTaskClientOptions()));
+        FunctionsDurableTaskClient first = provider.CreateBoundClient(new Uri("http://localhost:12345"), "hub", "connection", null, TimeSpan.FromMinutes(1), null, null);
+        FunctionsDurableTaskClient second = provider.CreateBoundClient(new Uri(address), hub, connection, null, TimeSpan.FromMinutes(1), null, null);
+
+        Assert.NotSame(ReadField(first, "inner"), ReadField(second, "inner"));
+        Assert.NotSame(ReadField(first, "purgeClient"), ReadField(second, "purgeClient"));
+    }
+
+    [Fact]
+    public async Task DisposedProviderRejectsBothClientCreationPaths()
+    {
+        var provider = new FunctionsDurableClientProvider(
+            NullLoggerFactory.Instance, Options.Create(new DurableTaskClientOptions()));
+        var endpoint = new Uri("http://localhost:12345");
+        provider.CreateBoundClient(endpoint, "hub", "connection", null, TimeSpan.FromMinutes(1), null, null);
+        await provider.DisposeAsync();
+        await provider.DisposeAsync();
+
+        Assert.Throws<ObjectDisposedException>(() => provider.CreateBoundClient(endpoint, "hub", "connection", null, TimeSpan.FromMinutes(1), null, null));
+        Assert.Throws<ObjectDisposedException>(() => provider.GetClient(endpoint, "hub", "connection", null, TimeSpan.FromMinutes(1)));
+    }
+
+    private static object ReadField(FunctionsDurableTaskClient client, string name)
+    {
+        FieldInfo? field = typeof(FunctionsDurableTaskClient).GetField(name, BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.NotNull(field);
+        object? value = field.GetValue(client);
+        Assert.NotNull(value);
+        return value;
+    }
+
     /// <summary>
     /// Tests that the DefaultMethodConfig static field is correctly configured with retry policy.
     /// </summary>

@@ -21,4 +21,4 @@ By default, the latest versions of the protobufs are downloaded from the `main` 
 .\refresh-protos.ps1 -branch <branch-name>
 ```
 
-The `versions.txt` file in this directory contains the list of protobuf files and their commit hashes that were last downloaded. It is updated automatically by the `refresh-protos.ps1` script.
+The `versions.txt` file records the exact upstream URL and commit for each imported protobuf file. It is provenance for the checked-in protocol sources, not a NuGet or extension version, and the refresh script updates it without timestamps so identical inputs produce identical content.
