@@ -154,7 +154,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation
         /// </summary>
         public void Initialize(ILogger logger)
         {
-            this.endToEndTraceHelper = new EndToEndTraceHelper(logger, this.options.Tracing.TraceReplayEvents);
+            this.endToEndTraceHelper = EndToEndTraceHelper.CreateHostOnly(logger, this.options.Tracing.TraceReplayEvents);
 
             if (this.options.Tracing.DistributedTracingEnabled)
             {

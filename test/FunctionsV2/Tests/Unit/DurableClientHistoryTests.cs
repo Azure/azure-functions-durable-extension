@@ -559,8 +559,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 "test");
             var options = new DurableTaskOptions { HubName = "HistoryTestHub" };
             var messageDataConverter = new MessagePayloadDataConverter(new JsonSerializerSettings(), true);
-            var traceHelper = new EndToEndTraceHelper(
-                new NullLogger<EndToEndTraceHelper>(),
+            var traceHelper = EndToEndTraceHelper.CreateWithSharedUserCategory(
+                NullLoggerFactory.Instance,
                 options.Tracing.TraceReplayEvents);
             var durableClient = (IDurableOrchestrationClient)new DurableClient(
                 durabilityProvider,

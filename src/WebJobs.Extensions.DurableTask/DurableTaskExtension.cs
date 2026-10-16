@@ -62,9 +62,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly ConcurrentDictionary<FunctionName, RegisteredFunctionInfo> knownActivities =
             new ConcurrentDictionary<FunctionName, RegisteredFunctionInfo>();
 
+        // Only registration populates this map; caller casing must not create additional logger categories.
+        private readonly ConcurrentDictionary<FunctionName, string> registeredFunctionNames =
+            new ConcurrentDictionary<FunctionName, string>();
+
         private readonly AsyncLock taskHubLock = new AsyncLock();
         private readonly object protocolLockObject = new ();
         private readonly object taskHubWorkerInitLock = new ();
+        private readonly HashSet<string> reportedSdkNames = new (StringComparer.OrdinalIgnoreCase);
 #pragma warning disable CS0169
         private readonly ITelemetryActivator telemetryActivator;
 #pragma warning restore CS0169
@@ -130,7 +135,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             ILogger logger = loggerFactory.CreateLogger(LoggerCategoryName);
 
-            this.TraceHelper = new EndToEndTraceHelper(logger, this.Options.Tracing.TraceReplayEvents, this.Options.Tracing.TraceInputsAndOutputs);
+            this.TraceHelper = EndToEndTraceHelper.CreateWithFunctionRegistry(
+                loggerFactory,
+                this.Options.Tracing.TraceReplayEvents,
+                this.ResolveRegisteredFunctionName,
+                this.Options.Tracing.TraceInputsAndOutputs);
             this.LifeCycleNotificationHelper = lifeCycleNotificationHelper ?? this.CreateLifeCycleNotificationHelper();
             this.durabilityProviderFactory = GetDurabilityProviderFactory(this.Options, logger, orchestrationServiceFactories);
             this.defaultDurabilityProvider = this.durabilityProviderFactory.GetDurabilityProvider();
@@ -419,6 +428,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 .AddConverter<JObject, StartOrchestrationArgs>(bindings.JObjectToStartOrchestrationArgs)
                 .AddConverter<IDurableClient, string>(bindings.DurableOrchestrationClientToString);
 
+            // Extension discovery can load Durable in apps that never use it. Validate slot isolation
+            // when a Durable binding is indexed, not while registering the extension.
+            rule.AddValidator((attribute, type) => this.Options.ValidateHubNameForSlot());
             rule.BindToCollector<StartOrchestrationArgs>(bindings.CreateAsyncCollector);
             rule.BindToInput<IDurableOrchestrationClient>(this.GetClient);
             rule.BindToInput<IDurableEntityClient>(this.GetClient);
@@ -440,6 +452,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 .AddConverter<JObject, StartOrchestrationArgs>(bindings.JObjectToStartOrchestrationArgs)
                 .AddConverter<IDurableClient, string>(bindings.DurableOrchestrationClientToString);
 
+            backwardsCompRule.AddValidator((attribute, type) => this.Options.ValidateHubNameForSlot());
             backwardsCompRule.BindToCollector<StartOrchestrationArgs>(bindings.CreateAsyncCollector);
             backwardsCompRule.BindToInput<IDurableOrchestrationClient>(this.GetClient);
             backwardsCompRule.BindToInput<IDurableEntityClient>(this.GetClient);
@@ -483,20 +496,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     {
                         // This happens when the customer is using a durability provider/provider factory that does not yet support SetUseSeparateQueueForEntityWorkItems.
                         // It only represents a real problem when the customer is also using a language config that requires configuring gRPC during function indexing,
-                        // like for the gRPC-based Python SDK. Eventually, this method will be implemented on all durability provider SDKs and should never appear.
+                        // like the newer Python and JavaScript SDKs. Eventually, this method will be implemented on all durability provider SDKs and should never appear.
                         this.TraceHelper.ExtensionWarningEvent(this.Options.HubName, string.Empty, string.Empty, $"Could not set UseSeparateQueueForEntityWorkItems: {ex}");
                     }
                 }
             }
         }
 
-        internal void ConfigureForGrpcProtocol()
+        internal void ConfigureForGrpcProtocol(string durableSdkName = null, string durableSdkVersion = null)
         {
             lock (this.protocolLockObject)
             {
                 if (this.OutOfProcProtocol != OutOfProcOrchestrationProtocol.MiddlewarePassthrough)
                 {
                     this.OutOfProcProtocol = OutOfProcOrchestrationProtocol.MiddlewarePassthrough;
+
+                    string normalizedSdkName = durableSdkName?.Trim();
+                    string normalizedSdkVersion = durableSdkVersion?.Trim();
+                    if (!string.IsNullOrEmpty(normalizedSdkName) &&
+                        !string.IsNullOrEmpty(normalizedSdkVersion) &&
+                        this.reportedSdkNames.Add(normalizedSdkName))
+                    {
+                        this.TraceHelper.SdkUsageDetected(
+                            this.Options.HubName,
+                            normalizedSdkName,
+                            normalizedSdkVersion);
+                    }
+
                     if (this.localGrpcListener is null)
                     {
                         this.localGrpcListener = LocalGrpcListener.Create(this, this.Options.GrpcListenerMode);
@@ -515,7 +541,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     {
                         // This happens when the customer is using a durability provider/provider factory that does not yet support SetUseSeparateQueueForEntityWorkItems.
                         // It only represents a real problem when the customer is also using a language config that requires configuring gRPC during function indexing,
-                        // like for the gRPC-based Python SDK. Eventually, this method will be implemented on all durability provider SDKs and should never appear.
+                        // like the newer Python and JavaScript SDKs. Eventually, this method will be implemented on all durability provider SDKs and should never appear.
                         this.TraceHelper.ExtensionWarningEvent(this.Options.HubName, string.Empty, string.Empty, $"Could not set UseSeparateQueueForEntityWorkItems: {ex}");
                     }
                 }
@@ -653,6 +679,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <returns>A task representing the async delete operation.</returns>
         public Task DeleteTaskHubAsync()
         {
+            // Deletion uses the host's default provider without acquiring a client, so it must
+            // enforce slot isolation here even when no Durable bindings are present.
+            this.Options.ValidateHubNameForSlot();
             return this.defaultDurabilityProvider.DeleteAsync();
         }
 
@@ -812,6 +841,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 context.ParentInstanceId = orchestrationRuntimeState.ParentInstance.OrchestrationInstance.InstanceId;
             }
 
+            context.SourceInstanceId = GetSourceInstanceId(orchestrationRuntimeState);
+
             context.InstanceId = orchestrationRuntimeState.OrchestrationInstance?.InstanceId;
             context.ExecutionId = orchestrationRuntimeState.OrchestrationInstance?.ExecutionId;
             context.IsReplaying = orchestrationRuntimeState.ExecutionStartedEvent.IsPlayed;
@@ -943,6 +974,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             await context.RunDeferredTasks();
         }
 
+        internal static string GetSourceInstanceId(OrchestrationRuntimeState orchestrationRuntimeState)
+        {
+            if (orchestrationRuntimeState.ParentInstance != null)
+            {
+                return null;
+            }
+
+            if (orchestrationRuntimeState.ExecutionStartedEvent.Tags?.TryGetValue(
+                DurableClient.SourceInstanceIdTag,
+                out string sourceInstanceId) == true &&
+                !string.IsNullOrEmpty(sourceInstanceId))
+            {
+                return sourceInstanceId;
+            }
+
+            return null;
+        }
+
         /// <summary>
         /// This DTFx orchestration middleware (for entities) allows us to add context and set state
         /// to the entity shim orchestration before it starts executing the actual entity logic.
@@ -986,6 +1035,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             EventRaisedEvent eventRaisedEvent = (EventRaisedEvent)e;
 
                             this.TraceHelper.DeliveringEntityMessage(
+                                entityContext.Name,
                                 entityContext.InstanceId,
                                 entityContext.ExecutionId,
                                 e.EventId,
@@ -1368,6 +1418,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <returns>Returns a <see cref="IDurableClient"/> instance. The returned instance may be a cached instance.</returns>
         protected internal virtual IDurableClient GetClient(DurableClientAttribute attribute)
         {
+            this.Options.ValidateHubNameForSlot();
+
             if (attribute.DurableRequiresGrpc)
             {
                 // In the case when an app has only a durable client binding initialized, we still need to detect and start
@@ -1375,7 +1427,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 // this normally needs to be done before the listeners start. Thankfully, even though DurableClient doesn't have
                 // an equivalent to the AttributeBindingProviders used by the trigger types for this, the durable client only case
                 // does not start the listeners, so we can defer initializing the task hub until first execution.
-                this.ConfigureForGrpcProtocol();
+                this.ConfigureForGrpcProtocol(attribute.DurableSdkName, attribute.DurableSdkVersion);
             }
 
             // We must ensure the TaskHubWorker exists so that we know we have started the appropriate server.
@@ -1394,6 +1446,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal void RegisterOrchestrator(FunctionName orchestratorFunction, RegisteredFunctionInfo orchestratorInfo)
         {
+            this.Options.ValidateHubNameForSlot();
+            this.registeredFunctionNames.TryAdd(orchestratorFunction, orchestratorFunction.Name);
             if (orchestratorInfo != null)
             {
                 orchestratorInfo.IsDeregistered = false;
@@ -1441,6 +1495,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal void RegisterActivity(FunctionName activityFunction, ITriggeredFunctionExecutor executor)
         {
+            this.Options.ValidateHubNameForSlot();
+            this.registeredFunctionNames.TryAdd(activityFunction, activityFunction.Name);
             if (this.knownActivities.TryGetValue(activityFunction, out RegisteredFunctionInfo existing))
             {
                 existing.Executor = executor;
@@ -1477,6 +1533,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal void RegisterEntity(FunctionName entityFunction, RegisteredFunctionInfo entityInfo)
         {
+            this.Options.ValidateHubNameForSlot();
+            this.registeredFunctionNames.TryAdd(entityFunction, entityFunction.Name);
             if (entityInfo != null)
             {
                 entityInfo.IsDeregistered = false;
@@ -1534,6 +1592,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 throw new ArgumentException(this.GetInvalidEntityFunctionMessage(name));
             }
+        }
+
+        private string ResolveRegisteredFunctionName(string name)
+        {
+            // Return the registered spelling for consistent logger categories, or null so unknown
+            // names share a fallback category instead of creating unbounded cached logger categories.
+            this.registeredFunctionNames.TryGetValue(new FunctionName(name), out string registeredName);
+            return registeredName;
         }
 
         internal void ThrowIfOrchestratorFunctionIsDisabled(string name)
@@ -1600,6 +1666,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal async Task<bool> StartTaskHubWorkerIfNotStartedAsync()
         {
+            this.Options.ValidateHubNameForSlot();
+
             if (!this.isTaskHubWorkerStarted)
             {
                 using (await this.taskHubLock.AcquireAsync())

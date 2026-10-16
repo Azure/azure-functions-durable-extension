@@ -27,7 +27,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.nameResolver = nameResolver;
 
             ILogger logger = loggerFactory.CreateLogger(DurableTaskExtension.LoggerCategoryName);
-            this.traceHelper = new EndToEndTraceHelper(logger, traceReplayEvents: false);
+            this.traceHelper = EndToEndTraceHelper.CreateHostOnly(logger, traceReplayEvents: false);
 
             this.cachedEnviromentVariables = new ConcurrentDictionary<string, string>();
         }
