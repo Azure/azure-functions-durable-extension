@@ -12,8 +12,8 @@ Work item filters solve this by having each app automatically advertise which fu
 
 ## How it works
 
-1. The Durable Functions extension discovers registered orchestrators, activities, and entities during function indexing
-2. These names are sent to the DTS backend as `WorkItemFilters` on the `GetWorkItems` gRPC stream
+1. The Durable Functions extension indexes orchestrators, activities, and entities, then creates listeners for enabled functions
+2. Before the task hub worker starts, only names with active listeners are passed to the DTS provider for `WorkItemFilters` on the `GetWorkItems` gRPC stream
 3. DTS only dispatches work items that match the worker's registered functions
 4. Unmatched work items stay in the queue until a worker with the right filter connects
 
@@ -141,7 +141,16 @@ To demonstrate filter isolation across two apps:
 
 | Scenario | Behavior |
 |----------|----------|
-| Work item matches a registered function | Dispatched to this worker |
-| Work item does NOT match any registered function | Held in DTS queue (not dispatched) |
-| `workItemFilteringEnabled` is `false` or not set | All work items dispatched to all workers (default, no filtering) |
+| Work item matches a function with an active listener | Eligible for dispatch to this worker |
+| Function is indexed but disabled in this app | Not advertised by this worker; another app with an enabled listener can process it |
+| No connected worker advertises the requested function | Work waits for a matching worker; an orchestration waiting on an activity can remain `Running` |
+| `workItemFilteringEnabled` is `false` or not set | No capability-based filtering; a connected worker can receive unavailable functions |
 | Worker disconnects | Filter channel stays active briefly; items drain back to the general queue after a timeout |
+
+### Disabling and re-enabling functions
+
+Filters describe this app's capabilities, not a task-hub-wide prohibition. Disabling an activity with `AzureWebJobs.<FunctionName>.Disabled` does not prevent an orchestration from scheduling it. With filtering enabled, this app no longer advertises that activity on its next worker startup. Another app on the same hub can still execute it. If no eligible worker is available, the activity waits; re-enabling a listener can allow that pending work to complete, but does not revive an already failed call.
+
+The capability list is a startup snapshot, not an in-process hot-refresh mechanism. [Changing application settings restarts the function app by default](https://learn.microsoft.com/azure/azure-functions/disable-function). After restart and indexing, the replacement worker advertises the new listener set. This does not cancel work already leased or executing, or guarantee an immediate global change during rolling restarts.
+
+With filtering disabled, the existing dispatch behavior is unchanged: if a worker receives an activity that is disabled locally, it fails that call deterministically rather than waiting for the activity to be re-enabled.
