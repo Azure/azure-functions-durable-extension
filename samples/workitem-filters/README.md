@@ -151,6 +151,14 @@ To demonstrate filter isolation across two apps:
 
 Filters describe this app's capabilities, not a task-hub-wide prohibition. Disabling an activity with `AzureWebJobs.<FunctionName>.Disabled` does not prevent an orchestration from scheduling it. With filtering enabled, this app no longer advertises that activity on its next worker startup. Another app on the same hub can still execute it. If no eligible worker is available, the activity waits; re-enabling a listener can allow that pending work to complete, but does not revive an already failed call.
 
+For example, using this sample with `workItemFilteringEnabled: true` and no other workers connected to its task hub:
+
+1. Add `"AzureWebJobs.SayHello.Disabled": "true"` under `Values` in `local.settings.json`, then stop and restart the sample with `func start --port 7071`.
+2. Start `GreetingOrchestration` with `curl -X POST http://localhost:7071/api/orchestrators/greeting`. Use the returned `instanceId` in `curl http://localhost:7071/api/instances/<instanceId>` to check its status. It stays `Running` while waiting for `SayHello`, which this worker does not advertise.
+3. Set `"AzureWebJobs.SayHello.Disabled": "false"`, restart the sample on the same task hub, and query the **same instance ID**. The pending activity can now execute, allowing the instance to reach `Completed` with output `"Hello, World!"`; no new orchestration instance is needed.
+
+If another app on the same hub advertises an enabled `SayHello` listener, it can execute that activity even while `SayHello` remains disabled in this app.
+
 The capability list is a startup snapshot, not an in-process hot-refresh mechanism. [Changing application settings restarts the function app by default](https://learn.microsoft.com/azure/azure-functions/disable-function). After restart and indexing, the replacement worker advertises the new listener set. This does not cancel work already leased or executing, or guarantee an immediate global change during rolling restarts.
 
 With filtering disabled, the existing dispatch behavior is unchanged: if a worker receives an activity that is disabled locally, it fails that call deterministically rather than waiting for the activity to be re-enabled.
