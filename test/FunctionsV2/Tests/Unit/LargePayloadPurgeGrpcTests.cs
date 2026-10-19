@@ -37,6 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void PurgeServerDoesNotUseAnotherRpcServerAsItsBindingHelper()
         {
             Assert.DoesNotContain(
@@ -50,6 +51,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData("OtherHub", null)]
         [InlineData(null, "OtherConnection")]
         [InlineData("OtherHub", "OtherConnection")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task OrdinaryAndPurgeRequestsResolveTheSameBindingProvider(string hub, string connection)
         {
             using var fixture = new BridgeFixture(this.output);
