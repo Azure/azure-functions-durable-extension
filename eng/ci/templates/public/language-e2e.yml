@@ -4,6 +4,29 @@ parameters:
     values:
       - windows
       - linux
+  - name: testApps
+    type: object
+    default:
+      - app: BasicDotNetIsolated
+        language: dotnet-isolated
+        filter: Dotnet
+        outputs: [bin, obj, packages]
+      - app: BasicPowerShell
+        language: powershell
+        filter: PowerShell
+        outputs: [bin, obj, packages, Modules/AzureFunctions.PowerShell.Durable.SDK]
+      - app: BasicPython
+        language: python
+        filter: Python
+        outputs: [bin, obj, packages, .venv]
+      - app: BasicNode
+        language: node
+        filter: Node
+        outputs: [bin, obj, packages, node_modules, dist]
+      - app: BasicJava
+        language: java
+        filter: Java
+        outputs: [bin, obj, packages, target]
 
 jobs:
   - job: LanguageE2E
@@ -232,15 +255,20 @@ jobs:
           $resultsDirectory = Join-Path $env:AGENT_TEMPDIRECTORY 'TestResults'
           New-Item -ItemType Directory -Path $resultsDirectory -Force | Out-Null
           Write-Host '##vso[task.setvariable variable=languageE2EDiagnosticsReady]true'
-          ./eng/ci/templates/public/run-language-e2e.ps1 `
-            -TargetFramework '$(testTargetFramework)' `
-            -Backend '$(backendFilter)' `
-            -E2EAppName '$(e2eApps)'.Split(',') `
-            -ResultsDirectory $resultsDirectory
+          Get-PSDrive -PSProvider FileSystem | Select-Object Root, Used, Free
+          # App packaging needs both extension TFMs, including in .NET 8 jobs.
+          dotnet build ./src/WebJobs.Extensions.DurableTask -c Debug /p:GeneratePackageOnBuild=false
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          dotnet build ./test/e2e/Tests -f $(testTargetFramework)
           exit $LASTEXITCODE
-        displayName: Build, test, and clean each language E2E app
-        env:
-          E2E_TEST_DURABLE_BACKEND: $(E2E_TEST_DURABLE_BACKEND)
-          MSSQL_SA_PASSWORD: $(MSSQL_SA_PASSWORD)
+        displayName: Build shared extension and E2E tests
+
+      - ${{ each app in parameters.testApps }}:
+          - template: language-e2e-app.yml
+            parameters:
+              app: ${{ app.app }}
+              language: ${{ app.language }}
+              filter: ${{ app.filter }}
+              outputs: ${{ app.outputs }}
 
       - template: publish-test-results.yml
