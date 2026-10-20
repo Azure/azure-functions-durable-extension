@@ -32,9 +32,9 @@ param(
     [Switch]
     $SkipBuild,
 
-    # Target a specific test app to build. Ignored if -SkipBuild is set. If not specified, all test apps will be built.
-    [string]
-    $E2EAppName = "",
+    # Target specific test apps to build. Ignored if -SkipBuild is set. If not specified, all test apps will be built.
+    [string[]]
+    $E2EAppName = @(),
 
     # Target framework to build (e.g., net8.0, net10.0). If not specified, builds all TFMs.
     [string]
@@ -237,7 +237,9 @@ if (!$SkipBuild)
 
   if ($E2EAppName)
   {
-    InstallExtensionAndBuildTestApp (Join-Path $E2EAppParentDirectory $E2EAppName)
+    foreach ($appName in $E2EAppName) {
+      InstallExtensionAndBuildTestApp (Join-Path $E2EAppParentDirectory $appName)
+    }
   }
   else {
     Get-ChildItem -Path $E2EAppParentDirectory -Directory | ForEach-Object {

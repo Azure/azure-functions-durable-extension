@@ -12,39 +12,67 @@ jobs:
     strategy:
       matrix:
         ${{ if eq(parameters.platform, 'windows') }}:
-          AzureStorageNet8:
+          AzureStorageNet8_Dotnet:
             backendName: AzureStorage
             backendFilter: AzureStorage
             testTargetFramework: net8.0
-          AzureStorageNet10:
+            e2eApps: BasicDotNetIsolated
+          AzureStorageNet8_Node:
+            backendName: AzureStorage
+            backendFilter: AzureStorage
+            testTargetFramework: net8.0
+            e2eApps: BasicNode
+          AzureStorageNet8_OtherLanguages:
+            backendName: AzureStorage
+            backendFilter: AzureStorage
+            testTargetFramework: net8.0
+            e2eApps: BasicPowerShell,BasicPython,BasicJava
+          AzureStorageNet10_Dotnet:
             backendName: AzureStorage
             backendFilter: AzureStorage
             testTargetFramework: net10.0
+            e2eApps: BasicDotNetIsolated
+          AzureStorageNet10_Node:
+            backendName: AzureStorage
+            backendFilter: AzureStorage
+            testTargetFramework: net10.0
+            e2eApps: BasicNode
+          AzureStorageNet10_OtherLanguages:
+            backendName: AzureStorage
+            backendFilter: AzureStorage
+            testTargetFramework: net10.0
+            e2eApps: BasicPowerShell,BasicPython,BasicJava
         ${{ if eq(parameters.platform, 'linux') }}:
           AzureStorageNet8:
             backendName: AzureStorage
             backendFilter: AzureStorage
             testTargetFramework: net8.0
+            e2eApps: BasicDotNetIsolated,BasicPowerShell,BasicPython,BasicNode,BasicJava
           AzureStorageNet10:
             backendName: AzureStorage
             backendFilter: AzureStorage
             testTargetFramework: net10.0
+            e2eApps: BasicDotNetIsolated,BasicPowerShell,BasicPython,BasicNode,BasicJava
           DTSNet8:
             backendName: DTS
             backendFilter: DTS
             testTargetFramework: net8.0
+            e2eApps: BasicDotNetIsolated,BasicPowerShell,BasicPython,BasicNode,BasicJava
           DTSNet10:
             backendName: DTS
             backendFilter: DTS
             testTargetFramework: net10.0
+            e2eApps: BasicDotNetIsolated,BasicPowerShell,BasicPython,BasicNode,BasicJava
           MSSQLNet8:
             backendName: MSSQL
             backendFilter: MSSQL
             testTargetFramework: net8.0
+            e2eApps: BasicDotNetIsolated,BasicPowerShell,BasicPython,BasicNode,BasicJava
           MSSQLNet10:
             backendName: MSSQL
             backendFilter: MSSQL
             testTargetFramework: net10.0
+            e2eApps: BasicDotNetIsolated,BasicPowerShell,BasicPython,BasicNode,BasicJava
     steps:
       - checkout: self
         clean: true
@@ -92,6 +120,7 @@ jobs:
           $hostConfig.managedDependency.enabled = $false
           $hostConfig | ConvertTo-Json -Depth 10 | Set-Content $hostConfigPath
         displayName: Restore PowerShell Durable SDK from CFS
+        condition: and(succeeded(), contains(variables['e2eApps'], 'BasicPowerShell'))
         env:
           SYSTEM_ACCESSTOKEN: $(System.AccessToken)
 
@@ -114,11 +143,13 @@ jobs:
 
       - task: UsePythonVersion@0
         displayName: Install Python 3.13
+        condition: and(succeeded(), contains(variables['e2eApps'], 'BasicPython'))
         inputs:
           versionSpec: 3.13
 
       - task: JavaToolInstaller@0
         displayName: Install JDK 17
+        condition: and(succeeded(), contains(variables['e2eApps'], 'BasicJava'))
         inputs:
           versionSpec: 17
           jdkArchitectureOption: x64
@@ -165,6 +196,7 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $arguments = @{
             TargetFramework = '$(testTargetFramework)'
+            E2EAppName = '$(e2eApps)'.Split(',')
             SkipStorageEmulator = $true
           }
 
@@ -198,6 +230,8 @@ jobs:
             @{ Name = 'node'; App = 'BasicNode'; Filter = 'Node' }
             @{ Name = 'java'; App = 'BasicJava'; Filter = 'Java' }
           )
+          $selectedApps = '$(e2eApps)'.Split(',')
+          $cases = @($cases | Where-Object { $_.App -in $selectedApps })
 
           $testProject = './test/e2e/Tests'
           dotnet build $testProject -f $(testTargetFramework)

@@ -150,5 +150,5 @@ The build-e2e-test.ps1 script has several flags and parameters that may be helpf
 
 - `-StartMSSqlContainer` and `-StartDTSContainer` will automatically pull the docker images for MSSQL or the Durable Task Scheduler, respectively, and start them up using arguments compatible with the E2E tests. You should also use `-MSSQLpwd` to provide the SA password that will be used for the MSSQL instance.
 - `-SkipBuild` will skip building the extension and tests apps entirely, useful when you want to download Core Tools or start an emulator without waiting for these components to build.
-- `-E2EAppName` may be used to build only one of the test apps in the project, for example passing `-E2EAppName BasicJava` will only build BasicJava, saving time during build.
+- `-E2EAppName` may be used to build only selected test apps, for example `-E2EAppName BasicJava` or `-E2EAppName BasicPowerShell,BasicPython,BasicJava`. If omitted, all test apps are built. Windows CI runs .NET isolated, JavaScript, and the remaining languages in three separate jobs per framework; Linux CI continues to run all languages in each backend/framework job.
 - `-SkipCoreTools` and `-SkipStorageEmulator` work as described, but build-e2e-test.ps1 will automatically skip these steps if Core Tools or the Storage emulator are already present/running, so these flags are useful only in niche situations.
