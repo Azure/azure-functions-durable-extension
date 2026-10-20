@@ -73,10 +73,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (trigger.DurableRequiresGrpc)
             {
                 // The function's metadata sets the DurableRequiresGrpc attribute property, indicating that a language typically
-                // configured for HTTP wants to use gRPC instead. Currently only Python uses this property for the durabletask-based
-                // Python SDK.
+                // configured for HTTP wants to use gRPC instead. The newer Python and JavaScript SDKs use this property.
                 // Calling this method will cause the extension to use gRPC instead of HTTP when starting the task hub.
-                this.config.ConfigureForGrpcProtocol();
+                this.config.ConfigureForGrpcProtocol(trigger.DurableSdkName, trigger.DurableSdkVersion);
             }
 
             var binding = new OrchestrationTriggerBinding(this.config, parameter, orchestratorName, this.connectionName, this.platormInformation);
@@ -185,6 +184,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     };
                     orchestratorRequest.Properties.Add(ProtobufUtils.ConvertPocoToProtoMap(remoteContext.Configurations));
 
+                    if (remoteContext.SourceInstanceId is string sourceInstanceId)
+                    {
+                        orchestratorRequest.Properties.Add("sourceInstanceId", proto.Value.ForString(sourceInstanceId));
+                    }
+
                     // We only do a null check as an empty string is a valid version.
                     if (this.config.Options.DefaultVersion != null)
                     {
@@ -198,10 +202,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     var triggerData = new TriggerData(contextValueProvider, EmptyBindingData);
                     return Task.FromResult<ITriggerData>(triggerData);
                 }
-                else
+
+                // Portal/Admin API invocations use null when input is omitted and a serialized string otherwise.
+                else if (value is null || value is string)
                 {
-                    throw new ArgumentException($"Don't know how to bind to {value?.GetType().Name ?? "null"}.", nameof(value));
+                    throw new InvalidOperationException(
+                        "Durable orchestrator functions do not support direct invocation. " +
+                        "Start an orchestration from a client function by using a Durable client.");
                 }
+
+                throw new ArgumentException($"Don't know how to bind to {value.GetType().Name}.", nameof(value));
             }
 
             public ParameterDescriptor ToParameterDescriptor()
@@ -250,6 +260,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     new JProperty("instanceId", arg.InstanceId),
                     new JProperty("isReplaying", arg.IsReplaying),
                     new JProperty("parentInstanceId", arg.ParentInstanceId),
+                    new JProperty("sourceInstanceId", arg.SourceInstanceId),
                     new JProperty("upperSchemaVersion", SchemaVersion.V2),
                     new JProperty("upperSchemaVersionNew", SchemaVersion.V4),
                     new JProperty("longRunningTimerIntervalDuration", arg.LongRunningTimerIntervalLength),

@@ -5,14 +5,19 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
+using Azure.Identity;
 using DurableTask.Core;
 using Microsoft.ApplicationInsights.Channel;
 using Microsoft.ApplicationInsights.DataContracts;
+using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.ApplicationInsights.Extensibility.Implementation;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Options;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 using Xunit.Abstractions;
@@ -126,6 +131,405 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task DurableTelemetryInitializers_PreserveRawV2Spans(bool forwardToHostChannel)
+        {
+            string[] baseline = null;
+            foreach (bool useDurableInitializer in new[] { false, true })
+            {
+                var hostTelemetry = new ConcurrentQueue<ITelemetry>();
+                var durableTelemetry = new ConcurrentQueue<ITelemetry>();
+                var sentSpans = new ConcurrentQueue<(OperationTelemetry Telemetry, object Snapshot)>();
+                void Capture(ITelemetry telemetry, ConcurrentQueue<ITelemetry> stream)
+                {
+                    if (telemetry is OperationTelemetry span)
+                    {
+                        sentSpans.Enqueue((span, CaptureRawSpan(span)));
+                    }
+
+                    stream.Enqueue(telemetry);
+                }
+
+                const string connectionString = "InstrumentationKey=00000000-0000-0000-0000-000000000001";
+                var resolver = new SimpleNameResolver(new Dictionary<string, string>
+                {
+                    ["APPLICATIONINSIGHTS_CONNECTION_STRING"] = connectionString,
+                    ["APPLICATIONINSIGHTS_AUTHENTICATION_STRING"] = forwardToHostChannel ? "Authorization=AAD" : null,
+                });
+                var options = new DurableTaskOptions
+                {
+                    Tracing = new TraceOptions
+                    {
+                        DistributedTracingEnabled = true,
+                        Version = DurableDistributedTracingVersion.V2,
+                    },
+                };
+                var sharedInitializer = new HostMetadataInitializer();
+                using (var host = TestHelpers.GetJobHost(
+                    this.loggerProvider,
+                    nameof(this.DurableTelemetryInitializers_PreserveRawV2Spans),
+                    enableExtendedSessions: false,
+                    options: options,
+                    nameResolver: resolver,
+                    onSend: forwardToHostChannel ? null : telemetry => Capture(telemetry, durableTelemetry),
+                    configureLogging: logging =>
+                    {
+                        logging.AddApplicationInsightsWebJobs(
+                            ai =>
+                            {
+                                ai.ConnectionString = connectionString;
+                                ai.EnableDependencyTracking = false;
+                                ai.EnablePerformanceCountersCollection = false;
+                                ai.EnableLiveMetrics = false;
+                                ai.SamplingSettings = null;
+                            },
+                            configuration => configuration.TelemetryInitializers.Add(sharedInitializer));
+                        logging.Services.AddSingleton<ITelemetryChannel>(
+                            new NoOpTelemetryChannel { OnSend = telemetry => Capture(telemetry, hostTelemetry) });
+                        if (useDurableInitializer)
+                        {
+                            logging.Services.AddDurableTaskTelemetryInitializer(sharedInitializer);
+                        }
+                    }))
+                {
+                    await host.StartAsync();
+                    var success = await host.StartOrchestratorAsync(nameof(TestOrchestrations.SayHelloWithActivity), "world", this.output);
+                    Assert.Equal(OrchestrationRuntimeStatus.Completed, (await success.WaitForCompletionAsync(this.output)).RuntimeStatus);
+                    var failure = await host.StartOrchestratorAsync(nameof(TestOrchestrations.ThrowOrchestrator), "expected failure", this.output);
+                    Assert.Equal(OrchestrationRuntimeStatus.Failed, (await failure.WaitForCompletionAsync(this.output)).RuntimeStatus);
+                    var entity = await host.StartOrchestratorAsync(
+                        nameof(TestOrchestrations.EntityId_CallAndDeleteStringStore),
+                        new EntityId("StringStore2", Guid.NewGuid().ToString()),
+                        this.output);
+                    Assert.Equal(OrchestrationRuntimeStatus.Completed, (await entity.WaitForCompletionAsync(this.output)).RuntimeStatus);
+                    await host.StopAsync();
+                }
+
+                // Inspect both raw streams before any Durable-name filtering or correlation sorting.
+                OperationTelemetry[] allSpans = hostTelemetry.Concat(durableTelemetry).OfType<OperationTelemetry>().ToArray();
+                Assert.NotEmpty(hostTelemetry);
+                Assert.Equal(19, allSpans.Length);
+                Assert.Equal(forwardToHostChannel ? 19 : 5, hostTelemetry.OfType<OperationTelemetry>().Count());
+                Assert.Equal(forwardToHostChannel ? 0 : 14, durableTelemetry.OfType<OperationTelemetry>().Count());
+                Assert.Equal(allSpans.Length, sentSpans.Count);
+                Assert.Equal(useDurableInitializer ? 19 : 5, sharedInitializer.BeforeEnrichment.Count);
+                if (useDurableInitializer)
+                {
+                    // Match by object identity, not mutable/random IDs. Compare immutable values
+                    // captured before enrichment with this same record at the channel boundary.
+                    Assert.All(sentSpans, sent =>
+                    {
+                        Assert.True(sharedInitializer.BeforeEnrichment.TryGetValue(sent.Telemetry, out object before));
+                        Assert.Equal(before, sent.Snapshot);
+                    });
+                }
+
+                Assert.Equal(allSpans.Length, allSpans.Select(span => (span.Context.Operation.Id, span.Id)).Distinct().Count());
+                Assert.All(allSpans, span =>
+                {
+                    Assert.False(string.IsNullOrEmpty(span.Id));
+                    Assert.False(string.IsNullOrEmpty(span.Context.Operation.Id));
+                });
+
+                var signature = allSpans.Select(span => $"{span.GetType().Name}|{span.Name}|{span.Success}")
+                    .OrderBy(value => value, StringComparer.Ordinal).ToArray();
+                this.output.WriteLine(string.Join(Environment.NewLine, signature));
+                foreach (var sent in sentSpans)
+                {
+                    this.output.WriteLine(sent.Snapshot.ToString());
+                }
+
+                if (baseline == null)
+                {
+                    baseline = signature;
+                }
+                else
+                {
+                    Assert.Equal(baseline, signature);
+                }
+
+                RequestTelemetry hello = Assert.Single(allSpans.OfType<RequestTelemetry>(), span => span.Name == "activity:Hello");
+                Assert.True(hello.Success);
+                RequestTelemetry failedActivity = Assert.Single(allSpans.OfType<RequestTelemetry>(), span => span.Name == "activity:ThrowActivity");
+                Assert.False(failedActivity.Success);
+                Assert.Single(allSpans.OfType<RequestTelemetry>(), span => span.Name == "orchestration:SayHelloWithActivity");
+                Assert.False(Assert.Single(allSpans.OfType<RequestTelemetry>(), span => span.Name == "orchestration:ThrowOrchestrator").Success);
+                Assert.Contains(allSpans, span => span.Name.StartsWith("entity:", StringComparison.Ordinal));
+                AssertRawV2Topology(allSpans);
+
+                foreach (var span in allSpans.Where(span =>
+                    span.Name.StartsWith("orchestration:", StringComparison.Ordinal) ||
+                    span.Name.StartsWith("activity:", StringComparison.Ordinal) ||
+                    span.Name.StartsWith("entity:", StringComparison.Ordinal)))
+                {
+                    Assert.Equal(span.Name, span.Context.Operation.Name);
+                    Assert.Equal(useDurableInitializer, span.Properties.ContainsKey("host-enrichment"));
+                    if (useDurableInitializer)
+                    {
+                        Assert.Equal("orders-functions", span.Context.Cloud.RoleName);
+                    }
+                }
+            }
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void RawSpanSnapshot_DetectsChangedAndDroppedProducerFields(bool isDependency)
+        {
+            var mutations = new Dictionary<string, Action<OperationTelemetry, bool>>
+            {
+                ["Id"] = (span, clear) => span.Id = clear ? null : "changed-span",
+                ["OperationId"] = (span, clear) => span.Context.Operation.Id = clear ? null : "changed-operation",
+                ["ParentId"] = (span, clear) => span.Context.Operation.ParentId = clear ? null : "changed-parent",
+                ["Timestamp"] = (span, clear) => span.Timestamp = clear ? default : span.Timestamp.AddTicks(1),
+                ["Duration"] = (span, clear) => span.Duration = clear ? default : span.Duration.Add(TimeSpan.FromTicks(1)),
+                ["Name"] = (span, clear) => span.Name = clear ? null : "changed-name",
+                ["Success"] = (span, clear) => span.Success = clear ? null : !span.Success,
+            };
+            if (isDependency)
+            {
+                mutations["ResultCode"] = (span, clear) => ((DependencyTelemetry)span).ResultCode = clear ? null : "500";
+                mutations["Type"] = (span, clear) => ((DependencyTelemetry)span).Type = clear ? null : "changed-type";
+                mutations["Target"] = (span, clear) => ((DependencyTelemetry)span).Target = clear ? null : "changed-target";
+                mutations["Data"] = (span, clear) => ((DependencyTelemetry)span).Data = clear ? null : "changed-data";
+            }
+            else
+            {
+                mutations["ResponseCode"] = (span, clear) => ((RequestTelemetry)span).ResponseCode = clear ? null : "500";
+                mutations["Url"] = (span, clear) => ((RequestTelemetry)span).Url = clear ? null : new Uri("https://example.test/changed");
+                mutations["Source"] = (span, clear) => ((RequestTelemetry)span).Source = clear ? null : "changed-source";
+            }
+
+            foreach (var mutation in mutations)
+            {
+                foreach (bool clear in new[] { false, true })
+                {
+                    OperationTelemetry span = isDependency
+                        ? new DependencyTelemetry { ResultCode = "201", Type = "queue", Target = "orders", Data = "enqueue" }
+                        : new RequestTelemetry { ResponseCode = "201", Url = new Uri("https://example.test/orders"), Source = "caller" };
+                    span.Id = "1111111111111111";
+                    span.Context.Operation.Id = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+                    span.Context.Operation.ParentId = "bbbbbbbbbbbbbbbb";
+                    span.Timestamp = new DateTimeOffset(2026, 1, 2, 3, 4, 5, TimeSpan.Zero);
+                    span.Duration = TimeSpan.FromMilliseconds(123);
+                    span.Name = "activity:Hello";
+                    span.Success = true;
+                    object before = CaptureRawSpan(span);
+
+                    new HostMetadataInitializer().Initialize(span);
+                    Assert.Equal(before, CaptureRawSpan(span));
+                    mutation.Value(span, clear);
+
+                    this.output.WriteLine($"Changed {mutation.Key} (clear: {clear})");
+                    Assert.NotEqual(before, CaptureRawSpan(span));
+                }
+            }
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData("Authorization=AAD", "system-assigned")]
+        [InlineData("Authorization=AAD;ClientId=00000000-0000-0000-0000-000000000001", "user-assigned")]
+        [InlineData(" authoRization=AAD ;; ClIentId = 00000000-0000-0000-0000-000000000001 ", "user-assigned")]
+        public void TelemetryActivator_ValidAuthenticationString_EnablesEntraAuthentication(
+            string authenticationString,
+            string expectedIdentityType)
+        {
+            TraceOptions traceOptions = new TraceOptions()
+            {
+                DistributedTracingEnabled = true,
+                Version = DurableDistributedTracingVersion.V2,
+            };
+            DurableTaskOptions options = new DurableTaskOptions
+            {
+                Tracing = traceOptions,
+            };
+            var mockNameResolver = GetNameResolverMock(
+                new[]
+                {
+                    ("APPLICATIONINSIGHTS_CONNECTION_STRING", "InstrumentationKey=00000000-0000-0000-0000-000000000000"),
+                    ("APPLICATIONINSIGHTS_AUTHENTICATION_STRING", authenticationString),
+                });
+
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.TelemetryActivator_ValidAuthenticationString_EnablesEntraAuthentication),
+                enableExtendedSessions: false,
+                nameResolver: mockNameResolver.Object,
+                options: options))
+            {
+                string expectedMessage =
+                    $"Microsoft Entra authentication enabled for Durable distributed tracing using the {expectedIdentityType} managed identity.";
+                Assert.Contains(
+                    this.loggerProvider.GetAllLogMessages(),
+                    log => log.FormattedMessage?.StartsWith(expectedMessage, StringComparison.Ordinal) == true);
+            }
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData("Authorization=AAD1")]
+        [InlineData("Auth123=AAD")]
+        [InlineData("Authorization=AAD;ClientId=123")]
+        public void TelemetryActivator_InvalidAuthenticationString_LogsWarning(string authenticationString)
+        {
+            TraceOptions traceOptions = new TraceOptions()
+            {
+                DistributedTracingEnabled = true,
+                Version = DurableDistributedTracingVersion.V2,
+            };
+            DurableTaskOptions options = new DurableTaskOptions
+            {
+                Tracing = traceOptions,
+            };
+            var mockNameResolver = GetNameResolverMock(
+                new[]
+                {
+                    ("APPLICATIONINSIGHTS_CONNECTION_STRING", "InstrumentationKey=00000000-0000-0000-0000-000000000000"),
+                    ("APPLICATIONINSIGHTS_AUTHENTICATION_STRING", authenticationString),
+                });
+
+            using (var host = TestHelpers.GetJobHost(
+                this.loggerProvider,
+                nameof(this.TelemetryActivator_InvalidAuthenticationString_LogsWarning),
+                enableExtendedSessions: false,
+                nameResolver: mockNameResolver.Object,
+                options: options))
+            {
+                const string expectedMessage =
+                    "APPLICATIONINSIGHTS_AUTHENTICATION_STRING is invalid and will not be used for Durable Functions distributed tracing.";
+                Assert.Contains(
+                    this.loggerProvider.GetAllLogMessages(),
+                    log => log.FormattedMessage?.StartsWith(expectedMessage, StringComparison.Ordinal) == true);
+            }
+        }
+
+        /*
+         * Reproduces the root cause of #3497 end to end. Durable keeps a private
+         * TelemetryConfiguration, which has no Microsoft Entra credential of its own, so with
+         * DisableLocalAuth=true its spans are rejected at ingestion. The fix forwards them to the
+         * host channel, which already carries the host's credential. Capturing on that host channel
+         * proves the spans really traverse it, and leaving onSend unset means the TelemetryActivator
+         * comes purely from the production DI registration.
+         */
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task DistributedTracingV2_EntraAuthentication_ForwardsModuleSpansThroughHostChannel()
+        {
+            string[] orchestrationFunctionNames =
+            {
+                nameof(TestOrchestrations.SayHelloWithActivity),
+            };
+
+            using TelemetryConfiguration hostTelemetryConfiguration = TelemetryConfiguration.CreateDefault();
+            TelemetryActivator activator = null;
+
+            var result = await this.ExecuteOrchestrationWithExceptionAsync(
+                orchestrationFunctionNames,
+                "DTV2EntraForward",
+                "world",
+                extendedSessions: false,
+                protocol: "W3CTraceContext",
+                version: DurableDistributedTracingVersion.V2,
+                authenticationString: "Authorization=AAD",
+                hostTelemetryConfiguration: hostTelemetryConfiguration,
+                inspectTelemetryActivator: telemetryActivator => activator = telemetryActivator,
+                captureThroughHostChannel: true);
+
+            // The activator must come from the production factory with the registered host configuration,
+            // otherwise this test would silently degrade to the standalone credential path.
+            Assert.NotNull(activator);
+            FieldInfo hostConfigurationField = typeof(TelemetryActivator).GetField(
+                "hostTelemetryConfiguration",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(hostConfigurationField);
+            Assert.Same(hostTelemetryConfiguration, hostConfigurationField.GetValue(activator));
+
+            var forwardingChannel = Assert.IsType<HostForwardingTelemetryChannel>(
+                activator.TelemetryConfiguration.TelemetryChannel);
+            Assert.Same(hostTelemetryConfiguration.TelemetryChannel, forwardingChannel.HostChannel);
+
+            const string expectedMessage =
+                "Microsoft Entra authentication enabled for Durable distributed tracing using the system-assigned managed identity.";
+            Assert.Contains(
+                this.loggerProvider.GetAllLogMessages(),
+                log => log.FormattedMessage?.StartsWith(expectedMessage, StringComparison.Ordinal) == true);
+
+            const string fallbackWarning =
+                "The Application Insights telemetry channel owned by the Functions host could not be read";
+            Assert.DoesNotContain(
+                this.loggerProvider.GetAllLogMessages(),
+                log => log.FormattedMessage?.Contains(fallbackWarning) == true);
+
+            AssertSayHelloWithActivitySpans(result.Item1);
+        }
+
+        /*
+         * Outside the Functions host there is no host configuration to forward to, so Durable still
+         * has to authenticate on its own. This keeps the pre-existing behaviour covered and guards
+         * the missing-spans regression that caused #3009 to be reverted by #3053.
+         */
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task DistributedTracingV2_EntraAuthentication_WithoutHostConfiguration_PreservesModuleSpans()
+        {
+            string[] orchestrationFunctionNames =
+            {
+                nameof(TestOrchestrations.SayHelloWithActivity),
+            };
+
+            TelemetryActivator activator = null;
+
+            var result = await this.ExecuteOrchestrationWithExceptionAsync(
+                orchestrationFunctionNames,
+                "DTV2EntraFallback",
+                "world",
+                extendedSessions: false,
+                protocol: "W3CTraceContext",
+                version: DurableDistributedTracingVersion.V2,
+                authenticationString: "Authorization=AAD",
+                inspectTelemetryActivator: telemetryActivator => activator = telemetryActivator);
+
+            Assert.NotNull(activator);
+            Assert.IsNotType<HostForwardingTelemetryChannel>(activator.TelemetryConfiguration.TelemetryChannel);
+
+            const string expectedMessage =
+                "Microsoft Entra authentication enabled for Durable distributed tracing using the system-assigned managed identity.";
+            Assert.Contains(
+                this.loggerProvider.GetAllLogMessages(),
+                log => log.FormattedMessage?.StartsWith(expectedMessage, StringComparison.Ordinal) == true);
+
+            AssertSayHelloWithActivitySpans(result.Item1);
+        }
+
+        private static void AssertSayHelloWithActivitySpans(List<OperationTelemetry> telemetry)
+        {
+            DependencyTelemetry createOrchestration = Assert.Single(
+                telemetry.OfType<DependencyTelemetry>(),
+                item => item.Name.StartsWith($"{TraceActivityConstants.CreateOrchestration}:", StringComparison.Ordinal));
+            RequestTelemetry orchestration = Assert.Single(
+                telemetry.OfType<RequestTelemetry>(),
+                item => item.Name.StartsWith($"{TraceActivityConstants.Orchestration}:", StringComparison.Ordinal));
+            DependencyTelemetry scheduleActivity = Assert.Single(
+                telemetry.OfType<DependencyTelemetry>(),
+                item => item.Name.StartsWith($"{TraceActivityConstants.Activity}:", StringComparison.Ordinal));
+            RequestTelemetry activity = Assert.Single(
+                telemetry.OfType<RequestTelemetry>(),
+                item => item.Name.StartsWith($"{TraceActivityConstants.Activity}:", StringComparison.Ordinal));
+
+            Assert.Equal(createOrchestration.Id, orchestration.Context.Operation.ParentId);
+            Assert.Equal(orchestration.Id, scheduleActivity.Context.Operation.ParentId);
+            Assert.Equal(scheduleActivity.Id, activity.Context.Operation.ParentId);
+            Assert.All(
+                new OperationTelemetry[] { createOrchestration, orchestration, scheduleActivity, activity },
+                item => Assert.Equal(orchestration.Context.Operation.Id, item.Context.Operation.Id));
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(false, "W3CTraceContext")]
         [InlineData(true, "HttpCorrelationProtocol")]
         [InlineData(true, "W3CTraceContext")]
@@ -208,7 +612,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 object input,
                 bool extendedSessions,
                 string protocol,
-                DurableDistributedTracingVersion version = DurableDistributedTracingVersion.V1)
+                DurableDistributedTracingVersion version = DurableDistributedTracingVersion.V1,
+                string authenticationString = null,
+                TelemetryConfiguration hostTelemetryConfiguration = null,
+                Action<TelemetryActivator> inspectTelemetryActivator = null,
+                bool captureThroughHostChannel = false)
         {
             ConcurrentQueue<ITelemetry> sendItems = new ConcurrentQueue<ITelemetry>();
             TraceOptions traceOptions = new TraceOptions()
@@ -222,9 +630,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var sendAction = new Action<ITelemetry>(
                 delegate(ITelemetry telemetry) { sendItems.Enqueue(telemetry); });
 
+            // Capturing on the host channel instead of the OnSend hook leaves the TelemetryActivator
+            // entirely to the production registration and proves telemetry really travels through
+            // the host channel, which is what carries the host's Entra credential.
+            if (captureThroughHostChannel)
+            {
+                hostTelemetryConfiguration.TelemetryChannel = new NoOpTelemetryChannel { OnSend = sendAction };
+            }
+
             string siteNameEnvironmentVarName = "WEBSITE_SITE_NAME";
             string siteNameEnvironmentVarValue = TestSiteName;
-            var mockNameResolver = GetNameResolverMock(new[] { (siteNameEnvironmentVarName, siteNameEnvironmentVarValue) });
+            var mockNameResolver = GetNameResolverMock(
+                new[]
+                {
+                    (siteNameEnvironmentVarName, siteNameEnvironmentVarValue),
+                    ("APPLICATIONINSIGHTS_CONNECTION_STRING", "InstrumentationKey=00000000-0000-0000-0000-000000000000"),
+                    ("APPLICATIONINSIGHTS_AUTHENTICATION_STRING", authenticationString),
+                });
 
             using (var host = TestHelpers.GetJobHost(
                 this.loggerProvider,
@@ -232,9 +654,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 extendedSessions,
                 options: options,
                 nameResolver: mockNameResolver.Object,
-                onSend: sendAction))
+                onSend: captureThroughHostChannel ? null : sendAction,
+                hostTelemetryConfiguration: hostTelemetryConfiguration))
             {
                 await host.StartAsync();
+
+                if (inspectTelemetryActivator != null)
+                {
+                    IServiceProvider services =
+                        ((PlatformSpecificHelpers.FunctionsV2HostWrapper)host).InnerHost.Services;
+                    inspectTelemetryActivator(
+                        Assert.IsType<TelemetryActivator>(services.GetRequiredService<ITelemetryActivator>()));
+                }
+
                 var client = await host.StartOrchestratorAsync(orchestratorFunctionNames[0], input, this.output);
                 await client.WaitForCompletionAsync(this.output, timeout: TimeSpan.FromSeconds(90));
                 await host.StopAsync();
@@ -413,6 +845,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     p.Name.Contains(TraceConstants.Orchestrator) ||
                     p.Name.Contains(TraceConstants.Client) ||
                     p.Name.Contains("Operation") ||
+                    p.Name.StartsWith($"{TraceActivityConstants.CreateOrchestration}:", StringComparison.Ordinal) ||
                     p.Name.StartsWith($"{TraceActivityConstants.Orchestration}:", StringComparison.Ordinal) ||
                     p.Name.StartsWith($"{TraceActivityConstants.Activity}:", StringComparison.Ordinal));
         }
@@ -430,6 +863,91 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
 
             return converted;
+        }
+
+        private static void AssertRawV2Topology(OperationTelemetry[] spans)
+        {
+            var scenarios = new[]
+            {
+                (nameof(TestOrchestrations.SayHelloWithActivity), new[] { "activity:Hello" }),
+                (nameof(TestOrchestrations.ThrowOrchestrator), new[] { "activity:ThrowActivity" }),
+                (nameof(TestOrchestrations.EntityId_CallAndDeleteStringStore), new[] { "entity:stringstore2:set", "entity:stringstore2:delete" }),
+            };
+            foreach (var (orchestrationName, childNames) in scenarios)
+            {
+                RequestTelemetry orchestration = Assert.Single(
+                    spans.OfType<RequestTelemetry>(), span => span.Name == $"orchestration:{orchestrationName}");
+                DependencyTelemetry create = Assert.Single(
+                    spans.OfType<DependencyTelemetry>(), span => span.Name == $"create_orchestration:{orchestrationName}");
+                RequestTelemetry start = Assert.Single(
+                    spans.OfType<RequestTelemetry>(), span => span.Name == "StartFunction" &&
+                        span.Context.Operation.Id == orchestration.Context.Operation.Id);
+                Assert.True(string.IsNullOrEmpty(start.Context.Operation.ParentId));
+                AssertSpanParent(create, start);
+                AssertSpanParent(orchestration, create);
+                foreach (string childName in childNames)
+                {
+                    DependencyTelemetry schedule = Assert.Single(
+                        spans.OfType<DependencyTelemetry>(), span => span.Name == childName);
+                    RequestTelemetry execution = Assert.Single(
+                        spans.OfType<RequestTelemetry>(), span => span.Name == childName);
+                    AssertSpanParent(schedule, orchestration);
+                    AssertSpanParent(execution, schedule);
+                }
+            }
+        }
+
+        private static void AssertSpanParent(OperationTelemetry child, OperationTelemetry parent)
+        {
+            Assert.False(string.IsNullOrEmpty(child.Context.Operation.ParentId));
+            Assert.Equal(parent.Id, child.Context.Operation.ParentId);
+            Assert.Equal(parent.Context.Operation.Id, child.Context.Operation.Id);
+        }
+
+        private static object CaptureRawSpan(OperationTelemetry telemetry)
+        {
+            var request = telemetry as RequestTelemetry;
+            var dependency = telemetry as DependencyTelemetry;
+            return new
+            {
+                TelemetryType = telemetry.GetType(),
+                telemetry.Id,
+                OperationId = telemetry.Context.Operation.Id,
+                ParentId = telemetry.Context.Operation.ParentId,
+                telemetry.Timestamp,
+                telemetry.Duration,
+                telemetry.Name,
+                telemetry.Success,
+                ResponseCode = request?.ResponseCode,
+                RequestUrl = request?.Url?.OriginalString,
+                RequestSource = request?.Source,
+                ResultCode = dependency?.ResultCode,
+                DependencyType = dependency?.Type,
+                DependencyTarget = dependency?.Target,
+                DependencyData = dependency?.Data,
+            };
+        }
+
+        private sealed class HostMetadataInitializer : ITelemetryInitializer
+        {
+            public ConcurrentDictionary<OperationTelemetry, object> BeforeEnrichment { get; } =
+                new ConcurrentDictionary<OperationTelemetry, object>(ReferenceEqualityComparer.Instance);
+
+            public void Initialize(ITelemetry telemetry)
+            {
+                if (telemetry is OperationTelemetry span)
+                {
+                    // The host SDK can initialize a request at both start and completion.
+                    // Preserve the latest pre-enrichment values, when producer fields are final.
+                    this.BeforeEnrichment[span] = CaptureRawSpan(span);
+                }
+
+                telemetry.Context.Cloud.RoleName = "orders-functions";
+                if (telemetry is ISupportProperties properties)
+                {
+                    properties.Properties["host-enrichment"] = "enabled";
+                }
+            }
         }
     }
 

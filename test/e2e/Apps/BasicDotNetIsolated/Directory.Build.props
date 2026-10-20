@@ -1,12 +1,14 @@
 <Project>
   <!--
-    Pin System.Drawing.Common 4.7.3 for WorkerExtensions to override
+    Pin System.Drawing.Common 6.0.0 for WorkerExtensions to override
     the vulnerable transitive 4.7.0 from Microsoft.DurableTask.SqlServer (CVE-2021-24112).
+    6.0.0 is also the floor required by Microsoft.Data.SqlClient's
+    System.Configuration.ConfigurationManager 6.0.0 chain.
     CPM is disabled for WorkerExtensions via the local Directory.Packages.props.
     Import-blocking is removed via the _FunctionsExtensionCommonProps override
     in Directory.Build.targets.
   -->
   <ItemGroup Condition="'$(MSBuildProjectFile)' == 'WorkerExtensions.csproj'">
-    <PackageReference Include="System.Drawing.Common" Version="4.7.3" />
+    <PackageReference Include="System.Drawing.Common" Version="6.0.0" />
   </ItemGroup>
 </Project>

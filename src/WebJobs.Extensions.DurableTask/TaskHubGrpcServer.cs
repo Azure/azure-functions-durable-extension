@@ -64,6 +64,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     durableClient.ThrowIfOrchestratorFunctionIsDisabled(request.Name);
                 }
 
+                if (request.Tags.ContainsKey(DurableClient.SourceInstanceIdTag))
+                {
+                    throw new ArgumentException(
+                        $"The tag key '{DurableClient.SourceInstanceIdTag}' is reserved for internal use.",
+                        nameof(request.Tags));
+                }
+
                 List<OrchestrationStatus> allStatuses = System.Enum
                     .GetValues<OrchestrationStatus>()
                     .ToList();

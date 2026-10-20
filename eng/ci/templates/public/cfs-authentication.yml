@@ -1,0 +1,138 @@
+steps:
+  - task: NuGetAuthenticate@1
+    displayName: Authenticate NuGet with CFS
+
+  - task: npmAuthenticate@0
+    displayName: Authenticate npm with CFS
+    inputs:
+      workingFile: eng/cfs/.npmrc
+
+  - task: PipAuthenticate@1
+    displayName: Authenticate pip with CFS
+    inputs:
+      artifactFeeds: public/upstream-public
+      onlyAddExtraIndex: false
+
+  - task: MavenAuthenticate@0
+    displayName: Authenticate Maven with CFS
+    inputs:
+      artifactsFeeds: public/upstream-public
+
+  - pwsh: |
+      $ErrorActionPreference = 'Stop'
+      $feedUrl = 'https://pkgs.dev.azure.com/azfunc/public/_packaging/upstream-public/maven/v1'
+
+      $settingsPath = Join-Path $HOME '.m2/settings.xml'
+      [xml] $settings = Get-Content -LiteralPath $settingsPath -Raw
+      $namespace = $settings.DocumentElement.NamespaceURI
+      $mirrors = $settings.DocumentElement.SelectSingleNode(
+        "*[local-name()='mirrors']")
+      if ($null -eq $mirrors) {
+        $mirrors = $settings.CreateElement('mirrors', $namespace)
+        [void] $settings.DocumentElement.AppendChild($mirrors)
+      }
+
+      $mirror = $settings.CreateElement('mirror', $namespace)
+      foreach ($entry in @{
+        id = 'public/upstream-public'
+        name = 'Azure Functions CFS'
+        url = $feedUrl
+        mirrorOf = '*'
+      }.GetEnumerator()) {
+        $element = $settings.CreateElement($entry.Key, $namespace)
+        $element.InnerText = $entry.Value
+        [void] $mirror.AppendChild($element)
+      }
+      [void] $mirrors.AppendChild($mirror)
+      $settings.Save($settingsPath)
+
+      $gradleInitDirectory = Join-Path $HOME '.gradle/init.d'
+      New-Item -ItemType Directory -Path $gradleInitDirectory -Force | Out-Null
+      @"
+      settingsEvaluated { settings ->
+          settings.pluginManagement.repositories.clear()
+          settings.pluginManagement.repositories.maven {
+              url = uri('$feedUrl')
+              credentials {
+                  username = 'AzureDevOps'
+                  password = System.getenv('VSS_NUGET_ACCESSTOKEN')
+              }
+          }
+      }
+      allprojects {
+          buildscript.repositories {
+              clear()
+              maven {
+                  url = uri('$feedUrl')
+                  credentials {
+                      username = 'AzureDevOps'
+                      password = System.getenv('VSS_NUGET_ACCESSTOKEN')
+                  }
+              }
+          }
+          repositories {
+              clear()
+              maven {
+                  url = uri('$feedUrl')
+                  credentials {
+                      username = 'AzureDevOps'
+                      password = System.getenv('VSS_NUGET_ACCESSTOKEN')
+                  }
+              }
+          }
+      }
+      "@ | Set-Content -LiteralPath (Join-Path $gradleInitDirectory 'cfs.gradle')
+    displayName: Route Maven and Gradle through CFS
+
+  - pwsh: |
+      $ErrorActionPreference = 'Stop'
+      $outputDirectory = Join-Path $env:AGENT_TEMPDIRECTORY 'cfs-docker'
+      New-Item -ItemType Directory -Path $outputDirectory -Force | Out-Null
+
+      $npmConfigPath = Join-Path $outputDirectory '.npmrc'
+      Copy-Item -LiteralPath 'eng/cfs/.npmrc' -Destination $npmConfigPath -Force
+      if ((Get-Content -LiteralPath $npmConfigPath -Raw) -notmatch ':(_authToken|_password)=') {
+        throw 'npmAuthenticate did not add credentials to the CFS npm configuration.'
+      }
+
+      if ([string]::IsNullOrWhiteSpace($env:PIP_INDEX_URL)) {
+        throw 'PipAuthenticate did not set PIP_INDEX_URL.'
+      }
+      $pipIndexPath = Join-Path $outputDirectory 'pip-index-url'
+      [System.IO.File]::WriteAllText(
+        $pipIndexPath,
+        $env:PIP_INDEX_URL,
+        [System.Text.UTF8Encoding]::new($false))
+
+      if ([string]::IsNullOrWhiteSpace($env:VSS_NUGET_ACCESSTOKEN)) {
+        throw 'NuGetAuthenticate did not set VSS_NUGET_ACCESSTOKEN.'
+      }
+      [xml] $nugetConfig = Get-Content -LiteralPath 'nuget.config' -Raw
+      $credentials = $nugetConfig.CreateElement('packageSourceCredentials')
+      $source = $nugetConfig.CreateElement('upstream-public')
+      foreach ($entry in @{
+        Username = 'AzureDevOps'
+        ClearTextPassword = $env:VSS_NUGET_ACCESSTOKEN
+      }.GetEnumerator()) {
+        $add = $nugetConfig.CreateElement('add')
+        $add.SetAttribute('key', $entry.Key)
+        $add.SetAttribute('value', $entry.Value)
+        [void] $source.AppendChild($add)
+      }
+      [void] $credentials.AppendChild($source)
+      [void] $nugetConfig.configuration.AppendChild($credentials)
+      $nugetConfigPath = Join-Path $outputDirectory 'NuGet.config'
+      $writerSettings = [System.Xml.XmlWriterSettings]::new()
+      $writerSettings.Indent = $true
+      $writerSettings.Encoding = [System.Text.UTF8Encoding]::new($false)
+      $writer = [System.Xml.XmlWriter]::Create($nugetConfigPath, $writerSettings)
+      try {
+        $nugetConfig.Save($writer)
+      } finally {
+        $writer.Dispose()
+      }
+
+      Write-Host "##vso[task.setvariable variable=CFS_NPM_CONFIG]$npmConfigPath"
+      Write-Host "##vso[task.setvariable variable=CFS_PIP_INDEX]$pipIndexPath"
+      Write-Host "##vso[task.setvariable variable=CFS_NUGET_CONFIG]$nugetConfigPath"
+    displayName: Prepare authenticated CFS Docker configuration

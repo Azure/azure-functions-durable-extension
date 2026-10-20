@@ -8,8 +8,14 @@ ARG TARGET_FRAMEWORK=net8.0
 FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_SDK_TAG} AS build-env
 ARG TARGET_FRAMEWORK
 COPY . /root
-RUN cd /root/test/SmokeTests/OOProcSmokeTests/durableJS && \
-    dotnet build -o bin -f $TARGET_FRAMEWORK
+RUN --mount=type=secret,id=nuget_config,required=false \
+    cd /root/test/SmokeTests/OOProcSmokeTests/durableJS && \
+    if [ -f /run/secrets/nuget_config ]; then \
+      dotnet restore -p:TargetFramework=$TARGET_FRAMEWORK --configfile /run/secrets/nuget_config; \
+    else \
+      dotnet restore -p:TargetFramework=$TARGET_FRAMEWORK; \
+    fi && \
+    dotnet build -o bin -f $TARGET_FRAMEWORK --no-restore
 
 # Step 2: Deploy and run npm install to get the Durable Functions SDK
 FROM mcr.microsoft.com/azure-functions/node:4-node20
@@ -17,7 +23,8 @@ ARG NPM_REGISTRY=https://pkgs.dev.azure.com/azfunc/public/_packaging/upstream-pu
 COPY --from=build-env /root/test/SmokeTests/OOProcSmokeTests/durableJS /home/site/wwwroot
 ENV AzureWebJobsScriptRoot=/home/site/wwwroot \
     AzureFunctionsJobHost__Logging__Console__IsEnabled=true
-RUN cd /home/site/wwwroot && \
+RUN --mount=type=secret,id=npmrc,target=/root/.npmrc,required=false \
+    cd /home/site/wwwroot && \
     npm install --registry="$NPM_REGISTRY" \
       --@azure:registry="$NPM_REGISTRY" \
       --@opentelemetry:registry="$NPM_REGISTRY"
