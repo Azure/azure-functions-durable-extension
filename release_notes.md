@@ -49,4 +49,4 @@
 - Removed the production dependency on `Microsoft.Azure.WebJobs.Logging.ApplicationInsights` to reduce the extension's transitive dependencies while preserving Microsoft Entra authentication for distributed tracing.
 - Updated the Azure Managed SDK references to 1.10.2 for DTS sovereign-cloud token audiences and per-connection authority hosts, including the Functions scale extension and E2E apps.
 - Updated `Grpc.Net.Client` to 2.80.0 and `Microsoft.Bcl.AsyncInterfaces` to 10.0.9 to meet the Azure Managed SDK 1.10.2 dependency requirements.
-- Updated `Microsoft.Azure.DurableTask.AzureStorage` to 2.11.0, `Microsoft.Azure.DurableTask.Core` to 3.11.1, and `Microsoft.Azure.DurableTask.ApplicationInsights` to 0.13.0.
+- Updated `Microsoft.Azure.DurableTask.AzureStorage` to 2.11.1, `Microsoft.Azure.DurableTask.Core` to 3.11.2, and `Microsoft.Azure.DurableTask.ApplicationInsights` to 0.13.1, including fixes for entity-state deletion with extended sessions and unbounded memory growth when orchestration-state prefetch fails permanently.
