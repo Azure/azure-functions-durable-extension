@@ -11,6 +11,8 @@ jobs:
     
       steps:
 
+      - template: /eng/ci/templates/public/cfs-authentication.yml@self
+
       # Configure all the .NET SDK versions we need
       - task: UseDotNet@2
         displayName: 'Use the .NET Core 2.1 SDK (required for build signing)'
@@ -151,7 +153,7 @@ jobs:
       # This could be a separate pipeline, but the task is so small that it's paired with the .NET code build
       # for convenience.
       - pwsh: |
-          cd ./test/SmokeTests/OOProcSmokeTests/durableJava/
-          gradle build
-          ls
+          mvn --batch-mode `
+            --file ./test/SmokeTests/OOProcSmokeTests/durableJava/pom.xml `
+            clean package
         displayName: 'Build Java OOProc test (for CodeQL compliance)'

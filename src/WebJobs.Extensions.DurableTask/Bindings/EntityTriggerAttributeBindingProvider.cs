@@ -54,10 +54,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (trigger.DurableRequiresGrpc)
             {
                 // The function's metadata includes the DurableRequiresGrpc attribute, indicating that a language typically
-                // configured for HTTP wants to use gRPC instead. Currently only Python uses this flag for the durabletask-based
-                // Python SDK.
+                // configured for HTTP wants to use gRPC instead. The newer Python and JavaScript SDKs use this flag.
                 // Calling this method will cause the extension to use gRPC instead of HTTP when starting the task hub.
-                this.config.ConfigureForGrpcProtocol();
+                this.config.ConfigureForGrpcProtocol(trigger.DurableSdkName, trigger.DurableSdkVersion);
             }
 
             this.config.RegisterEntity(entityName, null);
@@ -108,7 +107,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return contract;
             }
 
-            public Task<ITriggerData> BindAsync(object value, ValueBindingContext context)
+            public Task<ITriggerData> BindAsync(object? value, ValueBindingContext context)
             {
                 if (value is DurableEntityContext entityContext)
                 {
@@ -150,10 +149,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     var triggerData = new TriggerData(contextValueProvider, EmptyBindingData);
                     return Task.FromResult<ITriggerData>(triggerData);
                 }
-                else
+
+                // Portal/Admin API invocations use null when input is omitted and a serialized string otherwise.
+                else if (value is null || value is string)
                 {
-                    throw new ArgumentException($"Don't know how to bind to {value?.GetType().Name ?? "null"}.", nameof(value));
+                    throw new InvalidOperationException(
+                        "Durable entity functions do not support direct invocation. " +
+                        "Signal an entity from a client or orchestrator function by using a Durable client.");
                 }
+
+                throw new ArgumentException($"Don't know how to bind to {value.GetType().Name}.", nameof(value));
             }
 
             public ParameterDescriptor ToParameterDescriptor()

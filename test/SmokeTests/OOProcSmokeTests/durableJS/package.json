@@ -13,6 +13,9 @@
     "@azure/functions": "^4.16.2",
     "durable-functions": "^3.4.0"
   },
+  "overrides": {
+    "uuid": "11.1.1"
+  },
   "main": "src/{index.js,functions/*.js}",
   "devDependencies": {}
 }

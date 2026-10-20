@@ -19,7 +19,7 @@ def external_event_orchestrator(context: df.DurableOrchestrationContext) -> str:
 
 @bp.route(route="SendExternalEvent_HttpStart", methods=["GET", "POST"])
 @bp.durable_client_input(client_name="client")
-async def send_external_event_http_start(req: func.HttpRequest, client):
+async def send_external_event_http_start(req: func.HttpRequest, client, context: func.Context):
     try:
         instance_id = req.get_json()
         if isinstance(instance_id, dict):

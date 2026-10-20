@@ -428,6 +428,87 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(ParentInstanceId, Assert.Single(response.OrchestrationState).ParentInstanceId);
         }
 
+        [Theory]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        [InlineData(null, true)]
+        [InlineData(null, false)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void CreateQueryInstancesResponse_IncludesFailureDetailsOnlyWhenRequested(
+            bool? fetchInputsAndOutputs,
+            bool hasFailureDetails)
+        {
+            OrchestrationState failedState = CreateOrchestrationState("parent-instance");
+            failedState.OrchestrationStatus = CoreOrchestrationStatus.Failed;
+            failedState.Input = "\"input\"";
+            failedState.Output = "Orchestration failed.";
+            failedState.Status = "\"custom-status\"";
+            if (hasFailureDetails)
+            {
+                failedState.FailureDetails = new FailureDetails(
+                    "System.InvalidOperationException",
+                    "Orchestration failed.",
+                    "at TestOrchestrator.Run()",
+                    new FailureDetails(
+                        "System.ArgumentException",
+                        "Invalid input.",
+                        "at TestActivity.Run()",
+                        null,
+                        false,
+                        properties: new Dictionary<string, object> { ["ParameterName"] = "input" }),
+                    true,
+                    properties: new Dictionary<string, object> { ["ErrorCode"] = "InvalidInput" });
+            }
+
+            OrchestrationState completedState = CreateOrchestrationState("parent-instance");
+            completedState.OrchestrationInstance.InstanceId = "completed-instance";
+            completedState.OrchestrationStatus = CoreOrchestrationStatus.Completed;
+            var result = new OrchestrationQueryResult(new[] { failedState, completedState }, "next-page");
+            var request = new P.QueryInstancesRequest
+            {
+                Query = fetchInputsAndOutputs.HasValue
+                    ? new P.InstanceQuery { FetchInputsAndOutputs = fetchInputsAndOutputs.Value }
+                    : null,
+            };
+
+            P.QueryInstancesResponse response = ProtobufUtils.CreateQueryInstancesResponse(result, request);
+
+            Assert.Equal("next-page", response.ContinuationToken);
+            Assert.Equal(2, response.OrchestrationState.Count);
+            P.OrchestrationState failedResponse = response.OrchestrationState[0];
+            Assert.Equal(failedState.OrchestrationInstance.InstanceId, failedResponse.InstanceId);
+            Assert.Equal((P.OrchestrationStatus)CoreOrchestrationStatus.Failed, failedResponse.OrchestrationStatus);
+            Assert.Equal(failedState.Input, failedResponse.Input);
+            Assert.Equal(failedState.Output, failedResponse.Output);
+            Assert.Equal(failedState.Status, failedResponse.CustomStatus);
+            Assert.Equal("completed-instance", response.OrchestrationState[1].InstanceId);
+            Assert.Null(response.OrchestrationState[1].FailureDetails);
+
+            if (fetchInputsAndOutputs == true && hasFailureDetails)
+            {
+                P.TaskFailureDetails failure = failedResponse.FailureDetails;
+                Assert.NotNull(failure);
+                Assert.Equal("System.InvalidOperationException", failure.ErrorType);
+                Assert.Equal("Orchestration failed.", failure.ErrorMessage);
+                Assert.Equal("at TestOrchestrator.Run()", failure.StackTrace);
+                Assert.True(failure.IsNonRetriable);
+                Assert.Equal("InvalidInput", failure.Properties["ErrorCode"].StringValue);
+                Assert.NotNull(failure.InnerFailure);
+                Assert.Equal("System.ArgumentException", failure.InnerFailure.ErrorType);
+                Assert.Equal("Invalid input.", failure.InnerFailure.ErrorMessage);
+                Assert.Equal("at TestActivity.Run()", failure.InnerFailure.StackTrace);
+                Assert.False(failure.InnerFailure.IsNonRetriable);
+                Assert.Equal("input", failure.InnerFailure.Properties["ParameterName"].StringValue);
+                Assert.Null(failure.InnerFailure.InnerFailure);
+            }
+            else
+            {
+                Assert.Null(failedResponse.FailureDetails);
+            }
+        }
+
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void ToHistoryEventProto_HistoryStateIncludesParentInstanceId()

@@ -2,7 +2,7 @@
   <!--
     The Worker SDK sets _FunctionsExtensionCommonProps to block Directory.Build.props/targets
     and Directory.Packages.props imports for the generated WorkerExtensions.csproj.
-    This prevents our CVE-2021-24112 fix (System.Drawing.Common 4.7.3 pin via
+    This prevents our CVE-2021-24112 fix (System.Drawing.Common 6.0.0 pin via
     Directory.Build.props and Directory.Packages.props) from applying.
     Override it here (imported after SDK targets) to allow our import files.
   -->

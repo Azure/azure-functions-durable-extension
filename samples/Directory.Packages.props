@@ -41,7 +41,7 @@
     <PackageVersion Update="Microsoft.Azure.WebJobs.Script.ExtensionsMetadataGenerator" Version="4.0.1" />
     <PackageVersion Update="Microsoft.Bcl.AsyncInterfaces" Version="10.0.2" />
     <PackageVersion Update="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
-    <PackageVersion Update="System.Drawing.Common" Version="4.7.3" />
+    <PackageVersion Update="System.Drawing.Common" Version="6.0.0" />
     <PackageVersion Update="System.Text.Json" Version="10.0.2" />
    </ItemGroup>
 

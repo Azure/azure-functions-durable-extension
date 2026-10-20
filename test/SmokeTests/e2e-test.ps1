@@ -73,7 +73,7 @@ function Start-And-Wait-Orchestration {
 }
 
 $ErrorActionPreference = "Stop"
-$AzuriteVersion = "3.35.0"
+$AzuriteVersion = "3.36.0"
 
 if ($NoSetup -eq $false) {
 	# Build the docker image first, since that's the most critical step
@@ -91,6 +91,21 @@ if ($NoSetup -eq $false) {
 		$buildArgs += "--build-arg"
 		$buildArgs += "DOTNET_ISOLATED_TAG=$DotnetIsolatedTag"
 	}
+	$dockerSecrets = @{
+		"nuget_config" = $env:CFS_NUGET_CONFIG
+		"npmrc" = $env:CFS_NPM_CONFIG
+		"pip_index_url" = $env:CFS_PIP_INDEX
+	}
+	foreach ($secret in $dockerSecrets.GetEnumerator()) {
+		if ($secret.Value) {
+			if (!(Test-Path -LiteralPath $secret.Value)) {
+				throw "Docker secret '$($secret.Key)' does not exist at '$($secret.Value)'."
+			}
+			$buildArgs += "--secret"
+			$buildArgs += "id=$($secret.Key),src=$($secret.Value)"
+		}
+	}
+	$env:DOCKER_BUILDKIT = "1"
 	docker build --pull -f $DockerfilePath -t $ImageName --progress plain @buildArgs $PSScriptRoot/../../
 	Exit-OnError
 
