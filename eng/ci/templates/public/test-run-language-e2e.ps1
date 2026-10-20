@@ -25,6 +25,13 @@ $ErrorActionPreference = 'Stop'
 $root = $env:RUNNER_TEST_ROOT
 $events = Join-Path $root 'events.txt'
 if ($args[0] -eq 'build') {
+    if ($args[1] -like '*WebJobs.Extensions.DurableTask.csproj') {
+        if ('-f' -in $args -or '/p:GeneratePackageOnBuild=false' -notin $args) { throw 'Extension baseline must build all TFMs without auto-packing' }
+        Add-Content $events 'extension-build'
+        if ($env:RUNNER_TEST_SCENARIO -eq 'extension-failure') { exit 19 }
+        exit 0
+    }
+    if (!(Test-Path $events) -or @(Get-Content $events)[0] -ne 'extension-build') { throw 'Extension baseline missing before test project build' }
     Add-Content $events 'project-build'
     if ($env:RUNNER_TEST_SCENARIO -eq 'project-failure') { exit 17 }
     exit 0
@@ -63,6 +70,7 @@ exit 0
         @{ Name = 'cleanup-failure'; Exit = 1 }
         @{ Name = 'combined-failure'; Exit = 13 }
         @{ Name = 'lingering-host'; Exit = 13 }
+        @{ Name = 'extension-failure'; Exit = 19 }
         @{ Name = 'project-failure'; Exit = 17 }
         @{ Name = 'local-refused'; Exit = 1 }
         @{ Name = 'delayed-host'; Exit = 0 }
@@ -171,13 +179,13 @@ function global:dotnet {
             $tests = @($events | Where-Object { $_ -like 'test:*' })
             if ($scenario.Exit -eq 0) {
                 $hostEvent = if ($scenario.Name -eq 'delayed-host') { ',host-stopped' } else { '' }
-                Assert (($events -join ',') -eq ('project-build,' + (($apps | ForEach-Object { "app-build:$_,test:$_$hostEvent" }) -join ','))) "$($scenario.Name): lifecycle order incorrect"
+                Assert (($events -join ',') -eq ('extension-build,project-build,' + (($apps | ForEach-Object { "app-build:$_,test:$_$hostEvent" }) -join ','))) "$($scenario.Name): lifecycle order incorrect"
                 Assert (@(Get-ChildItem $results -Filter '*.trx').Count -eq $apps.Count) 'TRX files overwritten/missing'
                 foreach ($app in $apps) {
                     $remaining = @(Get-ChildItem (Join-Path $root "test\e2e\Apps\$app") -Directory | Where-Object Name -ne 'user-directory')
                     Assert ($remaining.Count -eq 0) "Generated output left for $app"
                 }
-            } elseif ($scenario.Name -in @('project-failure', 'local-refused', 'results-refused')) {
+            } elseif ($scenario.Name -in @('extension-failure', 'project-failure', 'local-refused', 'results-refused')) {
                 Assert ($builds.Count -eq 0 -and $tests.Count -eq 0) 'Apps ran after setup failure'
             } else {
                 Assert ($builds.Count -eq 1) 'Runner did not stop after first app failure'

@@ -33,7 +33,7 @@ param(
     $SkipBuild,
 
     # Skip only the initial extension baseline build. App PreBuild packaging still runs.
-    # CI uses this after building E2ETests.csproj, which references the extension.
+    # CI uses this after building the extension for all target frameworks.
     [Switch]
     $SkipExtensionBuild,
 

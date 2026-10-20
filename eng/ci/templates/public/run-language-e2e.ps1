@@ -32,6 +32,7 @@ if ($env:TF_BUILD -ne 'True') {
 
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..\..')).Path
 $testProject = Join-Path $repo 'test\e2e\Tests\E2ETests.csproj'
+$extensionProject = Join-Path $repo 'src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj'
 $buildScript = Join-Path $repo 'test\e2e\Tests\build-e2e-test.ps1'
 $appsRoot = Join-Path $repo 'test\e2e\Apps'
 $ResultsDirectory = [IO.Path]::GetFullPath($ResultsDirectory)
@@ -143,7 +144,11 @@ Push-Location $repo
 try {
     Wait-HostStopped
     Write-DiskUsage 'Before test project build'
-    # E2ETests references WebJobs.Extensions.DurableTask. Build once, keep its outputs for all suites.
+    # App PreBuild packs both extension TFMs, even when the test project targets only one.
+    Invoke-LoggedPhase 'extension-build' {
+        dotnet build $extensionProject -c Debug /p:GeneratePackageOnBuild=false
+    }
+    Write-DiskUsage 'After extension build'
     Invoke-LoggedPhase "test-project-$Backend-$TargetFramework-build" {
         dotnet build $testProject -f $TargetFramework
     }
