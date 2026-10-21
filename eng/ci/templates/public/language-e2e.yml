@@ -32,13 +32,6 @@ jobs:
   - job: LanguageE2E
     displayName: Language E2E
     timeoutInMinutes: 180
-    templateContext:
-      outputs:
-        - output: pipelineArtifact
-          displayName: Preserve language E2E diagnostics
-          condition: and(succeededOrFailed(), eq(variables['languageE2EDiagnosticsReady'], 'true'))
-          path: $(Agent.TempDirectory)/TestResults
-          artifact: language-e2e-$(System.JobId)-$(System.JobAttempt)
     strategy:
       matrix:
         ${{ if eq(parameters.platform, 'windows') }}:
@@ -254,7 +247,6 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $resultsDirectory = Join-Path $env:AGENT_TEMPDIRECTORY 'TestResults'
           New-Item -ItemType Directory -Path $resultsDirectory -Force | Out-Null
-          Write-Host '##vso[task.setvariable variable=languageE2EDiagnosticsReady]true'
           Get-PSDrive -PSProvider FileSystem | Select-Object Root, Used, Free
           # App packaging needs both extension TFMs, including in .NET 8 jobs.
           dotnet build ./src/WebJobs.Extensions.DurableTask -c Debug /p:GeneratePackageOnBuild=false
