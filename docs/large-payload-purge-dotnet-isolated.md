@@ -65,6 +65,8 @@ await client.SetLargePayloadAutoPurgeAsync(
 
 The bound client's task hub and connection determine which hub is changed. Enable each task hub separately.
 
+An enable call is not transactional; cancellation or failure does not roll back changes that already succeeded.
+
 Enable auto-purge before retiring instances whose external payloads should be tracked. Enabling later does not backfill payloads retired while the setting was disabled.
 
 Disabling auto-purge prevents new eligible retirements from being tracked. It does not terminate an already-running purge orchestration or cancel work that was already fetched.
