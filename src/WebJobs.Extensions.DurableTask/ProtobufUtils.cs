@@ -741,6 +741,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         Input = operationAction.StartNewOrchestration.Input,
                         InstanceId = operationAction.StartNewOrchestration.InstanceId,
                         Version = version,
+                        Tags = operationAction.StartNewOrchestration.Tags.Count > 0 ? operationAction.StartNewOrchestration.Tags.ToDictionary() : null,
                         RequestTime = operationAction.StartNewOrchestration.RequestTime?.ToDateTimeOffset(),
                         ScheduledStartTime = operationAction.StartNewOrchestration.ScheduledTime?.ToDateTime(),
                         ParentTraceContext = operationAction.StartNewOrchestration.ParentTraceContext != null ?
