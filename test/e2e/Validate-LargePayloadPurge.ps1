@@ -22,61 +22,95 @@ function Save-Evidence([string] $Name, $Value) {
     $Value | ConvertTo-Json -Depth 30 | Set-Content (Join-Path $ArtifactsDirectory "$Name.json")
 }
 
-$functions = Get-Api '/admin/functions'
-$expected = @('BlobPurgeJobOrchestrator', 'GetLargePayloadTombstonesActivity', 'DeleteExternalBlobActivity', 'ReportLargePayloadPurgeResultsActivity')
-foreach ($name in $expected) {
-    $function = @($functions | Where-Object name -eq $name)
-    if ($function.Count -ne 1) { throw "Expected one indexed SDK function named $name" }
-    if ($function[0].config.scriptFile -notlike '*Microsoft.Azure.Functions.Worker.Extensions.DurableTask.AzureBlobPayloads.dll') {
-        throw "SDK function $name did not come from the SDK package assembly."
+$enableAttempted = $false
+$leavePurgeEnabled = $false
+$validationError = $null
+$cleanupFailures = [Collections.Generic.List[string]]::new()
+$successMessage = $null
+try {
+    $functions = Get-Api '/admin/functions'
+    $expected = @('BlobPurgeJobOrchestrator', 'GetLargePayloadTombstonesActivity', 'DeleteExternalBlobActivity', 'ReportLargePayloadPurgeResultsActivity')
+    foreach ($name in $expected) {
+        $function = @($functions | Where-Object name -eq $name)
+        if ($function.Count -ne 1) { throw "Expected one indexed SDK function named $name" }
+        if ($function[0].config.scriptFile -notlike '*Microsoft.Azure.Functions.Worker.Extensions.DurableTask.AzureBlobPayloads.dll') {
+            throw "SDK function $name did not come from the SDK package assembly."
+        }
+    }
+    Save-Evidence 'indexed-functions' $functions
+    $before = Get-Api '/api/large-payload-purge/storage'
+    Save-Evidence 'storage-before' $before
+    $enableAttempted = $true
+    $enabled = Post-Api '/api/large-payload-purge/true'
+    Save-Evidence 'enabled' $enabled
+    $created = if ($PSCmdlet.ParameterSetName -eq 'Prepare') {
+        Post-Api '/api/large-payload-purge/payload'
+    } else {
+        @{ instanceId = $InstanceId }
+    }
+    Save-Evidence 'created-instance' $created
+    $deadline = [DateTime]::UtcNow.AddSeconds(90)
+    do {
+        $state = Get-Api "/api/large-payload-purge/instances/$($created.instanceId)"
+        if ($state.status -eq 'Failed') { throw "Payload orchestration failed: $($state.failure)" }
+        if ($state.status -eq 'Completed') { break }
+        Start-Sleep -Milliseconds 500
+    } while ([DateTime]::UtcNow -lt $deadline)
+    if ($state.status -ne 'Completed') { throw 'Payload orchestration did not complete.' }
+    Save-Evidence 'completed-instance' $state
+    $stored = Get-Api '/api/large-payload-purge/storage'
+    Save-Evidence 'storage-before-purge' $stored
+    if ($PSCmdlet.ParameterSetName -eq 'Prepare') {
+        $newBlobNames = @($stored.blobs | Where-Object { $_.name -notin @($before.blobs.name) } | ForEach-Object name)
+        if ($newBlobNames.Count -eq 0) { throw 'No actual externalized payload blobs were created.' }
+        $leavePurgeEnabled = $true
+        $successMessage = "Prepared instance $($created.instanceId), worker PID $($created.workerPid). Observe its backend v2 references before running the Purge parameter set."
+    } else {
+        if ($ReferencedBlobNames.Count -eq 0) { throw 'The backend reference observation must identify at least one physical blob.' }
+        foreach ($name in $ReferencedBlobNames) {
+            if ($name -notin @($stored.blobs.name)) { throw "Referenced payload blob $name is absent before purge." }
+        }
+        Save-Evidence 'referenced-blob-names' $ReferencedBlobNames
+
+        $purged = Post-Api "/api/large-payload-purge/instances/$($created.instanceId)/purge"
+        Save-Evidence 'purged-instance' $purged
+        $deadline = [DateTime]::UtcNow.AddSeconds(180)
+        do {
+            $storage = Get-Api '/api/large-payload-purge/storage'
+            $remaining = @($storage.blobs | Where-Object { $_.name -in $ReferencedBlobNames })
+            if ($remaining.Count -eq 0) { break }
+            Start-Sleep -Seconds 2
+        } while ([DateTime]::UtcNow -lt $deadline)
+        if ($remaining.Count -ne 0) { throw "SDK cleanup left $($remaining.Count) payload blobs." }
+        Save-Evidence 'storage-after-cleanup' $storage
+        $successMessage = "Indexed four SDK functions; worker PID $($enabled.workerPid); removed all $($ReferencedBlobNames.Count) observed referenced payload blobs. Other container blobs are not cleanup claims."
+    }
+} catch {
+    $validationError = $_
+} finally {
+    if ($enableAttempted -and !$leavePurgeEnabled) {
+        try {
+            Save-Evidence 'override-disabled' (Post-Api '/api/large-payload-purge/override/false')
+        } catch {
+            $message = "Large payload purge cleanup failed for the override hub: $($_.Exception.Message)"
+            $cleanupFailures.Add($message)
+            Write-Error -Message $message -ErrorAction Continue
+        }
+
+        try {
+            Save-Evidence 'disabled' (Post-Api '/api/large-payload-purge/false')
+        } catch {
+            $message = "Large payload purge cleanup failed for the default hub: $($_.Exception.Message)"
+            $cleanupFailures.Add($message)
+            Write-Error -Message $message -ErrorAction Continue
+        }
     }
 }
-Save-Evidence 'indexed-functions' $functions
-$before = Get-Api '/api/large-payload-purge/storage'
-Save-Evidence 'storage-before' $before
-$enabled = Post-Api '/api/large-payload-purge/true'
-Save-Evidence 'enabled' $enabled
-$created = if ($PSCmdlet.ParameterSetName -eq 'Prepare') {
-    Post-Api '/api/large-payload-purge/payload'
-} else {
-    @{ instanceId = $InstanceId }
-}
-Save-Evidence 'created-instance' $created
-$deadline = [DateTime]::UtcNow.AddSeconds(90)
-do {
-    $state = Get-Api "/api/large-payload-purge/instances/$($created.instanceId)"
-    if ($state.status -eq 'Failed') { throw "Payload orchestration failed: $($state.failure)" }
-    if ($state.status -eq 'Completed') { break }
-    Start-Sleep -Milliseconds 500
-} while ([DateTime]::UtcNow -lt $deadline)
-if ($state.status -ne 'Completed') { throw 'Payload orchestration did not complete.' }
-Save-Evidence 'completed-instance' $state
-$stored = Get-Api '/api/large-payload-purge/storage'
-Save-Evidence 'storage-before-purge' $stored
-if ($PSCmdlet.ParameterSetName -eq 'Prepare') {
-    $newBlobNames = @($stored.blobs | Where-Object { $_.name -notin @($before.blobs.name) } | ForEach-Object name)
-    if ($newBlobNames.Count -eq 0) { throw 'No actual externalized payload blobs were created.' }
-    Write-Output "Prepared instance $($created.instanceId), worker PID $($created.workerPid). Observe its backend v2 references before running the Purge parameter set."
-    return
-}
 
-if ($ReferencedBlobNames.Count -eq 0) { throw 'The backend reference observation must identify at least one physical blob.' }
-foreach ($name in $ReferencedBlobNames) {
-    if ($name -notin @($stored.blobs.name)) { throw "Referenced payload blob $name is absent before purge." }
+if ($validationError) {
+    $PSCmdlet.ThrowTerminatingError($validationError)
 }
-Save-Evidence 'referenced-blob-names' $ReferencedBlobNames
-
-$purged = Post-Api "/api/large-payload-purge/instances/$($created.instanceId)/purge"
-Save-Evidence 'purged-instance' $purged
-$deadline = [DateTime]::UtcNow.AddSeconds(180)
-do {
-    $storage = Get-Api '/api/large-payload-purge/storage'
-    $remaining = @($storage.blobs | Where-Object { $_.name -in $ReferencedBlobNames })
-    if ($remaining.Count -eq 0) { break }
-    Start-Sleep -Seconds 2
-} while ([DateTime]::UtcNow -lt $deadline)
-if ($remaining.Count -ne 0) { throw "SDK cleanup left $($remaining.Count) payload blobs." }
-Save-Evidence 'storage-after-cleanup' $storage
-Save-Evidence 'override-disabled' (Post-Api '/api/large-payload-purge/override/false')
-Save-Evidence 'disabled' (Post-Api '/api/large-payload-purge/false')
-Write-Output "Indexed four SDK functions; worker PID $($enabled.workerPid); removed all $($ReferencedBlobNames.Count) observed referenced payload blobs. Other container blobs are not cleanup claims."
+if ($cleanupFailures.Count -gt 0) {
+    throw "Large payload purge cleanup failed: $($cleanupFailures -join ' ')"
+}
+Write-Output $successMessage
