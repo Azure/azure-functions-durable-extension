@@ -134,9 +134,11 @@ To resolve this, there are several steps, in order of increasing severity:
 
 See step #2 in `Running the E2E Tests` for instructions on running the tests against non-dotnet languages. When editing test.runsettings, the following values are accepted:
 **`E2E_TEST_FUNCTIONS_LANGUAGE`** — Supported values: `dotnet-isolated`, `powershell`, `python`, `node`, `java`
-**`TEST_APP_NAME`** — Supported values: `BasicDotNetIsolated`, `BasicPowerShell`, `BasicPython`, `BasicNode`, `BasicJava`
+**`TEST_APP_NAME`** — Supported values: `BasicDotNetIsolated`, `LargePayloadPurgeDotNetIsolated`, `BasicPowerShell`, `BasicPython`, `BasicNode`, `BasicJava`
 
 It is important that the language and app name are compatible.
+
+`LargePayloadPurgeDotNetIsolated` copies local Azurite defaults for `PurgePayloadConnection` and `PurgePayloadContainer` into its build output. Set either environment variable before launching the E2E host to override the corresponding local setting.
 
 #### Non-`Azure Storage` backends
 
