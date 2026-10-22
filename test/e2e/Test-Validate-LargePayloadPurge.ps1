@@ -26,7 +26,8 @@ function Test-DriverScenario {
         [bool] $ExactFailure = $false,
         [bool] $ExpectCleanup = $false,
         [bool] $ExpectCleanupReport = $false,
-        [bool] $UseMissingReference = $false
+        [bool] $UseMissingReference = $false,
+        [bool] $ExpectVersionProbe = $true
     )
 
     $scenarioDirectory = Join-Path $testDirectory ($Name -replace '[^a-zA-Z0-9.-]', '-')
@@ -65,6 +66,43 @@ function Test-DriverScenario {
             '^/api/large-payload-purge/payload$' {
                 if ('Payload' -in $Faults) { throw 'Injected payload creation failure.' }
                 return @{ instanceId = 'instance-a'; workerPid = 1234 }
+            }
+            '^/api/large-payload-purge/mismatched-version$' {
+                return @{ instanceId = 'instance-version'; workerPid = 1234 }
+            }
+            '^/api/large-payload-purge/instances/instance-version$' {
+                if ('VersionStatusError' -in $Faults) { throw 'Injected version status failure.' }
+                if ('VersionRunning' -in $Faults) {
+                    return @{ status = 'Running'; instanceId = 'instance-version' }
+                }
+                if ('VersionCompleted' -in $Faults) {
+                    return @{ status = 'Completed'; instanceId = 'instance-version' }
+                }
+                if ('VersionUnrelatedFailure' -in $Faults) {
+                    return @{
+                        status = 'Failed'
+                        instanceId = 'instance-version'
+                        failureType = 'System.InvalidOperationException'
+                        failure = 'Unrelated business failure.'
+                    }
+                }
+                if ('VersionMissingDiagnostic' -in $Faults) {
+                    return @{ status = 'Failed'; instanceId = 'instance-version' }
+                }
+                if ('VersionMalformedDiagnostic' -in $Faults) {
+                    return @{
+                        status = 'Failed'
+                        instanceId = 'instance-version'
+                        failureType = 'VersionMismatch'
+                        failure = 'Unexpected version failure text.'
+                    }
+                }
+                return @{
+                    status = 'Failed'
+                    instanceId = 'instance-version'
+                    failureType = 'VersionMismatch'
+                    failure = 'Orchestration version did not comply with Worker Versioning'
+                }
             }
             '^/api/large-payload-purge/instances/instance-a$' {
                 return @{ status = 'Completed'; instanceId = 'instance-a' }
@@ -142,6 +180,33 @@ function Test-DriverScenario {
     Assert-Condition ($defaultDisables -eq $expectedDisableCount) `
         "$Name default disable count was $defaultDisables, expected $expectedDisableCount."
 
+    $versionStarts = @($scenario.Calls | Where-Object { $_ -eq 'POST /api/large-payload-purge/mismatched-version' }).Count
+    $versionStatuses = @($scenario.Calls | Where-Object { $_ -eq 'GET /api/large-payload-purge/instances/instance-version' }).Count
+    $expectedVersionStartCount = if ($ExpectVersionProbe) { 1 } else { 0 }
+    Assert-Condition ($versionStarts -eq $expectedVersionStartCount) `
+        "$Name version mismatch start count was $versionStarts, expected $expectedVersionStartCount."
+    Assert-Condition (($versionStatuses -gt 0) -eq $ExpectVersionProbe) `
+        "$Name version mismatch status polling expectation was not met."
+    if ('VersionRunning' -in $Faults) {
+        Assert-Condition ($versionStatuses -eq 180) `
+            "$Name version mismatch status count was $versionStatuses, expected 180."
+    }
+    if ($ExpectVersionProbe) {
+        Assert-Condition ('mismatched-version-created.json' -in $scenario.Evidence) `
+            "$Name did not save the distinct mismatched-version instance evidence."
+    }
+    $versionFailureFaults = @(
+        'VersionStatusError',
+        'VersionRunning',
+        'VersionCompleted',
+        'VersionUnrelatedFailure',
+        'VersionMissingDiagnostic',
+        'VersionMalformedDiagnostic'
+    )
+    $expectCompletedVersionEvidence = $ExpectVersionProbe -and @($Faults | Where-Object { $_ -in $versionFailureFaults }).Count -eq 0
+    Assert-Condition (('mismatched-version-failed.json' -in $scenario.Evidence) -eq $expectCompletedVersionEvidence) `
+        "$Name mismatched-version failure evidence expectation was not met."
+
     $cleanupReports = @($records | Where-Object { $_ -is [Management.Automation.ErrorRecord] -and $_.ToString() -like '*cleanup failed*' })
     Assert-Condition (($cleanupReports.Count -gt 0) -eq $ExpectCleanupReport) `
         "$Name cleanup reporting expectation was not met."
@@ -176,17 +241,23 @@ function Test-DriverScenario {
 $results = [Collections.Generic.List[object]]::new()
 $failures = [Collections.Generic.List[string]]::new()
 $scenarios = @(
-    @{ Name = 'Pre-enable failure does not disable'; Mode = 'Prepare'; Faults = @('BeforeEnable'); ExpectFailure = $true; ExpectedFailure = 'Injected pre-enable failure' },
+    @{ Name = 'Pre-enable failure does not disable'; Mode = 'Prepare'; Faults = @('BeforeEnable'); ExpectFailure = $true; ExpectedFailure = 'Injected pre-enable failure'; ExpectVersionProbe = $false },
     @{ Name = 'Prepare success leaves purge enabled'; Mode = 'Prepare' },
     @{ Name = 'Failed Prepare disables both hubs'; Mode = 'Prepare'; Faults = @('Payload'); ExpectFailure = $true; ExpectedFailure = 'Injected payload creation failure'; ExpectCleanup = $true },
     @{ Name = 'Purge success disables both hubs'; Mode = 'Purge'; ExpectCleanup = $true },
     @{ Name = 'Early Purge reference failure disables both hubs'; Mode = 'Purge'; UseMissingReference = $true; ExpectFailure = $true; ExpectedFailure = 'Referenced payload blob missing'; ExpectCleanup = $true },
-    @{ Name = 'Enable response failure still disables both hubs'; Mode = 'Prepare'; Faults = @('Enable'); ExpectFailure = $true; ExpectedFailure = 'Injected enable response failure'; ExpectCleanup = $true },
-    @{ Name = 'Enable evidence failure still disables both hubs'; Mode = 'Prepare'; Faults = @('EnabledEvidence'); ExpectFailure = $true; ExpectedFailure = 'Injected enable evidence failure.'; ExactFailure = $true; ExpectCleanup = $true },
+    @{ Name = 'Enable response failure still disables both hubs'; Mode = 'Prepare'; Faults = @('Enable'); ExpectFailure = $true; ExpectedFailure = 'Injected enable response failure'; ExpectCleanup = $true; ExpectVersionProbe = $false },
+    @{ Name = 'Enable evidence failure still disables both hubs'; Mode = 'Prepare'; Faults = @('EnabledEvidence'); ExpectFailure = $true; ExpectedFailure = 'Injected enable evidence failure.'; ExactFailure = $true; ExpectCleanup = $true; ExpectVersionProbe = $false },
     @{ Name = 'Override disable failure still attempts default'; Mode = 'Purge'; Faults = @('OverrideDisable'); ExpectFailure = $true; ExpectedFailure = 'Cleanup failed'; ExpectCleanup = $true; ExpectCleanupReport = $true },
     @{ Name = 'Default disable failure fails Purge'; Mode = 'Purge'; Faults = @('DefaultDisable'); ExpectFailure = $true; ExpectedFailure = 'Cleanup failed'; ExpectCleanup = $true; ExpectCleanupReport = $true },
     @{ Name = 'Original failure survives cleanup failure'; Mode = 'Prepare'; Faults = @('Payload', 'OverrideDisable'); ExpectFailure = $true; ExpectedFailure = 'Injected payload creation failure.'; ExactFailure = $true; ExpectCleanup = $true; ExpectCleanupReport = $true },
-    @{ Name = 'Override evidence failure still attempts default'; Mode = 'Purge'; Faults = @('OverrideEvidence'); ExpectFailure = $true; ExpectedFailure = 'Cleanup failed'; ExpectCleanup = $true; ExpectCleanupReport = $true }
+    @{ Name = 'Override evidence failure still attempts default'; Mode = 'Purge'; Faults = @('OverrideEvidence'); ExpectFailure = $true; ExpectedFailure = 'Cleanup failed'; ExpectCleanup = $true; ExpectCleanupReport = $true },
+    @{ Name = 'Unexpected version completion fails closed'; Mode = 'Prepare'; Faults = @('VersionCompleted'); ExpectFailure = $true; ExpectedFailure = 'Version mismatch orchestration completed unexpectedly with status Completed.'; ExactFailure = $true; ExpectCleanup = $true },
+    @{ Name = 'Unrelated version failure is rejected'; Mode = 'Prepare'; Faults = @('VersionUnrelatedFailure'); ExpectFailure = $true; ExpectedFailure = "unexpected diagnostic type 'System.InvalidOperationException' and message 'Unrelated business failure.'"; ExpectCleanup = $true },
+    @{ Name = 'Missing version diagnostic is rejected'; Mode = 'Prepare'; Faults = @('VersionMissingDiagnostic'); ExpectFailure = $true; ExpectedFailure = "unexpected diagnostic type '' and message ''"; ExpectCleanup = $true },
+    @{ Name = 'Malformed version diagnostic is rejected'; Mode = 'Prepare'; Faults = @('VersionMalformedDiagnostic'); ExpectFailure = $true; ExpectedFailure = "unexpected diagnostic type 'VersionMismatch' and message 'Unexpected version failure text.'"; ExpectCleanup = $true },
+    @{ Name = 'Nonterminal version status is bounded'; Mode = 'Prepare'; Faults = @('VersionRunning'); ExpectFailure = $true; ExpectedFailure = 'Version mismatch orchestration did not reach Failed after 180 attempts.'; ExactFailure = $true; ExpectCleanup = $true },
+    @{ Name = 'Version status error fails explicitly'; Mode = 'Prepare'; Faults = @('VersionStatusError'); ExpectFailure = $true; ExpectedFailure = 'Injected version status failure.'; ExactFailure = $true; ExpectCleanup = $true }
 )
 
 try {

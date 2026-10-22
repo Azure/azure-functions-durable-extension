@@ -43,6 +43,26 @@ try {
     $enableAttempted = $true
     $enabled = Post-Api '/api/large-payload-purge/true'
     Save-Evidence 'enabled' $enabled
+    $mismatched = Post-Api '/api/large-payload-purge/mismatched-version'
+    Save-Evidence 'mismatched-version-created' $mismatched
+    $mismatchedState = $null
+    for ($attempt = 1; $attempt -le 180; $attempt++) {
+        $mismatchedState = Get-Api "/api/large-payload-purge/instances/$($mismatched.instanceId)"
+        if ($mismatchedState.status -eq 'Failed') { break }
+        if ($mismatchedState.status -notin @($null, '', 'Pending', 'Running', 'Suspended')) {
+            throw "Version mismatch orchestration completed unexpectedly with status $($mismatchedState.status)."
+        }
+        Start-Sleep -Milliseconds 500
+    }
+    if ($mismatchedState.status -ne 'Failed') {
+        throw 'Version mismatch orchestration did not reach Failed after 180 attempts.'
+    }
+    if ($mismatchedState.failureType -ne 'VersionMismatch' -or
+        $mismatchedState.failure -ne 'Orchestration version did not comply with Worker Versioning') {
+        throw "Version mismatch orchestration failed with unexpected diagnostic type '$($mismatchedState.failureType)' and message '$($mismatchedState.failure)'."
+    }
+    Save-Evidence 'mismatched-version-failed' $mismatchedState
+
     $created = if ($PSCmdlet.ParameterSetName -eq 'Prepare') {
         Post-Api '/api/large-payload-purge/payload'
     } else {

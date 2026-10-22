@@ -102,6 +102,7 @@ public static class PurgeEndpoints
             instanceId = id,
             status = state?.RuntimeStatus.ToString(),
             customStatus = state?.SerializedCustomStatus,
+            failureType = state?.FailureDetails?.ErrorType,
             failure = state?.FailureDetails?.ErrorMessage,
             workerPid = Environment.ProcessId,
         });
