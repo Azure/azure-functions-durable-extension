@@ -10,12 +10,45 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 
 namespace Microsoft.Azure.Functions.Worker.Tests;
 
 public class LargePayloadPurgeStartupTests
 {
+    [Fact]
+    public void OptionalStartupUsesOneOptionsValidatorWhenRegisteredRepeatedly()
+    {
+        var services = new ServiceCollection();
+        IFunctionsWorkerApplicationBuilder builder = services.AddFunctionsWorkerCore();
+        var startup = new LargePayloadPurgeExtensionStartup();
+
+        startup.Configure(builder);
+        startup.Configure(builder);
+
+        Assert.Single(services, descriptor => descriptor.ServiceType == typeof(IValidateOptions<WorkerOptions>));
+        Assert.Single(services, descriptor =>
+            descriptor.ServiceType.FullName == "Microsoft.Extensions.Options.IStartupValidator");
+        Assert.DoesNotContain(typeof(LargePayloadPurgeExtensionStartup).Assembly.GetTypes(),
+            type => typeof(IHostedLifecycleService).IsAssignableFrom(type));
+    }
+
+    [Fact]
+    public void PayloadStoreValidationRunsForDefaultOptionsAndSkipsNamedOptions()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        IFunctionsWorkerApplicationBuilder builder = services.AddFunctionsWorkerCore();
+        new LargePayloadPurgeExtensionStartup().Configure(builder);
+        using ServiceProvider provider = services.BuildServiceProvider();
+
+        Assert.NotNull(provider.GetRequiredService<IOptionsMonitor<WorkerOptions>>().Get("named"));
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
+            () => provider.GetRequiredService<IOptions<WorkerOptions>>().Value);
+        Assert.Contains("ConfigureLargePayloadPurgeFunctions", exception.Message);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -30,11 +63,16 @@ public class LargePayloadPurgeStartupTests
         Assert.False(worker.Started);
     }
 
-    [Fact]
-    public async Task InvalidHelperConfigurationFailsBeforeHostedWorkerStarts()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task InvalidHelperConfigurationFailsBeforeHostedWorkerStarts(bool concurrentStart)
     {
         var worker = new StartProbe();
-        using IHost host = CreateHost(worker, (builder, _) => builder.ConfigureLargePayloadPurgeFunctions(_ => { }));
+        using IHost host = CreateHost(
+            worker,
+            (builder, _) => builder.ConfigureLargePayloadPurgeFunctions(_ => { }),
+            concurrentStart: concurrentStart);
 
         InvalidOperationException exception = await Assert.ThrowsAsync<InvalidOperationException>(() => host.StartAsync());
 
@@ -43,8 +81,10 @@ public class LargePayloadPurgeStartupTests
         Assert.False(worker.Started);
     }
 
-    [Fact]
-    public async Task MalformedConnectionStringRetainsCauseAndLogsConfigurationErrorBeforeWorkerStart()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task MalformedConnectionStringRetainsCauseAndLogsConfigurationErrorBeforeWorkerStart(bool concurrentStart)
     {
         var worker = new StartProbe();
         var logger = new Mock<ILogger>();
@@ -55,7 +95,7 @@ public class LargePayloadPurgeStartupTests
         {
             services.AddLogging(logging => logging.AddProvider(loggerProvider.Object));
             builder.ConfigureLargePayloadPurgeFunctions(options => options.ConnectionString = "not-a-connection-string");
-        });
+        }, concurrentStart: concurrentStart);
 
         InvalidOperationException exception = await Assert.ThrowsAsync<InvalidOperationException>(() => host.StartAsync());
 
@@ -161,6 +201,50 @@ public class LargePayloadPurgeStartupTests
         Assert.Equal(1, created);
         Assert.Equal(1, disposed);
         await host.StopAsync();
+    }
+
+    [Fact]
+    public async Task AsyncDisposableOnlySingletonStoreIsOwnedByHost()
+    {
+        int disposed = 0;
+        var store = new Mock<PayloadStore>();
+        store.As<IAsyncDisposable>().Setup(value => value.DisposeAsync()).Returns(() =>
+        {
+            disposed++;
+            return ValueTask.CompletedTask;
+        });
+        var worker = new StartProbe();
+        IHost host = CreateHost(worker, (_, services) => services.AddSingleton<PayloadStore>(_ => store.Object));
+        await using ((IAsyncDisposable)host)
+        {
+            await host.StartAsync();
+            Assert.True(worker.Started);
+            Assert.Equal(0, disposed);
+            await host.StopAsync();
+        }
+
+        Assert.Equal(1, disposed);
+    }
+
+    [Fact]
+    public async Task AsyncDisposableOnlyScopedStoreFailsWithSynchronousScopeGuidance()
+    {
+        int disposed = 0;
+        var store = new Mock<PayloadStore>();
+        store.As<IAsyncDisposable>().Setup(value => value.DisposeAsync()).Returns(() =>
+        {
+            disposed++;
+            return ValueTask.CompletedTask;
+        });
+        var worker = new StartProbe();
+        using IHost host = CreateHost(worker, (_, services) => services.AddScoped(_ => store.Object));
+
+        InvalidOperationException exception = await Assert.ThrowsAsync<InvalidOperationException>(() => host.StartAsync());
+
+        Assert.Contains("Register an async-only custom store as a singleton", exception.Message);
+        Assert.Contains("only implements IAsyncDisposable", Assert.IsType<InvalidOperationException>(exception.InnerException).Message);
+        Assert.False(worker.Started);
+        Assert.Equal(0, disposed);
     }
 
     [Fact]
