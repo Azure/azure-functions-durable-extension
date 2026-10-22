@@ -46,16 +46,23 @@ try {
     $mismatched = Post-Api '/api/large-payload-purge/mismatched-version'
     Save-Evidence 'mismatched-version-created' $mismatched
     $mismatchedState = $null
-    for ($attempt = 1; $attempt -le 180; $attempt++) {
+    $mismatchedDeadline = [DateTime]::UtcNow.AddSeconds(90)
+    $mismatchedFailedWithinBounds = $false
+    for ($attempt = 1; $attempt -le 180 -and [DateTime]::UtcNow -lt $mismatchedDeadline; $attempt++) {
         $mismatchedState = Get-Api "/api/large-payload-purge/instances/$($mismatched.instanceId)"
-        if ($mismatchedState.status -eq 'Failed') { break }
+        $observedAt = [DateTime]::UtcNow
+        if ($mismatchedState.status -eq 'Failed') {
+            $mismatchedFailedWithinBounds = $observedAt -lt $mismatchedDeadline
+            break
+        }
         if ($mismatchedState.status -notin @($null, '', 'Pending', 'Running', 'Suspended')) {
             throw "Version mismatch orchestration completed unexpectedly with status $($mismatchedState.status)."
         }
+        if ($observedAt -ge $mismatchedDeadline) { break }
         Start-Sleep -Milliseconds 500
     }
-    if ($mismatchedState.status -ne 'Failed') {
-        throw 'Version mismatch orchestration did not reach Failed after 180 attempts.'
+    if (!$mismatchedFailedWithinBounds) {
+        throw 'Version mismatch orchestration did not reach Failed before the 90-second deadline or 180-attempt limit.'
     }
     if ($mismatchedState.failureType -ne 'VersionMismatch' -or
         $mismatchedState.failure -ne 'Orchestration version did not comply with Worker Versioning') {

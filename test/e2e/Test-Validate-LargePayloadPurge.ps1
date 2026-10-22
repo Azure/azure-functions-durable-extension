@@ -256,7 +256,7 @@ $scenarios = @(
     @{ Name = 'Unrelated version failure is rejected'; Mode = 'Prepare'; Faults = @('VersionUnrelatedFailure'); ExpectFailure = $true; ExpectedFailure = "unexpected diagnostic type 'System.InvalidOperationException' and message 'Unrelated business failure.'"; ExpectCleanup = $true },
     @{ Name = 'Missing version diagnostic is rejected'; Mode = 'Prepare'; Faults = @('VersionMissingDiagnostic'); ExpectFailure = $true; ExpectedFailure = "unexpected diagnostic type '' and message ''"; ExpectCleanup = $true },
     @{ Name = 'Malformed version diagnostic is rejected'; Mode = 'Prepare'; Faults = @('VersionMalformedDiagnostic'); ExpectFailure = $true; ExpectedFailure = "unexpected diagnostic type 'VersionMismatch' and message 'Unexpected version failure text.'"; ExpectCleanup = $true },
-    @{ Name = 'Nonterminal version status is bounded'; Mode = 'Prepare'; Faults = @('VersionRunning'); ExpectFailure = $true; ExpectedFailure = 'Version mismatch orchestration did not reach Failed after 180 attempts.'; ExactFailure = $true; ExpectCleanup = $true },
+    @{ Name = 'Nonterminal version status is bounded'; Mode = 'Prepare'; Faults = @('VersionRunning'); ExpectFailure = $true; ExpectedFailure = 'Version mismatch orchestration did not reach Failed before the 90-second deadline or 180-attempt limit.'; ExactFailure = $true; ExpectCleanup = $true },
     @{ Name = 'Version status error fails explicitly'; Mode = 'Prepare'; Faults = @('VersionStatusError'); ExpectFailure = $true; ExpectedFailure = 'Injected version status failure.'; ExactFailure = $true; ExpectCleanup = $true }
 )
 
