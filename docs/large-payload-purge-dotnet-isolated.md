@@ -47,7 +47,7 @@ The credentials belong to the worker process. They are not copied from the Funct
 
 The optional package validates that a `PayloadStore` is registered and can be constructed before the worker starts accepting work. Missing or invalid configuration fails startup. You can register a custom `PayloadStore` instead of calling `ConfigureLargePayloadPurgeFunctions`.
 
-The built-in store is a singleton. Startup validation uses a synchronous scope, so a scoped custom store must support synchronous disposal. Register an async-only custom store as a singleton so the host owns its asynchronous disposal.
+The built-in store is a singleton. Startup validation uses a synchronous scope, so a scoped custom store must support synchronous disposal. Register an async-only custom store as a DI-created singleton so the host owns its asynchronous disposal. If you register an existing store instance, you remain responsible for disposing it.
 
 Startup validation checks configuration and construction only. It does not test storage connectivity, credentials, permissions, or later service availability.
 
