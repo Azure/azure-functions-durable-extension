@@ -5,6 +5,8 @@
     "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
     "PurgePayloadConnection": "UseDevelopmentStorage=true",
     "PurgePayloadContainer": "durabletask-large-payload-purge-e2e",
-    "PurgeTestHub": "LargePayloadPurgeE2E"
+    "PurgeTestHub": "LargePayloadPurgeE2E",
+    "PurgeOverrideConnection": "UseDevelopmentStorage=true",
+    "PurgeOverrideHub": "LargePayloadPurgeOverrideE2E"
   }
 }

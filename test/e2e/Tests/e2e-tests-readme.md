@@ -138,7 +138,7 @@ See step #2 in `Running the E2E Tests` for instructions on running the tests aga
 
 It is important that the language and app name are compatible.
 
-`LargePayloadPurgeDotNetIsolated` copies local Azurite defaults for `PurgePayloadConnection` and `PurgePayloadContainer` into its build output. Set either environment variable before launching the E2E host to override the corresponding local setting.
+`LargePayloadPurgeDotNetIsolated` copies local Azurite defaults for its payload store, default task hub, and distinct override task hub into its build output. Set `PurgePayloadConnection`, `PurgePayloadContainer`, `PurgeTestHub`, `PurgeOverrideConnection`, or `PurgeOverrideHub` in the process environment before launching the E2E host to override the corresponding local setting.
 
 #### Non-`Azure Storage` backends
 
