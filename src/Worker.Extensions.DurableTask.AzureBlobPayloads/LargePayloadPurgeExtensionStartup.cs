@@ -21,12 +21,13 @@ public sealed class LargePayloadPurgeExtensionStartup : WorkerExtensionStartup
     public override void Configure(IFunctionsWorkerApplicationBuilder applicationBuilder)
     {
         applicationBuilder.Services.TryAddEnumerable(
-            ServiceDescriptor.Singleton<IValidateOptions<WorkerOptions>, PayloadStoreValidation>());
-        applicationBuilder.Services.AddOptions<WorkerOptions>().ValidateOnStart();
+            ServiceDescriptor.Singleton<IValidateOptions<LargePayloadPurgeStartupOptions>, PayloadStoreValidation>());
+        applicationBuilder.Services.AddOptions<LargePayloadPurgeStartupOptions>().ValidateOnStart();
     }
 
     private sealed class PayloadStoreValidation(
-        IServiceScopeFactory scopeFactory, ILogger<PayloadStoreValidation> logger) : IValidateOptions<WorkerOptions>
+        IServiceScopeFactory scopeFactory, ILogger<PayloadStoreValidation> logger)
+        : IValidateOptions<LargePayloadPurgeStartupOptions>
     {
         private const string ConfigurationMessage =
             "The optional large payload purge Functions require a working PayloadStore registration. " +
@@ -36,7 +37,7 @@ public sealed class LargePayloadPurgeExtensionStartup : WorkerExtensionStartup
             "A scoped custom PayloadStore must support synchronous disposal. " +
             "Register an async-only custom store as a singleton so the host owns its asynchronous disposal.";
 
-        public ValidateOptionsResult Validate(string? name, WorkerOptions options)
+        public ValidateOptionsResult Validate(string? name, LargePayloadPurgeStartupOptions options)
         {
             if (name != Options.DefaultName)
             {
@@ -65,5 +66,9 @@ public sealed class LargePayloadPurgeExtensionStartup : WorkerExtensionStartup
 
             return ValidateOptionsResult.Success;
         }
+    }
+
+    private sealed class LargePayloadPurgeStartupOptions
+    {
     }
 }

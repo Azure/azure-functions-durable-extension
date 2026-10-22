@@ -27,7 +27,11 @@ public class LargePayloadPurgeStartupTests
         startup.Configure(builder);
         startup.Configure(builder);
 
-        Assert.Single(services, descriptor => descriptor.ServiceType == typeof(IValidateOptions<WorkerOptions>));
+        ServiceDescriptor validator = Assert.Single(services, descriptor =>
+            descriptor.ServiceType.IsGenericType
+            && descriptor.ServiceType.GetGenericTypeDefinition() == typeof(IValidateOptions<>));
+        Assert.Equal("LargePayloadPurgeStartupOptions", validator.ServiceType.GenericTypeArguments[0].Name);
+        Assert.DoesNotContain(services, descriptor => descriptor.ServiceType == typeof(IValidateOptions<WorkerOptions>));
         Assert.Single(services, descriptor =>
             descriptor.ServiceType.FullName == "Microsoft.Extensions.Options.IStartupValidator");
         Assert.DoesNotContain(typeof(LargePayloadPurgeExtensionStartup).Assembly.GetTypes(),
@@ -41,11 +45,21 @@ public class LargePayloadPurgeStartupTests
         services.AddLogging();
         IFunctionsWorkerApplicationBuilder builder = services.AddFunctionsWorkerCore();
         new LargePayloadPurgeExtensionStartup().Configure(builder);
+        Type optionsType = services.Single(descriptor =>
+            descriptor.ServiceType.IsGenericType
+            && descriptor.ServiceType.GetGenericTypeDefinition() == typeof(IValidateOptions<>))
+            .ServiceType.GenericTypeArguments[0];
         using ServiceProvider provider = services.BuildServiceProvider();
 
-        Assert.NotNull(provider.GetRequiredService<IOptionsMonitor<WorkerOptions>>().Get("named"));
-        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
-            () => provider.GetRequiredService<IOptions<WorkerOptions>>().Value);
+        Type validatorType = typeof(IValidateOptions<>).MakeGenericType(optionsType);
+        object validator = Assert.Single(provider.GetServices(validatorType))!;
+        MethodInfo validate = validatorType.GetMethod(nameof(IValidateOptions<object>.Validate))!;
+        object options = Activator.CreateInstance(optionsType, nonPublic: true)!;
+
+        Assert.Same(ValidateOptionsResult.Skip, validate.Invoke(validator, ["named", options]));
+        TargetInvocationException invocation = Assert.Throws<TargetInvocationException>(
+            () => validate.Invoke(validator, [Options.DefaultName, options]));
+        InvalidOperationException exception = Assert.IsType<InvalidOperationException>(invocation.InnerException);
         Assert.Contains("ConfigureLargePayloadPurgeFunctions", exception.Message);
     }
 
@@ -156,6 +170,48 @@ public class LargePayloadPurgeStartupTests
         await host.StartAsync();
         Assert.True(worker.Started);
         await host.StopAsync();
+    }
+
+    [Fact]
+    public async Task ValidHelperConfigurationStartsWithRealWorkerLoggingRegistrations()
+    {
+        var worker = new StartProbe();
+        bool hasWorkerLoggerProvider = false;
+        Type? systemLogWriterServiceType = null;
+        Task<IHost> start = Task.Run(async () =>
+        {
+            IHost host = new HostBuilder()
+                .ConfigureFunctionsWorkerDefaults(builder =>
+                {
+                    new LargePayloadPurgeExtensionStartup().Configure(builder);
+                    builder.ConfigureLargePayloadPurgeFunctions(options =>
+                        options.ConnectionString = "UseDevelopmentStorage=true");
+                })
+                .ConfigureServices(services =>
+                {
+                    hasWorkerLoggerProvider = services.Any(descriptor =>
+                        descriptor.ImplementationType?.Name == "WorkerLoggerProvider");
+                    systemLogWriterServiceType = services.First(descriptor =>
+                        descriptor.ServiceType.Name == "ISystemLogWriter").ServiceType;
+                    services.RemoveAll<IHostedService>();
+                    services.AddSingleton<IHostedService>(worker);
+                })
+                .Build();
+            await host.StartAsync();
+            return host;
+        });
+        Task completed = await Task.WhenAny(start, Task.Delay(TimeSpan.FromSeconds(5)));
+
+        Assert.Same(start, completed);
+        IHost host = await start;
+        Assert.True(hasWorkerLoggerProvider);
+        Assert.NotNull(systemLogWriterServiceType);
+        Assert.Contains(
+            host.Services.GetServices(systemLogWriterServiceType),
+            writer => writer?.GetType().Name == "GrpcFunctionsHostLogWriter");
+        Assert.True(worker.Started);
+        await host.StopAsync();
+        host.Dispose();
     }
 
     [Fact]
