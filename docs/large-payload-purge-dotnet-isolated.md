@@ -2,8 +2,6 @@
 
 The optional `Microsoft.Azure.Functions.Worker.Extensions.DurableTask.AzureBlobPayloads` package supplies the Durable Task SDK's purge orchestration and activities as ordinary .NET isolated Functions. It targets .NET 8 and .NET 10.
 
-The optional package is not published yet. Use this guide after compatible Functions and provider packages are available.
-
 ## Requirements
 
 Use:
