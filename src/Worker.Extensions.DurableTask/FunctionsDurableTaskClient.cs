@@ -22,12 +22,19 @@ internal sealed class FunctionsDurableTaskClient : DurableTaskClient, ILargePayl
 {
     private readonly DurableTaskClient inner;
     private readonly ILargePayloadPurgeClient? purgeClient;
+    private readonly ILargePayloadAutoPurgeReadinessValidator? readinessValidator;
 
-    public FunctionsDurableTaskClient(DurableTaskClient inner, string? queryString, string? httpBaseUrl, ILargePayloadPurgeClient? purgeClient = null)
+    public FunctionsDurableTaskClient(
+        DurableTaskClient inner,
+        string? queryString,
+        string? httpBaseUrl,
+        ILargePayloadPurgeClient? purgeClient = null,
+        ILargePayloadAutoPurgeReadinessValidator? readinessValidator = null)
         : base(inner.Name)
     {
         this.inner = inner;
         this.purgeClient = purgeClient;
+        this.readinessValidator = readinessValidator;
         this.QueryString = queryString;
         this.HttpBaseUrl = httpBaseUrl;
     }
@@ -36,10 +43,20 @@ internal sealed class FunctionsDurableTaskClient : DurableTaskClient, ILargePayl
     public string? HttpBaseUrl { get; }
     public override DurableEntityClient Entities => this.inner.Entities;
 
-    Task ILargePayloadAutoPurgeClient.SetLargePayloadAutoPurgeAsync(bool enabled, CancellationToken cancellation)
-        => this.inner is ILargePayloadAutoPurgeClient control
-            ? control.SetLargePayloadAutoPurgeAsync(enabled, cancellation)
-            : throw new NotSupportedException("The bound Durable Functions client does not support large payload auto-purge.");
+    async Task ILargePayloadAutoPurgeClient.SetLargePayloadAutoPurgeAsync(bool enabled, CancellationToken cancellation)
+    {
+        if (this.inner is not ILargePayloadAutoPurgeClient control)
+        {
+            throw new NotSupportedException("The bound Durable Functions client does not support large payload auto-purge.");
+        }
+
+        if (enabled && this.readinessValidator != null)
+        {
+            await this.readinessValidator.ValidateAsync(cancellation);
+        }
+
+        await control.SetLargePayloadAutoPurgeAsync(enabled, cancellation);
+    }
 
     Task<List<LargePayloadTombstone>> ILargePayloadPurgeClient.GetLargePayloadTombstonesAsync(int limit, DateTime deadline, CancellationToken cancellationToken)
         => this.GetPurgeClient().GetLargePayloadTombstonesAsync(limit, deadline, cancellationToken);

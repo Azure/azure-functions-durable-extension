@@ -103,10 +103,11 @@ internal partial class FunctionsDurableClientProvider : IAsyncDisposable
 
     internal FunctionsDurableTaskClient CreateBoundClient(
         Uri endpoint, string? taskHub, string? connectionName, int? maxGrpcMessageSizeInBytes,
-        TimeSpan grpcHttpClientTimeout, string? queryString, string? httpBaseUrl)
+        TimeSpan grpcHttpClientTimeout, string? queryString, string? httpBaseUrl,
+        ILargePayloadAutoPurgeReadinessValidator? readinessValidator = null)
     {
         ClientHolder holder = this.GetOrCreateClient(endpoint, taskHub, connectionName, maxGrpcMessageSizeInBytes, grpcHttpClientTimeout);
-        return new FunctionsDurableTaskClient(holder.Client, queryString, httpBaseUrl, holder.PurgeClient);
+        return new FunctionsDurableTaskClient(holder.Client, queryString, httpBaseUrl, holder.PurgeClient, readinessValidator);
     }
 
     private ClientHolder GetOrCreateClient(Uri endpoint, string? taskHub, string? connectionName, int? maxGrpcMessageSizeInBytes, TimeSpan grpcHttpClientTimeout)
