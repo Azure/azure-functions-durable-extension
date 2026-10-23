@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Microsoft.Azure.Functions.Worker.Extensions.DurableTask.AzureBlobPayloads</AssemblyName>
+    <RootNamespace>Microsoft.Azure.Functions.Worker.Extensions.DurableTask</RootNamespace>
+    <VersionPrefix>1.0.0</VersionPrefix>
+    <AssemblyVersion>$(VersionPrefix).0</AssemblyVersion>
+    <FileVersion Condition="'$(FileVersionRevision)' != ''">$(VersionPrefix).$(FileVersionRevision)</FileVersion>
+    <Description>SDK-owned large payload purge Functions for the .NET isolated worker.</Description>
+    <Authors>Microsoft</Authors>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/Azure/azure-functions-durable-extension</RepositoryUrl>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <DebugType>embedded</DebugType>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\sign.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Worker.Extensions.DurableTask\Worker.Extensions.DurableTask.csproj" />
+    <PackageReference Include="Microsoft.DurableTask.Extensions.AzureBlobPayloads" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
+    <None Include="..\..\docs\large-payload-purge-dotnet-isolated.md" Pack="true" PackagePath="README.md" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)' == 'Release'">
+    <Content Include="..\..\_manifest\**" Pack="true" PackagePath="content/SBOM" />
+  </ItemGroup>
+</Project>

@@ -28,15 +28,15 @@ steps:
     verbosityRestore: Minimal
     feedsToUse: 'config'
     nugetConfigPath: 'nuget.config'
-    projects: 'src/Worker.Extensions.DurableTask/*.csproj'
+    projects: 'src/Worker.Extensions.DurableTask*/*.csproj'
 
-# Build just the .NET Isolated worker extension project
+# Build the .NET isolated worker extension and optional payload purge package.
 - task: DotNetCoreCLI@2
   displayName: 'Build'
   inputs:
     command: build
     arguments: --no-restore -c release -p:FileVersionRevision=$(Build.BuildId) -p:ContinuousIntegrationBuild=true
-    projects: 'src/Worker.Extensions.DurableTask/*.csproj'
+    projects: 'src/Worker.Extensions.DurableTask*/*.csproj'
 
 # Authenticode sign all the DLLs with the Microsoft certificate.
 # This appears to be an in-place signing job, which is convenient.
@@ -71,6 +71,37 @@ steps:
           }
       ]
 
+- task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@2
+  displayName: 'ESRP CodeSigning: Payload purge Authenticode'
+  inputs:
+    ConnectedServiceName: 'ESRP Service'
+    FolderPath: 'src/Worker.Extensions.DurableTask.AzureBlobPayloads/bin/Release'
+    Pattern: 'Microsoft.Azure.Functions.Worker.Extensions.DurableTask.AzureBlobPayloads.dll'
+    signConfigType: inlineSignParams
+    inlineOperation: |
+     [
+        {
+            "KeyCode": "CP-230012",
+            "OperationCode": "SigntoolSign",
+            "Parameters": {
+                "OpusName": "Microsoft",
+                "OpusInfo": "http://www.microsoft.com",
+                "FileDigest": "/fd \"SHA256\"",
+                "PageHash": "/NPH",
+                "TimeStamp": "/tr \"http://rfc3161.gtm.corp.microsoft.com/TSS/HttpTspServer\" /td sha256"
+            },
+            "ToolName": "sign",
+            "ToolVersion": "1.0"
+        },
+        {
+            "KeyCode": "CP-230012",
+            "OperationCode": "SigntoolVerify",
+            "Parameters": {},
+            "ToolName": "sign",
+            "ToolVersion": "1.0"
+        }
+     ]
+
 # SBOM generator task for additional supply chain protection
 - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
   displayName: 'SBOM Manifest Generator'
@@ -80,14 +111,24 @@ steps:
 # Packaging needs to be a separate step from build.
 # This will automatically pick up any signed DLLs.
 - task: DotNetCoreCLI@2
-  displayName: Generate nuget packages
+  displayName: Generate Worker.Extensions.DurableTask nuget package
   inputs:
     command: pack
     verbosityPack: Minimal
     configuration: Release
     nobuild: true
     packDirectory: $(build.artifactStagingDirectory)
-    packagesToPack: 'src/Worker.Extensions.DurableTask/*.csproj'
+    packagesToPack: 'src/Worker.Extensions.DurableTask/Worker.Extensions.DurableTask.csproj'
+
+- task: DotNetCoreCLI@2
+  displayName: Generate Worker.Extensions.DurableTask.AzureBlobPayloads nuget package
+  inputs:
+    command: pack
+    verbosityPack: Minimal
+    configuration: Release
+    nobuild: true
+    packDirectory: $(build.artifactStagingDirectory)
+    packagesToPack: 'src/Worker.Extensions.DurableTask.AzureBlobPayloads/Worker.Extensions.DurableTask.AzureBlobPayloads.csproj'
 
 # Digitally sign all the nuget packages with the Microsoft certificate.
 # This appears to be an in-place signing job, which is convenient.
