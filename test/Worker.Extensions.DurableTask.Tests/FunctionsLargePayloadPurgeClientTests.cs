@@ -63,85 +63,88 @@ public class FunctionsLargePayloadPurgeClientTests
         invoker.VerifyAll();
     }
 
-    [Fact]
-    public async Task Disable_OnlyForwardsSettingThroughBoundClient()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task SetLargePayloadAutoPurge_OnlyForwardsSettingAndCancellation(bool enabled)
     {
         var inner = new Mock<DurableTaskClient>(MockBehavior.Strict, "test");
-        var readiness = new TestReadinessValidator();
         using var cancellation = new CancellationTokenSource();
+        Task operation = Task.FromResult(true);
         inner.As<ILargePayloadAutoPurgeClient>()
-            .Setup(c => c.SetLargePayloadAutoPurgeAsync(false, cancellation.Token)).Returns(Task.CompletedTask);
-        var client = new FunctionsDurableTaskClient(inner.Object, null, null, readinessValidator: readiness);
-
-        await client.SetLargePayloadAutoPurgeAsync(false, cancellationToken: cancellation.Token);
-
-        inner.VerifyAll();
-        Assert.Equal(0, readiness.CallCount);
-        inner.VerifyNoOtherCalls();
-    }
-
-    [Fact]
-    public async Task Enable_ValidatesBeforeForwardingSetting()
-    {
-        var inner = new Mock<DurableTaskClient>(MockBehavior.Strict, "test");
-        var calls = new List<string>();
-        var readiness = new TestReadinessValidator(
-            cancellation => { calls.Add("validate"); return Task.CompletedTask; });
-        using var cancellation = new CancellationTokenSource();
-        inner.As<ILargePayloadAutoPurgeClient>()
-            .Setup(c => c.SetLargePayloadAutoPurgeAsync(true, cancellation.Token))
-            .Callback(() => calls.Add("rpc"))
-            .Returns(Task.CompletedTask);
-        var client = new FunctionsDurableTaskClient(inner.Object, null, null, readinessValidator: readiness);
-
-        await ((ILargePayloadAutoPurgeClient)client).SetLargePayloadAutoPurgeAsync(true, cancellation.Token);
-
-        Assert.Equal(new[] { "validate", "rpc" }, calls);
-        inner.VerifyAll();
-    }
-
-    [Fact]
-    public async Task Enable_ValidationFailureDoesNotCallInnerClient()
-    {
-        var inner = new Mock<DurableTaskClient>(MockBehavior.Strict, "test");
-        inner.As<ILargePayloadAutoPurgeClient>();
-        var failure = new InvalidOperationException("Local payload store is not ready.");
-        var readiness = new TestReadinessValidator(_ => Task.FromException(failure));
-        var client = new FunctionsDurableTaskClient(inner.Object, null, null, readinessValidator: readiness);
-
-        Assert.Same(failure, await Assert.ThrowsAsync<InvalidOperationException>(
-            () => ((ILargePayloadAutoPurgeClient)client).SetLargePayloadAutoPurgeAsync(true, CancellationToken.None)));
-
-        Assert.Equal(1, readiness.CallCount);
-        inner.VerifyNoOtherCalls();
-    }
-
-    [Fact]
-    public async Task Enable_WithoutOptionalReadinessHookRetainsControlOnlyBehavior()
-    {
-        var inner = new Mock<DurableTaskClient>(MockBehavior.Strict, "test");
-        inner.As<ILargePayloadAutoPurgeClient>()
-            .Setup(c => c.SetLargePayloadAutoPurgeAsync(true, CancellationToken.None)).Returns(Task.CompletedTask);
+            .Setup(c => c.SetLargePayloadAutoPurgeAsync(enabled, cancellation.Token)).Returns(operation);
         var client = new FunctionsDurableTaskClient(inner.Object, null, null);
 
-        await ((ILargePayloadAutoPurgeClient)client).SetLargePayloadAutoPurgeAsync(true, CancellationToken.None);
+        Task forwarded = ((ILargePayloadAutoPurgeClient)client).SetLargePayloadAutoPurgeAsync(enabled, cancellation.Token);
+
+        Assert.Same(operation, forwarded);
+        await forwarded;
+        inner.VerifyAll();
+        inner.VerifyNoOtherCalls();
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task SetLargePayloadAutoPurge_PreservesBackendFailure(bool enabled)
+    {
+        var inner = new Mock<DurableTaskClient>(MockBehavior.Strict, "test");
+        var failure = new RpcException(new Status(StatusCode.Unimplemented, "unsupported backend"));
+        inner.As<ILargePayloadAutoPurgeClient>()
+            .Setup(c => c.SetLargePayloadAutoPurgeAsync(enabled, CancellationToken.None))
+            .ThrowsAsync(failure);
+        var client = new FunctionsDurableTaskClient(inner.Object, null, null);
+
+        Assert.Same(failure, await Assert.ThrowsAsync<RpcException>(
+            () => client.SetLargePayloadAutoPurgeAsync(enabled, cancellationToken: CancellationToken.None)));
 
         inner.VerifyAll();
     }
 
-    [Fact]
-    public async Task OrdinaryClientOperationDoesNotValidatePayloadStore()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task SetLargePayloadAutoPurge_ForwardsCancellationToInnerClient(bool enabled)
     {
         var inner = new Mock<DurableTaskClient>(MockBehavior.Strict, "test");
-        var readiness = new TestReadinessValidator();
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        inner.As<ILargePayloadAutoPurgeClient>()
+            .Setup(c => c.SetLargePayloadAutoPurgeAsync(enabled, cancellation.Token))
+            .Returns(Task.FromCanceled(cancellation.Token));
+        var client = new FunctionsDurableTaskClient(inner.Object, null, null);
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => client.SetLargePayloadAutoPurgeAsync(enabled, cancellationToken: cancellation.Token));
+
+        inner.VerifyAll();
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task SetLargePayloadAutoPurge_RejectsUnsupportedInnerClient(bool enabled)
+    {
+        var inner = new Mock<DurableTaskClient>(MockBehavior.Strict, "test");
+        var client = new FunctionsDurableTaskClient(inner.Object, null, null);
+
+        await Assert.ThrowsAsync<NotSupportedException>(
+            () => client.SetLargePayloadAutoPurgeAsync(enabled, cancellationToken: CancellationToken.None));
+
+        inner.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task OrdinaryClientOperationRetainsForwarding()
+    {
+        var inner = new Mock<DurableTaskClient>(MockBehavior.Strict, "test");
         inner.Setup(c => c.GetInstancesAsync("instance", false, CancellationToken.None))
             .ReturnsAsync((OrchestrationMetadata?)null);
-        var client = new FunctionsDurableTaskClient(inner.Object, null, null, readinessValidator: readiness);
+        var client = new FunctionsDurableTaskClient(inner.Object, null, null);
 
         Assert.Null(await client.GetInstancesAsync("instance"));
 
         inner.VerifyAll();
-        Assert.Equal(0, readiness.CallCount);
     }
 
     [Fact]
@@ -163,22 +166,4 @@ public class FunctionsLargePayloadPurgeClientTests
 
     private static AsyncUnaryCall<T> Call<T>(T response)
         => new(Task.FromResult(response), Task.FromResult(new Metadata()), () => Status.DefaultSuccess, () => new Metadata(), () => { });
-
-    private sealed class TestReadinessValidator : ILargePayloadAutoPurgeReadinessValidator
-    {
-        private readonly Func<CancellationToken, Task> validate;
-
-        public TestReadinessValidator(Func<CancellationToken, Task>? validate = null)
-        {
-            this.validate = validate ?? (_ => Task.CompletedTask);
-        }
-
-        public int CallCount { get; private set; }
-
-        public Task ValidateAsync(CancellationToken cancellation)
-        {
-            this.CallCount++;
-            return this.validate(cancellation);
-        }
-    }
 }

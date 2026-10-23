@@ -95,6 +95,33 @@ public class GeneratedPurgeFunctionInvocationTests
     }
 
     [Fact]
+    public async Task GeneratedDeleteWithoutPayloadStoreFailsAtInvocation()
+    {
+        using ServiceProvider services = CreateServices();
+
+        InvalidOperationException exception = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => Invoke(services, typeof(LargePayloadDeleteFunction), nameof(LargePayloadDeleteFunction.Delete),
+                new List<string>(), "purge-instance"));
+
+        Assert.Contains(nameof(PayloadStore), exception.Message);
+    }
+
+    [Fact]
+    public async Task GeneratedDeleteWithInvalidPayloadStoreConfigurationFailsAtInvocation()
+    {
+        using ServiceProvider services = CreateServices(configureWorker: worker =>
+            worker.ConfigureLargePayloadPurgeFunctions(options =>
+            {
+                options.ConnectionString = "not-a-storage-connection-string";
+                options.ContainerName = "Invalid_Name";
+            }));
+
+        await Assert.ThrowsAsync<FormatException>(
+            () => Invoke(services, typeof(LargePayloadDeleteFunction), nameof(LargePayloadDeleteFunction.Delete),
+                new List<string>(), "purge-instance"));
+    }
+
+    [Fact]
     public async Task GeneratedReportUsesBoundClientAndPreservesResultList()
     {
         var purge = new Mock<ILargePayloadPurgeClient>(MockBehavior.Strict);
@@ -118,11 +145,13 @@ public class GeneratedPurgeFunctionInvocationTests
     private static FunctionsDurableTaskClient BoundClient(ILargePayloadPurgeClient purge) =>
         new(new Mock<DurableTaskClient>("bound-hub").Object, null, null, purge);
 
-    private static ServiceProvider CreateServices(PayloadStore? store = null)
+    private static ServiceProvider CreateServices(
+        PayloadStore? store = null, Action<IFunctionsWorkerApplicationBuilder>? configureWorker = null)
     {
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddFunctionsWorkerCore();
+        IFunctionsWorkerApplicationBuilder worker = services.AddFunctionsWorkerCore();
+        configureWorker?.Invoke(worker);
         if (store != null)
         {
             services.AddSingleton(store);

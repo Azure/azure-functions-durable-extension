@@ -7,7 +7,6 @@ using Microsoft.Azure.Functions.Worker.Converters;
 using Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 using Microsoft.DurableTask.Client;
 using Microsoft.DurableTask.LargePayloadPurge.Abstractions;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -21,18 +20,14 @@ public class DurableTaskClientConverterTests
     {
         await using var provider = CreateProvider();
         var converter = new DurableTaskClientConverter(provider);
-        var readiness = new TestReadinessValidator();
-        using ServiceProvider services = Services(readiness);
-        var first = await Convert(converter, Binding("hub-a", "connection-a", "code=first", "https://first.example/runtime/webhooks/durabletask"), services);
-        var second = await Convert(converter, Binding("hub-a", "connection-a", "code=second", "https://second.example/runtime/webhooks/durabletask"), services);
+        var first = await Convert(converter, Binding("hub-a", "connection-a", "code=first", "https://first.example/runtime/webhooks/durabletask"));
+        var second = await Convert(converter, Binding("hub-a", "connection-a", "code=second", "https://second.example/runtime/webhooks/durabletask"));
 
         Assert.NotSame(first, second);
         Assert.IsAssignableFrom<DurableTaskClient>(first);
         Assert.IsAssignableFrom<ILargePayloadPurgeClient>(first);
         Assert.Same(Field(first, "inner"), Field(second, "inner"));
         Assert.Same(Field(first, "purgeClient"), Field(second, "purgeClient"));
-        Assert.Same(readiness, Field(first, "readinessValidator"));
-        Assert.Same(readiness, Field(second, "readinessValidator"));
         Assert.Equal("code=first", first.QueryString);
         Assert.Equal("code=second", second.QueryString);
         Assert.Equal("https://first.example/runtime/webhooks/durabletask", first.HttpBaseUrl);
@@ -42,7 +37,6 @@ public class DurableTaskClientConverterTests
         Assert.Contains("code=second", second.CreateHttpManagementPayload("instance").StatusQueryGetUri);
         await first.DisposeAsync();
         Assert.Same(Field(second, "inner"), provider.GetClient(new Uri("http://127.0.0.1:12345"), "hub-a", "connection-a", 4194304, TimeSpan.FromSeconds(90)));
-        Assert.Equal(0, readiness.CallCount);
     }
 
     [Theory]
@@ -70,18 +64,21 @@ public class DurableTaskClientConverterTests
     }
 
     [Fact]
-    public async Task BoundClientCreationDoesNotRunOptionalReadinessCheck()
+    public async Task BoundClientCreationDoesNotAccessWorkerServices()
     {
         await using var provider = CreateProvider();
         var converter = new DurableTaskClientConverter(provider);
-        var readiness = new TestReadinessValidator();
-        using ServiceProvider services = Services(readiness);
+        var context = new Mock<ConverterContext>(MockBehavior.Strict);
+        context.SetupGet(value => value.TargetType).Returns(typeof(DurableTaskClient));
+        context.SetupGet(value => value.Source).Returns(Binding("hub", "connection", null, null));
+        context.SetupGet(value => value.FunctionContext)
+            .Throws(new InvalidOperationException("Binding must not access worker services."));
 
-        FunctionsDurableTaskClient client = await Convert(
-            converter, Binding("hub", "connection", null, null), services);
+        ConversionResult result = await converter.ConvertAsync(context.Object);
 
-        Assert.Same(readiness, Field(client, "readinessValidator"));
-        Assert.Equal(0, readiness.CallCount);
+        Assert.Equal(ConversionStatus.Succeeded, result.Status);
+        Assert.IsType<FunctionsDurableTaskClient>(result.Value);
+        context.VerifyGet(value => value.FunctionContext, Times.Never);
     }
 
     [Theory]
@@ -148,45 +145,20 @@ public class DurableTaskClientConverterTests
             grpcHttpClientTimeout = JsonSerializer.Serialize(TimeSpan.FromSeconds(90)),
         });
 
-    private static ConverterContext Context(object? source, IServiceProvider? services = null)
+    private static ConverterContext Context(object? source)
     {
         var context = new Mock<ConverterContext>();
         context.SetupGet(value => value.TargetType).Returns(typeof(DurableTaskClient));
         context.SetupGet(value => value.Source).Returns(source);
-        if (services != null)
-        {
-            var functionContext = new Mock<FunctionContext>();
-            functionContext.SetupGet(value => value.InstanceServices).Returns(services);
-            context.SetupGet(value => value.FunctionContext).Returns(functionContext.Object);
-        }
-
         return context.Object;
     }
 
     private static async Task<FunctionsDurableTaskClient> Convert(
-        DurableTaskClientConverter converter, string source, IServiceProvider? services = null)
+        DurableTaskClientConverter converter, string source)
     {
-        ConversionResult result = await converter.ConvertAsync(Context(source, services));
+        ConversionResult result = await converter.ConvertAsync(Context(source));
         Assert.Equal(ConversionStatus.Succeeded, result.Status);
         return Assert.IsType<FunctionsDurableTaskClient>(result.Value);
-    }
-
-    private static ServiceProvider Services(ILargePayloadAutoPurgeReadinessValidator readiness)
-    {
-        var services = new ServiceCollection();
-        services.AddSingleton(readiness);
-        return services.BuildServiceProvider();
-    }
-
-    private sealed class TestReadinessValidator : ILargePayloadAutoPurgeReadinessValidator
-    {
-        public int CallCount { get; private set; }
-
-        public Task ValidateAsync(CancellationToken cancellation)
-        {
-            this.CallCount++;
-            return Task.CompletedTask;
-        }
     }
 
     private static object Field(FunctionsDurableTaskClient client, string name)

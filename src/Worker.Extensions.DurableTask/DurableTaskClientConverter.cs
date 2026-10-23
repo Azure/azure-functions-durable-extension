@@ -6,7 +6,6 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Azure.Functions.Worker.Converters;
 using Microsoft.DurableTask.Client;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 
@@ -52,12 +51,10 @@ internal sealed partial class DurableTaskClientConverter : IInputConverter
             // Deserialize the gRPC HTTP client timeout from inputData. If the value is null or missing, default to 100 seconds.
             TimeSpan grpcHttpClientTimeout = inputData?.grpcHttpClientTimeout != null
                                                 ? JsonSerializer.Deserialize<TimeSpan>(inputData.grpcHttpClientTimeout) : TimeSpan.FromSeconds(100);
-            ILargePayloadAutoPurgeReadinessValidator? readinessValidator =
-                context.FunctionContext?.InstanceServices.GetService<ILargePayloadAutoPurgeReadinessValidator>();
 
             DurableTaskClient client = this.clientProvider.CreateBoundClient(
                 endpoint, inputData?.taskHubName, inputData?.connectionName, inputData?.maxGrpcMessageSizeInBytes,
-                grpcHttpClientTimeout, inputData!.requiredQueryStringParameters, inputData!.httpBaseUrl, readinessValidator);
+                grpcHttpClientTimeout, inputData!.requiredQueryStringParameters, inputData!.httpBaseUrl);
             return new ValueTask<ConversionResult>(ConversionResult.Success(client));
         }
         catch (Exception innerException)

@@ -43,13 +43,11 @@ await host.RunAsync();
 
 The credentials belong to the worker process. They are not copied from the Functions host or sent through a blob-deletion RPC. The account and container must match the external payload store configured by the provider for this worker's task hub.
 
-Loading the optional package does not validate or construct a `PayloadStore`. Worker startup, bound-client creation, ordinary client operations, and disable calls do not require a local store. You can register a custom `PayloadStore` instead of calling `ConfigureLargePayloadPurgeFunctions`.
+Loading the optional package, worker startup, bound-client creation, ordinary client operations, and enable/disable calls do not resolve or construct a `PayloadStore`. You can register a custom `PayloadStore` instead of calling `ConfigureLargePayloadPurgeFunctions`.
 
-When this Functions process calls `SetLargePayloadAutoPurgeAsync(true)`, its bound client validates that the local `PayloadStore` can be constructed before changing the backend setting or scheduling the purge runner. Validation failure prevents those enable steps and reports how to configure the store. This local check does not validate other workers, or enables made through a standalone SDK client or another process.
+Enabling auto-purge can succeed without a working local store. The deletion activity still requires a valid `PayloadStore`: a missing registration or invalid configuration fails at runtime when the worker activates the deletion Function. Configure the store on every worker that can receive purge work.
 
-The built-in store is a singleton. Enable-time validation uses an asynchronous DI scope, so scoped and transient custom stores and their dependencies are fully disposed before the enable call continues, including async-only implementations. A DI-created singleton remains host-owned. If you register an existing store instance, you remain responsible for disposing it.
-
-Enable-time validation checks registration and construction only. It does not test storage connectivity, credentials, permissions, or later service availability.
+The built-in store is a singleton. Custom stores retain their registered DI lifetime and are resolved in the deletion Function's invocation scope. DI-created instances remain owned by the host or their scope. If you register an existing store instance, you remain responsible for disposing it.
 
 ## Enable or disable a task hub
 
@@ -95,4 +93,4 @@ The purge orchestration is SDK-owned and unversioned. This exemption applies onl
 - The common Functions host does not delete blobs; deletion runs in the isolated worker with the configured store.
 - Fetch and report operations use the task hub of the executing worker.
 - Rolling back to incompatible host, worker, Core, SDK, or provider packages can break active purge executions.
-- A successful local enable-time check does not guarantee storage availability when purge activities run.
+- Enabling auto-purge does not guarantee storage availability when purge activities run.
