@@ -12,10 +12,12 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 internal class ActivityInputConverter : IInputConverter
 {
     private readonly DurableTaskWorkerOptions options;
+    private readonly IExternalizedPayloads? payloads;
 
-    public ActivityInputConverter(IOptions<DurableTaskWorkerOptions> options)
+    public ActivityInputConverter(IOptions<DurableTaskWorkerOptions> options, IExternalizedPayloads? payloads = null)
     {
         this.options = options?.Value ?? throw new ArgumentNullException(nameof(options));
+        this.payloads = payloads;
     }
 
     public ValueTask<ConversionResult> ConvertAsync(ConverterContext context)
@@ -47,10 +49,26 @@ internal class ActivityInputConverter : IInputConverter
             throw new InvalidOperationException($"Expected converter source to be a string, received {context.Source?.GetType()}.");
         }
 
+        if (this.payloads is not null)
+        {
+            return new(this.ConvertExternalizedAsync(context, source));
+        }
+
+        return new(this.Deserialize(context, source));
+    }
+
+    private async Task<ConversionResult> ConvertExternalizedAsync(ConverterContext context, string source)
+    {
+        string? resolved = await this.payloads!.ResolveAsync(source, context.FunctionContext.CancellationToken);
+        return this.Deserialize(context, resolved);
+    }
+
+    private ConversionResult Deserialize(ConverterContext context, string? source)
+    {
         try
         {
             object? value = this.options.DataConverter.Deserialize(source, context.TargetType);
-            return new(ConversionResult.Success(value));
+            return ConversionResult.Success(value);
         }
         catch (Exception exception)
         {

@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;net8.0;net10.0</TargetFrameworks>
+    <LangVersion>latest</LangVersion>
+    <DebugType>embedded</DebugType>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Platforms>AnyCPU</Platforms>
+    <AssemblyName>Microsoft.Azure.Functions.Worker.Extensions.DurableTask.AzureBlobPayloads</AssemblyName>
+    <RootNamespace>Microsoft.Azure.Functions.Worker.Extensions.DurableTask</RootNamespace>
+    <VersionPrefix>1.20.0</VersionPrefix>
+    <AssemblyVersion>$(VersionPrefix).0</AssemblyVersion>
+    <FileVersion Condition="'$(FileVersionRevision)' != ''">$(VersionPrefix).$(FileVersionRevision)</FileVersion>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\sign.snk</AssemblyOriginatorKeyFile>
+    <Description>Opt-in SDK-side externalized payload support for .NET isolated Durable Functions.</Description>
+    <Authors>Microsoft</Authors>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageTags>Azure;Functions;DurableTask;Payloads;Blob</PackageTags>
+    <PackageIcon>functions.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/Azure/azure-functions-durable-extension</RepositoryUrl>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Worker.Extensions.DurableTask\Worker.Extensions.DurableTask.csproj" />
+    <PackageReference Include="Microsoft.DurableTask.Extensions.AzureBlobPayloads" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\functions.png" Pack="true" PackagePath="\" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)'=='Release'">
+    <Content Include="_manifest\**" Pack="true" PackagePath="content/SBOM" />
+  </ItemGroup>
+</Project>

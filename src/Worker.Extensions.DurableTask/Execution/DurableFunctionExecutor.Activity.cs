@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Azure.Functions.Worker.Extensions.DurableTask.Exceptions;
 using Microsoft.DurableTask;
@@ -28,11 +29,26 @@ internal partial class DurableFunctionExecutor
             if (context.FunctionDefinition.EntryPoint == ActivityEntryPoint)
             {
                 await this.RunDirectActivityAsync(context, triggerBinding);
-                return;
+            }
+            else
+            {
+                await inner.ExecuteAsync(context);
             }
 
-            await inner.ExecuteAsync(context);
-            return;
+            if (payloads is not null && context.GetInvocationResult().Value is object result)
+            {
+                string? serialized = this.Converter.Serialize(result);
+                string? externalized = await payloads.ExternalizeAsync(serialized, context.CancellationToken);
+                if (!string.Equals(serialized, externalized, StringComparison.Ordinal))
+                {
+                    // The Functions return binding serializes the reference string once.
+                    context.GetInvocationResult().Value = JsonSerializer.Deserialize<string>(externalized!);
+                }
+            }
+        }
+        catch (OperationCanceledException) when (payloads is not null && context.CancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -54,6 +70,11 @@ internal partial class DurableFunctionExecutor
         {
             throw new InvalidOperationException(
                 "Activity input data was either missing from the input or not a JSON string.");
+        }
+
+        if (payloads is not null)
+        {
+            data = (await payloads.ResolveAsync(data, context.CancellationToken))!;
         }
 
         object? input;
