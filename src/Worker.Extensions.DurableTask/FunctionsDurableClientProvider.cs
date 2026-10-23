@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Grpc.Core;
+using Grpc.Core.Interceptors;
 using Microsoft.DurableTask.Client;
 using Microsoft.DurableTask.Client.Grpc;
 using Microsoft.Extensions.Logging;
@@ -33,6 +34,7 @@ internal partial class FunctionsDurableClientProvider : IAsyncDisposable
     private readonly ILoggerFactory loggerFactory;
     private readonly ILogger logger;
     private readonly DurableTaskClientOptions options;
+    private readonly IExternalizedPayloads? payloads;
     private Dictionary<ClientKey, ClientHolder>? clients = new();
 
     private bool disposed;
@@ -42,11 +44,16 @@ internal partial class FunctionsDurableClientProvider : IAsyncDisposable
     /// </summary>
     /// <param name="loggerFactory">The service provider.</param>
     /// <param name="options">The client options.</param>
-    public FunctionsDurableClientProvider(ILoggerFactory loggerFactory, IOptions<DurableTaskClientOptions> options)
+    /// <param name="payloads">Optional worker-owned payload processing.</param>
+    public FunctionsDurableClientProvider(
+        ILoggerFactory loggerFactory,
+        IOptions<DurableTaskClientOptions> options,
+        IExternalizedPayloads? payloads = null)
     {
         this.loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
         this.logger = loggerFactory.CreateLogger<FunctionsDurableClientProvider>();
         this.options = options?.Value ?? throw new ArgumentNullException(nameof(options));
+        this.payloads = payloads;
     }
 
     /// <inheritdoc />
@@ -139,6 +146,10 @@ internal partial class FunctionsDurableClientProvider : IAsyncDisposable
 
             // Wrap the channel's call invoker with our InvocationIdCallInvoker to add correlation headers
             CallInvoker callInvoker = new InvocationIdCallInvoker(channel.CreateCallInvoker());
+            if (this.payloads is not null)
+            {
+                callInvoker = callInvoker.Intercept(this.payloads.ClientInterceptor);
+            }
 
             GrpcDurableTaskClientOptions options = new()
             {

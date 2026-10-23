@@ -5,6 +5,7 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Worker.Grpc;
+using P = Microsoft.DurableTask.Protobuf;
 
 namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask.Execution;
 
@@ -30,9 +31,23 @@ internal partial class DurableFunctionExecutor
                 "Orchestration history state was either missing from the input or not a string value.");
         }
 
+        if (payloads is not null)
+        {
+            encodedOrchestratorState = await ExternalizedPayloads.TransformInvocationAsync(
+                encodedOrchestratorState, P.OrchestratorRequest.Parser, payloads,
+                externalize: false, context.CancellationToken);
+        }
+
         await using IDisposableOrchestrator orchestrator = this.CreateOrchestrator(context, triggerInputData);
         string orchestratorOutput = GrpcOrchestrationRunner.LoadAndRun(
             encodedOrchestratorState, orchestrator, extendedSessionsCache, context.InstanceServices);
+
+        if (payloads is not null)
+        {
+            orchestratorOutput = await ExternalizedPayloads.TransformInvocationAsync(
+                orchestratorOutput, P.OrchestratorResponse.Parser, payloads,
+                externalize: true, context.CancellationToken);
+        }
 
         // Send the encoded orchestrator output as the return value seen by the functions host extension
         context.GetInvocationResult().Value = orchestratorOutput;
