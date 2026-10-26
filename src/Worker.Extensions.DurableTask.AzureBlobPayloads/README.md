@@ -46,17 +46,25 @@ size/offload policy.
 
 ## Reference and execution behavior
 
-- Serialized payloads at or above the threshold are stored out of band. The
+- SDK-owned serialized payloads at or above the threshold are stored out of band. The
   default threshold is 256 KiB and the default maximum stored payload is 10 MiB.
   Size is measured as serialized UTF-8, before compression.
 - Both attributed activities and registered `TaskActivity` implementations resolve
   input before user code runs and externalize output before returning to the host.
+- Scheduled activities retain the one-argument JSON array required by the host.
+  Only the serialized argument is externalized and measured against the size
+  limits, not its surrounding array. Array-valued arguments retain both layers.
+- With this opt-in, binary activity bindings request serialized string transport
+  through worker function metadata. The host forwards the reference without
+  decoding it as Base64; the worker resolves it before deserializing `byte[]`.
+  Unconfigured bindings retain their existing transport.
 - Orchestration input/history is hydrated in a separately decoded invocation
   message. Storage I/O occurs before and after the orchestration runner, not
   inside deterministic replay. Host history keeps the original references.
 - Activity inputs recorded in replay history are not downloaded, because replay
   only needs their scheduling metadata. Explicit client history reads hydrate
-  their payloads.
+  payload fields that are present. Fields omitted by the provider or SDK remain
+  omitted.
 - Outgoing activity/sub-orchestration inputs, orchestration output, external-event
   data and custom status use the same configuration. Null and inline payloads
   preserve their existing behavior.
@@ -69,6 +77,12 @@ size/offload policy.
   Storage retries are distinct from durable activity retry policies.
 
 ## Scope and retention
+
+Host-owned built-in activities, including `CallHttpAsync` (`BuiltIn::HttpActivity`),
+do not run in the isolated worker. Their scheduled inputs stay inline and are not
+subject to this opt-in's storage threshold or maximum. They remain subject to
+their existing host/backend size limits and any separately configured supported
+host-side payload policy.
 
 Entity payloads and entity protocol envelopes are not externalized by this opt-in;
 their existing behavior is unchanged. Entity LP support requires separate

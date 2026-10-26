@@ -34,6 +34,6 @@
     <None Include="..\..\functions.png" Pack="true" PackagePath="\" />
   </ItemGroup>
   <ItemGroup Condition="'$(Configuration)'=='Release'">
-    <Content Include="_manifest\**" Pack="true" PackagePath="content/SBOM" />
+    <Content Include="..\..\_manifest\**" Pack="true" PackagePath="content/SBOM" />
   </ItemGroup>
 </Project>

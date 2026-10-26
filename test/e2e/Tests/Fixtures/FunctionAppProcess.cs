@@ -27,6 +27,11 @@ internal class FunctionAppProcess
     /// </summary>
     internal Dictionary<string, string>? AdditionalEnvironmentVariables { get; set; }
 
+    /// <summary>
+    /// A fixture-owned address that does not require terminating any existing hosts.
+    /// </summary>
+    internal Uri? DedicatedHostAddress { get; set; }
+
     public FunctionAppProcess(ILogger logger, TestLoggerProvider TestLogs, LanguageType testLanguage)
     {
         this.logger = logger;
@@ -37,12 +42,17 @@ internal class FunctionAppProcess
 
     public async Task InitializeAsync()
     {
+        Uri hostAddress = this.DedicatedHostAddress ?? new Uri(Constants.FunctionsHostUrl);
+        bool startLocalHost = this.DedicatedHostAddress?.IsLoopback ?? Constants.FunctionsHostUrl.Contains("localhost");
         // start host via CLI if testing locally
-        if (Constants.FunctionsHostUrl.Contains("localhost"))
+        if (startLocalHost)
         {
-            // kill existing func processes
-            this.logger.LogInformation("Shutting down any running functions hosts..");
-            FixtureHelpers.KillExistingProcessesMatchingName("func");
+            if (this.DedicatedHostAddress is null)
+            {
+                // Preserve the existing lifecycle for the shared fixture.
+                this.logger.LogInformation("Shutting down any running functions hosts..");
+                FixtureHelpers.KillExistingProcessesMatchingName("func");
+            }
 
             // start functions process
             this.logger.LogInformation($"Starting functions host for {Constants.FunctionAppCollectionName}...");
@@ -74,7 +84,10 @@ internal class FunctionAppProcess
                         throw new InvalidOperationException($"The app bin path {e2eAppBuiltLocationPath} does not exist!");
                     }
 
-                    string? e2eHostJson = Directory.GetFiles(e2eAppBuiltLocationPath, "host.json", SearchOption.AllDirectories).FirstOrDefault();
+                    string? e2eHostJson = Directory.GetFiles(e2eAppBuiltLocationPath, "host.json", SearchOption.AllDirectories)
+                        .FirstOrDefault(path => this.DedicatedHostAddress is null
+                            || this.testLanguage != LanguageType.DotnetIsolated
+                            || Path.GetFileName(Path.GetDirectoryName(path)) == $"net{Environment.Version.Major}.0");
 
                     if (e2eHostJson == null)
                     {
@@ -91,6 +104,12 @@ internal class FunctionAppProcess
             }
 
             this.funcProcess = FixtureHelpers.GetFuncHostProcess(e2eAppPath, this.testLanguage);
+            if (this.DedicatedHostAddress is not null)
+            {
+                this.funcProcess.StartInfo.ArgumentList.Add("--port");
+                this.funcProcess.StartInfo.ArgumentList.Add(hostAddress.Port.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            }
+
             string workingDir = this.funcProcess.StartInfo.WorkingDirectory;
             this.logger.LogInformation($"  Working dir: '${workingDir}' Exists: '{Directory.Exists(workingDir)}'");
             string fileName = this.funcProcess.StartInfo.FileName;
@@ -122,7 +141,7 @@ internal class FunctionAppProcess
             {
                 try
                 {
-                    var response = await httpClient.GetAsync($"{Constants.FunctionsHostUrl}/admin/host/status");
+                    var response = await httpClient.GetAsync(new Uri(hostAddress, "admin/host/status"));
                     var content = await response.Content.ReadAsStringAsync();
                     var doc = JsonDocument.Parse(content);
                     if (doc.RootElement.TryGetProperty("state", out JsonElement value) &&

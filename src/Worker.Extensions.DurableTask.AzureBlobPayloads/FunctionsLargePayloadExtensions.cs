@@ -1,6 +1,7 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
+using Microsoft.Azure.Functions.Worker.Core.FunctionMetadata;
 using Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 using Microsoft.DurableTask;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -52,6 +53,8 @@ public static class FunctionsLargePayloadExtensions
 
         services.AddOptions<LargePayloadStorageOptions>();
         services.TryAddSingleton<IExternalizedPayloads, FunctionsExternalizedPayloads>();
+        services.TryAddEnumerable(
+            ServiceDescriptor.Singleton<IFunctionMetadataTransformer, FunctionsPayloadMetadataTransformer>());
         return services;
     }
 }

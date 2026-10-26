@@ -4,10 +4,12 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Google.Protobuf;
 using Google.Protobuf.Reflection;
+using P = Microsoft.DurableTask.Protobuf;
 
 namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 
@@ -65,13 +67,33 @@ internal static class ExternalizedPayloads
 
             if (!string.Equals(value, field.Value, StringComparison.Ordinal))
             {
-                field.Descriptor.Accessor.SetValue(field.Message, value);
+                field.SetValue(value);
             }
         }
     }
 
     private static void Collect(IMessage message, List<PayloadField> fields, bool skipScheduledInputs)
     {
+        if (message is P.ScheduleTaskAction activity)
+        {
+            if (!IsBuiltIn(activity.Name))
+            {
+                CollectActivityInput(message, activity.Input, fields, requiresEnvelope: true);
+            }
+
+            return;
+        }
+
+        if (message is P.TaskScheduledEvent scheduled)
+        {
+            if (!skipScheduledInputs && !IsBuiltIn(scheduled.Name))
+            {
+                CollectActivityInput(message, scheduled.Input, fields, requiresEnvelope: false);
+            }
+
+            return;
+        }
+
         // Entity protocol envelopes need separate correlation-aware processing. Leave their
         // existing transport unchanged rather than externalizing an envelope the host must parse.
         if (message.Descriptor.Name.IndexOf("Entity", StringComparison.Ordinal) >= 0)
@@ -84,10 +106,7 @@ internal static class ExternalizedPayloads
             object? value = field.Accessor.GetValue(message);
             if (value is string text && PayloadFields.Contains(field.JsonName))
             {
-                if (!skipScheduledInputs || message.Descriptor.Name != "TaskScheduledEvent" || field.JsonName != "input")
-                {
-                    fields.Add(new PayloadField(message, field, text));
-                }
+                fields.Add(new PayloadField(message, field, text));
             }
             else if (value is IMessage child)
             {
@@ -106,12 +125,50 @@ internal static class ExternalizedPayloads
         }
     }
 
-    private sealed class PayloadField(IMessage message, FieldDescriptor descriptor, string value)
+    private static bool IsBuiltIn(string name) => name.StartsWith("BuiltIn::", StringComparison.OrdinalIgnoreCase);
+
+    private static void CollectActivityInput(
+        IMessage message, string? input, List<PayloadField> fields, bool requiresEnvelope)
+    {
+        if (input is not { Length: > 0 })
+        {
+            return;
+        }
+
+        FieldDescriptor field = message.Descriptor.FindFieldByName("input");
+        if (!requiresEnvelope && !input.TrimStart().StartsWith("[", StringComparison.Ordinal))
+        {
+            // Explicit history reads can also contain inputs from SDKs without the DTFx argument envelope.
+            fields.Add(new PayloadField(message, field, input));
+            return;
+        }
+
+        using JsonDocument document = JsonDocument.Parse(input);
+        JsonElement envelope = document.RootElement;
+        if (envelope.ValueKind == JsonValueKind.Array && envelope.GetArrayLength() == 1)
+        {
+            fields.Add(new PayloadField(message, field, envelope[0].GetRawText(), activityInput: true));
+        }
+        else if (requiresEnvelope)
+        {
+            throw new InvalidOperationException("The serialized activity input must be a JSON array with one argument.");
+        }
+        else
+        {
+            fields.Add(new PayloadField(message, field, input));
+        }
+    }
+
+    private sealed class PayloadField(
+        IMessage message, FieldDescriptor descriptor, string value, bool activityInput = false)
     {
         public IMessage Message { get; } = message;
 
         public FieldDescriptor Descriptor { get; } = descriptor;
 
         public string Value { get; } = value;
+
+        public void SetValue(string? value)
+            => this.Descriptor.Accessor.SetValue(this.Message, activityInput ? $"[{value ?? "null"}]" : value);
     }
 }

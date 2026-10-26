@@ -2,7 +2,9 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System.Diagnostics;
+using Microsoft.Azure.Durable.Tests.E2E;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.DurableTask.Worker;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -12,6 +14,23 @@ var host = new HostBuilder()
         // Register async middleware to test the fix for https://github.com/microsoft/durabletask-dotnet/issues/158
         // This middleware performs async operations that previously caused non-determinism exceptions
         workerApplication.UseMiddleware<Microsoft.Azure.Durable.Tests.E2E.TestAsyncMiddleware>();
+        if (Environment.GetEnvironmentVariable("DF_PAYLOAD_TESTS_ENABLED") == "true")
+        {
+            workerApplication.Services.AddDurableTaskExternalizedPayloads(options =>
+            {
+                options.ConnectionString = Environment.GetEnvironmentVariable("PAYLOAD_STORAGE_CONNECTION_STRING")
+                    ?? throw new InvalidOperationException("Configure E2E payload storage.");
+                options.ContainerName = Environment.GetEnvironmentVariable("PAYLOAD_STORAGE_CONTAINER")
+                    ?? throw new InvalidOperationException("Configure an E2E payload container.");
+                options.ThresholdBytes = 4096;
+            });
+            workerApplication.ConfigureDurableWorker().AddTasks(tasks =>
+            {
+                tasks.AddActivity<ExternalizedRegisteredEcho>();
+                tasks.AddActivity<ExternalizedRegisteredBinaryEcho>();
+                tasks.AddOrchestrator<ExternalizedRegisteredOrchestrator>();
+            });
+        }
     })
     .ConfigureServices(services =>
     {

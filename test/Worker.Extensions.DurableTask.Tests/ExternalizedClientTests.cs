@@ -75,7 +75,7 @@ public class ExternalizedClientTests
             {
                 Events =
                 {
-                    new P.HistoryEvent { TaskScheduled = new P.TaskScheduledEvent { Input = reference } },
+                    new P.HistoryEvent { TaskScheduled = new P.TaskScheduledEvent { Input = $"[{reference}]" } },
                     new P.HistoryEvent { TaskCompleted = new P.TaskCompletedEvent { Result = reference } },
                 },
             },
@@ -87,7 +87,7 @@ public class ExternalizedClientTests
             new P.StreamInstanceHistoryRequest { InstanceId = "instance" });
         Assert.True(await call.ResponseStream.MoveNext(CancellationToken.None));
 
-        Assert.Equal(data, call.ResponseStream.Current.Events[0].TaskScheduled.Input);
+        Assert.Equal($"[{data}]", call.ResponseStream.Current.Events[0].TaskScheduled.Input);
         Assert.Equal(data, call.ResponseStream.Current.Events[1].TaskCompleted.Result);
         Assert.Equal(reference, transport.History.Events[1].TaskCompleted.Result);
         Assert.Equal(1, store.Downloads);

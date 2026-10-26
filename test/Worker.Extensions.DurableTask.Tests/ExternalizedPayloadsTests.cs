@@ -93,7 +93,7 @@ public class ExternalizedPayloadsTests
             {
                 new P.OrchestratorAction
                 {
-                    ScheduleTask = new P.ScheduleTaskAction { Name = "Activity", Version = metadata, Input = data },
+                    ScheduleTask = new P.ScheduleTaskAction { Name = "Activity", Version = metadata, Input = $"[{data}]" },
                 },
                 new P.OrchestratorAction
                 {
@@ -105,7 +105,7 @@ public class ExternalizedPayloadsTests
         await ExternalizedPayloads.TransformAsync(response, payloads, externalize: true, CancellationToken.None);
 
         Assert.StartsWith("\"blob:v1:", response.CustomStatus);
-        Assert.Equal(response.CustomStatus, response.Actions[0].ScheduleTask.Input);
+        Assert.Equal($"[{response.CustomStatus}]", response.Actions[0].ScheduleTask.Input);
         Assert.Equal(response.CustomStatus, response.Actions[1].CompleteOrchestration.Result);
         Assert.Equal(metadata, response.Actions[0].ScheduleTask.Version);
         Assert.Equal(1, store.Uploads);
@@ -236,7 +236,10 @@ public class ExternalizedPayloadsTests
             CustomStatus = new string('x', 300),
             Actions =
             {
-                new P.OrchestratorAction { ScheduleTask = new P.ScheduleTaskAction { Input = new string('x', 600) } },
+                new P.OrchestratorAction
+                {
+                    ScheduleTask = new P.ScheduleTaskAction { Input = $"[{JsonSerializer.Serialize(new string('x', 600))}]" },
+                },
             },
         };
         byte[] original = response.ToByteArray();
