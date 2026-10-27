@@ -32,9 +32,18 @@ param(
     [Switch]
     $SkipBuild,
 
-    # Target a specific test app to build. Ignored if -SkipBuild is set. If not specified, all test apps will be built.
-    [string]
-    $E2EAppName = "",
+    # Skip only the initial extension baseline build. App PreBuild packaging still runs.
+    # CI uses this after building the extension for all target frameworks.
+    [Switch]
+    $SkipExtensionBuild,
+
+    # CI reuses shared NuGet caches between languages; local behavior is unchanged.
+    [Switch]
+    $PreserveNuGetCache,
+
+    # Target specific test apps to build. Ignored if -SkipBuild is set. If not specified, all test apps will be built.
+    [string[]]
+    $E2EAppName = @(),
 
     # Target framework to build (e.g., net8.0, net10.0). If not specified, builds all TFMs.
     [string]
@@ -151,11 +160,13 @@ function InstallExtensionAndBuildTestApp($testAppDir) {
     Push-Location $testAppDir
     try {
 
-    Write-Host "Removing cached WebJobs extension versions from nuget cache, if exists"
-    $cachedVersionFolders = Get-ChildItem -Path (Join-Path $LocalNugetCacheDirectory "microsoft.azure.webjobs.extensions.durabletask") -Directory -ErrorAction SilentlyContinue
-    $cachedVersionFolders | ForEach-Object {
-      Write-Host "Removing cached version $($_.Name) from nuget cache"
-      Remove-Item -Recurse -Force $_.FullName -ErrorAction Stop
+    if (!$PreserveNuGetCache) {
+      Write-Host "Removing cached WebJobs extension versions from nuget cache, if exists"
+      $cachedVersionFolders = Get-ChildItem -Path (Join-Path $LocalNugetCacheDirectory "microsoft.azure.webjobs.extensions.durabletask") -Directory -ErrorAction SilentlyContinue
+      $cachedVersionFolders | ForEach-Object {
+        Write-Host "Removing cached version $($_.Name) from nuget cache"
+        Remove-Item -Recurse -Force $_.FullName -ErrorAction Stop
+      }
     }
 
     if (!(Test-Path ".\app.csproj")) {
@@ -223,21 +234,25 @@ function InstallExtensionAndBuildTestApp($testAppDir) {
 
 if (!$SkipBuild)
 {
-  Write-Host "Building WebJobs extension project"
+  if (!$SkipExtensionBuild) {
+    Write-Host "Building WebJobs extension project"
   
-  # Do NOT use --output with multi-targeted projects to avoid race conditions
-  # when multiple TFMs try to write to the same output directory (MSB4018).
-  # Disable GeneratePackageOnBuild to prevent parallel TFM builds from racing
-  # to write the same .nuspec file. The E2E test apps produce their own local
-  # .nupkg via MSBuild PreBuild targets, so the package is not needed here.
+    # Do NOT use --output with multi-targeted projects to avoid race conditions
+    # when multiple TFMs try to write to the same output directory (MSB4018).
+    # Disable GeneratePackageOnBuild to prevent parallel TFM builds from racing
+    # to write the same .nuspec file. The E2E test apps produce their own local
+    # .nupkg via MSBuild PreBuild targets, so the package is not needed here.
 
-  dotnet build -c Debug /p:GeneratePackageOnBuild=false "$WebJobsExtensionProjectDirectory\WebJobs.Extensions.DurableTask.csproj"
+    dotnet build -c Debug /p:GeneratePackageOnBuild=false "$WebJobsExtensionProjectDirectory\WebJobs.Extensions.DurableTask.csproj"
 
-  if ($LASTEXITCODE -ne 0) { Set-Location $PSScriptRoot; throw "WebJobs Extension build failed" }
+    if ($LASTEXITCODE -ne 0) { Set-Location $PSScriptRoot; throw "WebJobs Extension build failed" }
+  }
 
   if ($E2EAppName)
   {
-    InstallExtensionAndBuildTestApp (Join-Path $E2EAppParentDirectory $E2EAppName)
+    foreach ($appName in $E2EAppName) {
+      InstallExtensionAndBuildTestApp (Join-Path $E2EAppParentDirectory $appName)
+    }
   }
   else {
     Get-ChildItem -Path $E2EAppParentDirectory -Directory | ForEach-Object {
