@@ -21,3 +21,14 @@ At runtime, the extension uses the [Durable Task .NET SDK](https://github.com/mi
 | [`Microsoft.DurableTask.Worker.Grpc`](https://github.com/microsoft/durabletask-dotnet) | The gRPC-based Durable Task worker SDK that handles orchestration replay and entity dispatch. |
 | [`Microsoft.Azure.Functions.Worker.Core`](https://github.com/dotnet/azure-functions-dotnet-worker) | Core abstractions for the .NET isolated worker model. |
 | [`Microsoft.Azure.Functions.Worker.Extensions.Abstractions`](https://github.com/dotnet/azure-functions-dotnet-worker) | Base classes for worker extension attributes. |
+
+## Optional worker-owned large payloads
+
+The separate `Microsoft.Azure.Functions.Worker.Extensions.DurableTask.AzureBlobPayloads`
+package enables SDK-side payload storage for bound clients, orchestrations and
+activities through `IServiceCollection.AddDurableTaskExternalizedPayloads`.
+It preserves the host's activity argument envelope and hydrates binary inputs
+before worker-side deserialization. The base package does not enable this feature
+or add a Blob implementation dependency. See the optional package's
+[configuration and limitations](../Worker.Extensions.DurableTask.AzureBlobPayloads/README.md),
+including host-owned built-ins, entities, management endpoints and retention.

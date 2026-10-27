@@ -115,6 +115,35 @@ If the behavior is with logic or is something that we need to eventually address
 
 ### FAQ
 
+#### Worker-owned large payloads (.NET isolated)
+
+`ExternalizedPayloadTests` uses a separate, non-parallel collection with its own
+host port, task hub (where supported), and SDK Blob payload container. Only this
+fixture sets `DF_PAYLOAD_TESTS_ENABLED` and supplies the worker's payload-store
+configuration. Host-side `payloadStorageEnabled` remains false. The shared
+language suite retains its original behavior.
+
+The cases exercise above-threshold object, string, array and binary activity
+inputs/outputs, synchronous/asynchronous and directly registered tasks, bound
+client reads/events, custom status, sub-orchestrations, continue-as-new and
+host-owned HTTP activities. They verify original values in worker/client code
+and small references through the host management endpoint. The fixture chooses
+the built worker matching the test runner's framework and stops only its own
+host process.
+
+From the repository root, prepare the isolated app and run:
+
+```powershell
+& .\test\e2e\Tests\build-e2e-test.ps1 -E2EAppName BasicDotNetIsolated -PreserveNuGetCache
+$env:E2E_TEST_FUNCTIONS_LANGUAGE = 'dotnet-isolated'
+$env:E2E_TEST_DURABLE_BACKEND = 'AzureStorage'
+$env:TEST_APP_NAME = 'BasicDotNetIsolated'
+dotnet test .\test\e2e\Tests\E2ETests.csproj --filter "FullyQualifiedName~ExternalizedPayloadTests"
+```
+
+The test command runs both target frameworks. Core Tools and Azurite must be
+available as described earlier.
+
 #### Exception: GRPC max size exceeded
 
 If you see the following exception while running the tests (specifically, DurableTaskClientWriteOutputTests and ListAllOrchestrations_ShouldSucceed):

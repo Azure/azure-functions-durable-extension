@@ -28,6 +28,14 @@ Microsoft.Azure.WebJobs.Extensions.DurableTask | [![NuGet](https://img.shields.i
 Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers (C# only) | [![NuGet](https://img.shields.io/nuget/v/Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.svg)](https://www.nuget.org/packages/Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers)
 Microsoft.Azure.Functions.Worker.Extensions.DurableTask | [![NuGet](https://img.shields.io/nuget/v/Microsoft.Azure.Functions.Worker.Extensions.DurableTask.svg)](https://www.nuget.org/packages/Microsoft.Azure.Functions.Worker.Extensions.DurableTask)
 
+### SDK-side large payloads for .NET isolated apps
+
+The optional `Microsoft.Azure.Functions.Worker.Extensions.DurableTask.AzureBlobPayloads`
+package adds worker-owned payload offloading for bound clients, orchestrations and
+activities. It preserves references through the Functions host and hydrates data
+inside the isolated worker. See [configuration, supported operations and
+limitations](./src/Worker.Extensions.DurableTask.AzureBlobPayloads/README.md).
+
 
 ## Language support
 

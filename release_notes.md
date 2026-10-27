@@ -4,6 +4,7 @@
 
 ### New Features
 
+- Added opt-in SDK-side externalized payload support for .NET isolated bound clients, orchestrations and activities through the optional `Microsoft.Azure.Functions.Worker.Extensions.DurableTask.AzureBlobPayloads` package. Configure one shared store with `IServiceCollection.AddDurableTaskExternalizedPayloads`; payloads are externalized before returning to the Functions host and hydrated in worker-local invocation messages. Scheduled activities retain the host's argument array, and opted-in binary bindings defer decoding until worker hydration. Base-package and unconfigured behavior are unchanged. Host-owned built-in activity inputs stay inline; entity payload externalization and automatic blob purge are not enabled by this feature.
 - Added client operation correlation logging: Out-of-process workers (.NET isolated, Python, JavaScript, Java) now propagate `FunctionInvocationId` to the host when making client operations (start, terminate, suspend, resume, raise event, rewind, purge). This enables correlating worker-side function invocations with host-side orchestration events in extension logs. (#3317)
 - Add `GetFunctionContext` extension method on `TaskOrchestrationContext` to retrieve the underlying `FunctionContext` in Azure Functions orchestrations.
 
