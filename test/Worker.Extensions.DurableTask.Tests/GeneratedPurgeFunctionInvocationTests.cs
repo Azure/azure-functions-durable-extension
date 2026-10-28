@@ -2,9 +2,12 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System.Collections;
+using System.Diagnostics;
 using System.Reflection;
+using System.Text.Json;
 using DurableTask.GeneratedInvocationApp;
 using Microsoft.Azure.Functions.Worker.Context.Features;
+using Microsoft.Azure.Functions.Worker.Extensions.Abstractions;
 using Microsoft.Azure.Functions.Worker.Extensions.DurableTask;
 using Microsoft.Azure.Functions.Worker.Invocation;
 using Microsoft.DurableTask;
@@ -19,6 +22,36 @@ namespace Microsoft.Azure.Functions.Worker.Tests;
 
 public class GeneratedPurgeFunctionInvocationTests
 {
+    [Fact]
+    public void GeneratedAppUsesCurrentHostExtension()
+    {
+        ExtensionInformationAttribute extension = typeof(DurableClientAttribute).Assembly
+            .GetCustomAttribute<ExtensionInformationAttribute>()!;
+        FileVersionInfo host = FileVersionInfo.GetVersionInfo(
+            Path.Combine(AppContext.BaseDirectory, ".azurefunctions", $"{extension.ExtensionPackage}.dll"));
+        Version expected = Version.Parse(extension.ExtensionVersion);
+
+        Assert.Equal(expected.Major, host.FileMajorPart);
+        Assert.Equal(expected.Minor, host.FileMinorPart);
+        Assert.Equal(expected.Build, host.FileBuildPart);
+    }
+
+    [Fact]
+    public void GeneratedAppDiscoversFourOptionalFunctions()
+    {
+        using JsonDocument metadata = JsonDocument.Parse(
+            File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "functions.metadata")));
+        JsonElement[] functions = metadata.RootElement.EnumerateArray().ToArray();
+
+        Assert.Equal(
+            new[] { nameof(BlobPurgeJobOrchestrator), nameof(DeleteExternalBlobActivity),
+                nameof(GetLargePayloadTombstonesActivity), nameof(ReportLargePayloadPurgeResultsActivity) },
+            functions.Select(function => function.GetProperty("name").GetString()).OrderBy(name => name));
+        Assert.All(functions, function => Assert.Equal(
+            $"{typeof(LargePayloadPurgeFunctions).Assembly.GetName().Name}.dll",
+            function.GetProperty("scriptFile").GetString()));
+    }
+
     [Fact]
     public async Task GeneratedOrchestratorExecutesFiveCyclesAndContinuesWithPreservedState()
     {

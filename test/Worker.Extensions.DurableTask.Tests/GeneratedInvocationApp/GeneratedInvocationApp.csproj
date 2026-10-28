@@ -14,4 +14,23 @@
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" />
     <ProjectReference Include="..\..\..\src\Worker.Extensions.DurableTask.AzureBlobPayloads\Worker.Extensions.DurableTask.AzureBlobPayloads.csproj" />
   </ItemGroup>
+
+  <Target Name="PrepareSourceDurableHost"
+          BeforeTargets="_FunctionsPreBuild"
+          Condition="'$(DesignTimeBuild)' != 'true'">
+    <PropertyGroup>
+      <_SourceDurableHostDirectory>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', 'DurableHost'))</_SourceDurableHostDirectory>
+      <!-- Keep the metadata generator's working directory below Windows path-length limits. -->
+      <_SourceDurableHostPackagesPath>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '..\..\..\obj\GeneratedInvocationApp', '$(Configuration)', '$(TargetFramework)'))</_SourceDurableHostPackagesPath>
+    </PropertyGroup>
+    <!-- A separate build isolates Host outputs and prevents the app's TFM from reaching the Host build. -->
+    <Exec Command="dotnet build &quot;$(MSBuildProjectDirectory)\..\..\..\src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj&quot; --configuration &quot;$(Configuration)&quot; --artifacts-path &quot;$(_SourceDurableHostDirectory)\build&quot; -p:PackageOutputPath=&quot;$(_SourceDurableHostDirectory)\packages&quot; --nologo" />
+    <Exec Command="pwsh -NoLogo -NoProfile -File &quot;$(MSBuildProjectDirectory)\..\..\..\eng\cfs\New-LocalNuGetConfig.ps1&quot; -DestinationPath &quot;$(_SourceDurableHostDirectory)\NuGet.config&quot; -LocalSourcePath &quot;$(_SourceDurableHostDirectory)\packages&quot; -PackagePatterns Microsoft.Azure.WebJobs.Extensions.DurableTask" />
+    <!-- Refresh only the source-built package, even when its version has not changed. -->
+    <RemoveDir Directories="$(_SourceDurableHostPackagesPath)\microsoft.azure.webjobs.extensions.durabletask" />
+    <PropertyGroup>
+      <RestoreConfigFile>$(_SourceDurableHostDirectory)\NuGet.config</RestoreConfigFile>
+      <_FunctionsExtensionCommonProps>$(_FunctionsExtensionCommonProps);RestoreConfigFile=$(RestoreConfigFile);RestorePackagesPath=$(_SourceDurableHostPackagesPath)</_FunctionsExtensionCommonProps>
+    </PropertyGroup>
+  </Target>
 </Project>
