@@ -172,6 +172,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Grpc
                         app.UseEndpoints(endpoints =>
                         {
                             endpoints.MapGrpcService<TaskHubGrpcServer>();
+                            endpoints.MapGrpcService<LargePayloadPurgeGrpcServer>();
                         });
                     });
                 })
