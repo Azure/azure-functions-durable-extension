@@ -10,9 +10,11 @@
     <FileVersion Condition="'$(FileVersionRevision)' != ''">$(VersionPrefix).$(FileVersionRevision)</FileVersion>
     <Description>SDK-owned large payload purge Functions for the .NET isolated worker.</Description>
     <Authors>Microsoft</Authors>
+    <Copyright>&#169; Microsoft Corporation. All rights reserved.</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/Azure/azure-functions-durable-extension</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Azure/azure-functions-durable-extension</RepositoryUrl>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
