@@ -335,6 +335,89 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 () => middleware.CallOrchestratorAsync(dispatchContext, () => Task.CompletedTask));
         }
 
+        [Theory]
+        [MemberData(nameof(WorkerShutdownExceptions))]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CallOrchestratorAsync_DisposedWorkerServiceProvider_ThrowsSessionAbortedException(Exception exception)
+        {
+            (OutOfProcMiddleware middleware, DispatchMiddlewareContext dispatchContext) = this.SetupOrchestratorTest(exception);
+
+            await Assert.ThrowsAsync<SessionAbortedException>(
+                () => middleware.CallOrchestratorAsync(dispatchContext, () => Task.CompletedTask));
+
+            Assert.Null(dispatchContext.GetProperty<OrchestratorExecutionResult>());
+        }
+
+        [Theory]
+        [MemberData(nameof(WorkerShutdownExceptions))]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CallEntityAsync_DisposedWorkerServiceProvider_ThrowsSessionAbortedException(Exception exception)
+        {
+            (OutOfProcMiddleware middleware, DispatchMiddlewareContext dispatchContext) = this.SetupEntityTest(exception);
+            dispatchContext.GetProperty<EntityBatchRequest>().EntityState = "{\"value\":42}";
+
+            await Assert.ThrowsAsync<SessionAbortedException>(
+                () => middleware.CallEntityAsync(dispatchContext, () => Task.CompletedTask));
+
+            Assert.Null(dispatchContext.GetProperty<EntityBatchResult>());
+            Assert.Equal("{\"value\":42}", dispatchContext.GetProperty<EntityBatchRequest>().EntityState);
+        }
+
+        [Theory]
+        [MemberData(nameof(WorkerShutdownExceptions))]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CallActivityAsync_DisposedWorkerServiceProvider_ThrowsSessionAbortedException(Exception exception)
+        {
+            (OutOfProcMiddleware middleware, DispatchMiddlewareContext dispatchContext) = this.SetupActivityTest(exception);
+
+            await Assert.ThrowsAsync<SessionAbortedException>(
+                () => middleware.CallActivityAsync(dispatchContext, () => Task.CompletedTask));
+
+            Assert.Null(dispatchContext.GetProperty<ActivityExecutionResult>());
+        }
+
+        [Theory]
+        [MemberData(nameof(NonWorkerShutdownExceptions))]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CallOrchestratorAsync_ApplicationException_FailsWithoutAbort(Exception exception)
+        {
+            (OutOfProcMiddleware middleware, DispatchMiddlewareContext dispatchContext) = this.SetupOrchestratorTest(exception);
+
+            await middleware.CallOrchestratorAsync(dispatchContext, () => Task.CompletedTask);
+
+            OrchestratorExecutionResult result = dispatchContext.GetProperty<OrchestratorExecutionResult>();
+            var action = Assert.IsType<OrchestrationCompleteOrchestratorAction>(Assert.Single(result.Actions));
+            Assert.Equal(OrchestrationStatus.Failed, action.OrchestrationStatus);
+        }
+
+        [Theory]
+        [MemberData(nameof(NonWorkerShutdownExceptions))]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CallEntityAsync_ApplicationException_FailsWithoutAbort(Exception exception)
+        {
+            (OutOfProcMiddleware middleware, DispatchMiddlewareContext dispatchContext) = this.SetupEntityTest(exception);
+            dispatchContext.GetProperty<EntityBatchRequest>().EntityState = "{\"value\":42}";
+
+            await middleware.CallEntityAsync(dispatchContext, () => Task.CompletedTask);
+
+            EntityBatchResult result = dispatchContext.GetProperty<EntityBatchResult>();
+            Assert.Equal("FunctionInvocationFailed", result.FailureDetails.ErrorType);
+            Assert.Equal("{\"value\":42}", result.EntityState);
+        }
+
+        [Theory]
+        [MemberData(nameof(NonWorkerShutdownExceptions))]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CallActivityAsync_ApplicationException_FailsWithoutAbort(Exception exception)
+        {
+            (OutOfProcMiddleware middleware, DispatchMiddlewareContext dispatchContext) = this.SetupActivityTest(exception);
+
+            await middleware.CallActivityAsync(dispatchContext, () => Task.CompletedTask);
+
+            ActivityExecutionResult result = dispatchContext.GetProperty<ActivityExecutionResult>();
+            Assert.IsType<TaskFailedEvent>(result.ResponseEvent);
+        }
+
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task CallEntityAsync_FunctionTimeoutAbortException_ThrowsSessionAbortedException()
@@ -590,6 +673,46 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             await middleware.CallOrchestratorAsync(dispatchContext, () => Task.CompletedTask);
 
             Assert.Equal(new[] { "Completed" }, notificationHelper.Notifications);
+        }
+
+        public static IEnumerable<object[]> WorkerShutdownExceptions()
+        {
+            foreach (string typeField in new[] { string.Empty, "\nType: System.ObjectDisposedException" })
+            {
+                var rpcException = new Exception(
+                    $"Result: Failure{typeField}\nException: Cannot access a disposed object.\nObject name: 'IServiceProvider'.\nStack: " +
+                    "at Microsoft.Extensions.DependencyInjection.ServiceLookup.ThrowHelper.ThrowObjectDisposedException()\n" +
+                    "at Microsoft.Extensions.DependencyInjection.ServiceProvider.CreateScope()\n" +
+                    "at Microsoft.Azure.Functions.Worker.DefaultFunctionContext.get_InstanceServices()\n" +
+                    "at Microsoft.Extensions.Hosting.MiddlewareWorkerApplicationBuilderExtensions.UseMiddleware()");
+
+                yield return new object[] { rpcException };
+                yield return new object[] { new Exception("Function invocation failed.", rpcException) };
+                yield return new object[] { new Exception("Function invocation failed.", new Exception("Invocation wrapper.", rpcException)) };
+            }
+        }
+
+        public static IEnumerable<object[]> NonWorkerShutdownExceptions()
+        {
+            yield return new object[] { new ObjectDisposedException("IServiceProvider") };
+            yield return new object[] { new Exception("Function invocation failed.", new ObjectDisposedException("IServiceProvider")) };
+            yield return new object[]
+            {
+                new Exception(
+                    "Result: Failure\nException: Cannot access a disposed object.\nObject name: 'HttpClient'.\nStack: " +
+                    "at Microsoft.Azure.Functions.Worker.DefaultFunctionContext.get_InstanceServices()"),
+            };
+            yield return new object[]
+            {
+                new Exception(
+                    "Result: Failure\nException: Cannot access a disposed object.\nObject name: 'IServiceProvider'.\nStack: " +
+                    "at MyApplication.Run()"),
+            };
+            yield return new object[]
+            {
+                new Exception(
+                    "Result: Failure\nException: Cannot access a disposed object.\nObject name: 'IServiceProvider'."),
+            };
         }
 
         public static IEnumerable<object[]> PlatformLevelExceptions()
