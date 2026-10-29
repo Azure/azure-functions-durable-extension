@@ -42,8 +42,6 @@ The general flow for making a change to the script host is:
 
 3. Run the unit tests via Visual Studio Test Explorer by selecting "Run All"
 
-The isolated worker unit tests include a generated Functions app. Its build creates the current source Host package and an exact-ID local NuGet configuration under the app's `obj` directory before restoring the SDK-generated host project. The nested restore uses a private cache under the repository's `obj\GeneratedInvocationApp` directory and refreshes the source Host package on each build. Normal Debug and Release builds do not require that Host version to be published or a custom restore flag. This fixture uses `dotnet` and PowerShell (`pwsh`); production package sources are unchanged.
-
 ## Writing tests
 All tests for Durable Functions are found in [test/Common](https://github.com/Azure/azure-functions-durable-extension/tree/dev/test/Common). These tests are written using the [XUnit framework](https://xunit.github.io/). 
 
