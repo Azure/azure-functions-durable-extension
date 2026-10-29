@@ -4,6 +4,7 @@
 
 ### New Features
 
+- Added `SetLargePayloadAutoPurgeAsync` on normally bound `DurableTaskClient` instances to explicitly enable or disable external payload auto-purge for a task hub. Requires host extension `3.17.0` or later and a compatible storage provider. (#3556)
 - Added client operation correlation logging: Out-of-process workers (.NET isolated, Python, JavaScript, Java) now propagate `FunctionInvocationId` to the host when making client operations (start, terminate, suspend, resume, raise event, rewind, purge). This enables correlating worker-side function invocations with host-side orchestration events in extension logs. (#3317)
 - Add `GetFunctionContext` extension method on `TaskOrchestrationContext` to retrieve the underlying `FunctionContext` in Azure Functions orchestrations.
 
@@ -18,12 +19,24 @@
 
 ### Dependency Updates
 
-- Updated `Microsoft.DurableTask.Client.Grpc`, `Microsoft.DurableTask.Worker.Grpc`, and `Microsoft.DurableTask.Abstractions` to 1.26.0, including the fix for external-event loss after canceled waits in the isolated worker.
+- Updated `Microsoft.DurableTask.Client.Grpc`, `Microsoft.DurableTask.Worker.Grpc`, and `Microsoft.DurableTask.Abstractions` to 1.27.0, including external payload auto-purge support and the fix for external-event loss after canceled waits in the isolated worker.
+- Added `Microsoft.DurableTask.LargePayloadPurge.Abstractions` 1.27.0.
+
+## Microsoft.Azure.Functions.Worker.Extensions.DurableTask.AzureBlobPayloads
+
+### New Features
+
+- Initial `1.0.0` release supplies the SDK-owned purge orchestration and three activities as ordinary .NET 8 and .NET 10 isolated Functions. Blob deletion uses the worker's configured `PayloadStore`; referencing the package does not enable auto-purge or validate the store at startup. See [configuration and limitations](docs/large-payload-purge-dotnet-isolated.md). (#3556)
+
+### Dependency Updates
+
+- Requires isolated worker extension `1.21.0` or later and `Microsoft.DurableTask.Extensions.AzureBlobPayloads` 1.27.0.
 
 ## Microsoft.Azure.WebJobs.Extensions.DurableTask
 
 ### New Features
 
+- Added provider-backed external payload auto-purge control and tombstone fetch/report RPCs for .NET isolated Functions. Blob deletion runs in the isolated worker, not the common Functions host. (#3556)
 - Allow overriding orchestration version when starting orchestrations via APIs in PowerShell, Python, and Node.js (https://github.com/Azure/azure-functions-durable-extension/pull/3213)
 - Added `IServiceCollection.AddDurableTaskTelemetryInitializer` overloads for explicitly enriching distributed tracing V2 requests and dependencies with Application Insights telemetry initializers or service-provider factories. Host initializers and processors are not inherited automatically. (#1792)
 - Added `ClientOperationReceived` trace event to `DurableFunctionsEvents` for correlating out-of-process worker invocations with orchestration events. The event includes `FunctionInvocationId`, `OperationType`, and `InstanceId` fields for cross-log correlation. (#3317)
@@ -49,4 +62,5 @@
 - Removed the production dependency on `Microsoft.Azure.WebJobs.Logging.ApplicationInsights` to reduce the extension's transitive dependencies while preserving Microsoft Entra authentication for distributed tracing.
 - Updated the Azure Managed SDK references to 1.10.2 for DTS sovereign-cloud token audiences and per-connection authority hosts, including the Functions scale extension and E2E apps.
 - Updated `Grpc.Net.Client` to 2.80.0 and `Microsoft.Bcl.AsyncInterfaces` to 10.0.9 to meet the Azure Managed SDK 1.10.2 dependency requirements.
-- Updated `Microsoft.Azure.DurableTask.AzureStorage` to 2.11.0, `Microsoft.Azure.DurableTask.Core` to 3.11.1, and `Microsoft.Azure.DurableTask.ApplicationInsights` to 0.13.0.
+- Updated `Microsoft.Azure.DurableTask.AzureStorage` to 2.11.1, `Microsoft.Azure.DurableTask.Core` to 3.11.2, and `Microsoft.Azure.DurableTask.ApplicationInsights` to 0.13.1.
+- Added `Microsoft.DurableTask.LargePayloadPurge.Abstractions` 1.27.0.

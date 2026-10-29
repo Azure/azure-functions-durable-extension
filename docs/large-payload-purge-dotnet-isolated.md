@@ -7,7 +7,9 @@ The optional `Microsoft.Azure.Functions.Worker.Extensions.DurableTask.AzureBlobP
 Use:
 
 - The compatible Durable Task SDK `1.27.0` and Durable Task Core `3.11.2` dependency set.
-- Compatible Durable Functions host, isolated worker extension, and storage provider packages that support external payload auto-purge.
+- Durable Functions host extension `Microsoft.Azure.WebJobs.Extensions.DurableTask` `3.17.0` or later.
+- Isolated worker extension `Microsoft.Azure.Functions.Worker.Extensions.DurableTask` `1.21.0` or later, with optional `Microsoft.Azure.Functions.Worker.Extensions.DurableTask.AzureBlobPayloads` `1.0.0` or later to supply the purge Functions.
+- A compatible storage provider package that supports external payload auto-purge.
 - The same external payload storage account and container that the provider uses for the target task hub.
 
 Every worker that can receive purge work for the task hub must use compatible packages and a valid payload-store configuration.
