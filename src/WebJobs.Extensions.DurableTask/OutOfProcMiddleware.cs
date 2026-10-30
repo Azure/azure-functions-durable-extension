@@ -437,8 +437,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     // These exceptions are thrown when either:
                     // 1. Another Function on the worker exceeded the Function timeout.
                     // 2. The worker the entity was sent to has not yet been fully initialized and is not ready to process the entity execution.
+                    // 3. The worker's service provider was disposed during shutdown, before the host started stopping.
                     // In these cases we want to make sure to retry this entity's execution rather than marking it as failed.
-                    if (functionResult.Exception is Host.FunctionTimeoutAbortException || IsWorkerNotFullyInitializedException(functionResult.Exception))
+                    if (functionResult.Exception is Host.FunctionTimeoutAbortException || IsWorkerUnavailableException(functionResult.Exception))
                     {
                         throw functionResult.Exception;
                     }
@@ -602,8 +603,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     // These exceptions are thrown when either:
                     // 1. Another Function on the worker exceeded the Function timeout.
                     // 2. The worker the Activity was sent to has not yet been fully initialized and is not ready to process the Activity execution.
+                    // 3. The worker's service provider was disposed during shutdown, before the host started stopping.
                     // In these cases we want to make sure to retry this Activity's execution rather than marking it as failed.
-                    if (result.Exception is Host.FunctionTimeoutAbortException || IsWorkerNotFullyInitializedException(result.Exception))
+                    if (result.Exception is Host.FunctionTimeoutAbortException || IsWorkerUnavailableException(result.Exception))
                     {
                         throw result.Exception;
                     }
@@ -706,13 +708,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 || (exception?.InnerException?.GetType().ToString().Contains("WorkerProcessExitException", StringComparison.Ordinal) ?? false)
                 || (exception?.InnerException is InvalidOperationException ioe
                     && ioe.Message.Contains(NoProcessAssociatedMessage, StringComparison.Ordinal))
-                || IsWorkerNotFullyInitializedException(exception);
+                || IsWorkerUnavailableException(exception);
         }
 
-        private static bool IsWorkerNotFullyInitializedException(Exception? exception)
+        private static bool IsWorkerUnavailableException(Exception? exception)
         {
             return (exception?.InnerException is InvalidOperationException ioe && ioe.Message.Contains(NoWorkerInitializedMessage, StringComparison.Ordinal))
-                || (exception?.InnerException is FileNotFoundException fnfe && fnfe.Message.Contains(AssemblyNotLoadedMessage, StringComparison.Ordinal));
+                || (exception?.InnerException is FileNotFoundException fnfe && fnfe.Message.Contains(AssemblyNotLoadedMessage, StringComparison.Ordinal))
+                || IsWorkerShuttingDownException(exception);
+        }
+
+        private static bool IsWorkerShuttingDownException(Exception? exception)
+        {
+            // Worker shutdown does not necessarily cancel the host's stopping token.
+            // Match the framework failure, not application-level ObjectDisposedExceptions.
+            for (Exception? current = exception; current != null; current = current.InnerException)
+            {
+                if (current.Message.StartsWith("Result:", StringComparison.Ordinal)
+                    && TryGetRpcExceptionFields(current.Message, out string? message, out string? stackTrace)
+                    && message.Contains("Object name: 'IServiceProvider'.", StringComparison.Ordinal)
+                    && (stackTrace?.Contains("Microsoft.Azure.Functions.Worker.DefaultFunctionContext.get_InstanceServices", StringComparison.Ordinal) ?? false))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
