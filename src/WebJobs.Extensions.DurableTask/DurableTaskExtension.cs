@@ -44,6 +44,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         INameVersionObjectManager<TaskActivity>
     {
         private const string DefaultProvider = AzureStorageDurabilityProviderFactory.ProviderName;
+        internal const string LargePayloadPurgeOrchestratorName = "BlobPurgeJobOrchestrator";
 
         internal static readonly string LoggerCategoryName = LogCategories.CreateTriggerCategory("DurableTask");
 
@@ -227,12 +228,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private TaskHubWorker InitializeTaskHubWorker()
         {
-            var newTaskHubWorker = new TaskHubWorker(this.defaultDurabilityProvider, this, this, loggerFactory: this.loggerFactory, versioningSettings: new VersioningSettings
+            var versioningSettings = new VersioningSettings
             {
                 Version = this.Options.DefaultVersion, // A null (or empty) version is valid as it signifies non-versioned case.
                 MatchStrategy = this.Options.VersionMatchStrategy, // The default value for this is to no-op on versioning.
                 FailureStrategy = this.Options.VersionFailureStrategy, // The default value for this is to ignore work if there is a mismatch.
-            });
+            };
+            var newTaskHubWorker = new TaskHubWorker(this.defaultDurabilityProvider, this, this, loggerFactory: this.loggerFactory, versioningSettings: versioningSettings);
 
             // Add middleware to the DTFx dispatcher so that we can inject our own logic
             // into and customize the orchestration execution pipeline.
@@ -1461,6 +1463,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             else
             {
                 this.knownOrchestrators[orchestratorFunction] = orchestratorInfo;
+            }
+        }
+
+        internal void ValidateLargePayloadPurgeOrchestration(string name)
+        {
+            if (!string.Equals(name, LargePayloadPurgeOrchestratorName, StringComparison.Ordinal) ||
+                this.PlatformInformationService.GetWorkerRuntimeType() != WorkerRuntimeType.DotNetIsolated)
+            {
+                throw new InvalidOperationException("The largePayloadPurge marker is reserved for the SDK's .NET isolated BlobPurgeJobOrchestrator function.");
             }
         }
 
