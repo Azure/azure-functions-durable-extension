@@ -45,6 +45,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 instanceCreationTime);
         }
 
+        // NOTE: The TestTaskHub and SecondaryStorage app setting names must exist for indexing.
+        [NoAutomaticTrigger]
+        public static async Task StartFunctionWithConnection(
+            [DurableClient(TaskHub = "%TestTaskHub%", ConnectionName = "SecondaryStorage")] IDurableClient client,
+            string functionName,
+            string instanceId,
+            object input,
+            TestDurableClient[] clientRef)
+        {
+            DateTime instanceCreationTime = DateTime.UtcNow;
+
+            instanceId = await client.StartNewAsync(functionName, instanceId, input);
+            clientRef[0] = new TestDurableClient(
+                client,
+                functionName,
+                instanceId,
+                instanceCreationTime);
+        }
+
         [NoAutomaticTrigger]
         public static void GetEntityClient(
             [DurableClient] IDurableClient client,
