@@ -113,6 +113,8 @@ If the behavior is a difference in output formatting, and we don't expect to eve
 
 If the behavior is with logic or is something that we need to eventually address in the language worker to improve parity, use GetLanguageType() and if/case statements in the test code instead. This will improve visibility of these kinds of inconsistencies and (hopefully) motivate eventual changes towards parity.
 
+The automatic HTTP polling test verifies the initial 202 responses, subsequent HTTP activity completions, durable timer firings, and final 200 response in persisted orchestration history (`showHistory=true&showHistoryOutput=true`). This keeps the polling check independent of replay-safe informational log delivery.
+
 ### FAQ
 
 #### Exception: GRPC max size exceeded
