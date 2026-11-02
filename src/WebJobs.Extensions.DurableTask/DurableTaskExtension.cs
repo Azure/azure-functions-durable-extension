@@ -1576,6 +1576,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return;
             }
 
+            if (functionType == FunctionType.Activity && this.Options.AllowExternalActivities)
+            {
+                return;
+            }
+
             var functionName = new FunctionName(name);
 
             if (functionType == FunctionType.Activity && !this.knownActivities.ContainsKey(functionName))

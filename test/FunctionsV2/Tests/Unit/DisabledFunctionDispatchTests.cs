@@ -128,6 +128,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void ThrowIfFunctionDoesNotExist_UnknownActivity_Throws_ByDefault()
+        {
+            var extension = CreateExtension();
+
+            Assert.Throws<ArgumentException>(() => extension.ThrowIfFunctionDoesNotExist("ExternalActivity", FunctionType.Activity));
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void ThrowIfFunctionDoesNotExist_UnknownActivity_Allowed_WhenAllowExternalActivities()
+        {
+            var extension = CreateExtension(allowExternalActivities: true);
+
+            extension.ThrowIfFunctionDoesNotExist("ExternalActivity", FunctionType.Activity);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void ThrowIfFunctionDoesNotExist_UnknownOrchestrator_StillThrows_WhenAllowExternalActivities()
+        {
+            var extension = CreateExtension(allowExternalActivities: true);
+
+            Assert.Throws<ArgumentException>(() => extension.ThrowIfFunctionDoesNotExist("ExternalOrchestrator", FunctionType.Orchestrator));
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void DisabledEntity_IsTreatedAsUnavailableByClassicDispatch()
         {
             // The classic (in-proc / HTTP-protocol) entity dispatch path in EntityMiddleware treats an
@@ -183,12 +210,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.DoesNotContain("No entity functions are currently registered", message);
         }
 
-        private static DurableTaskExtension CreateExtension()
+        private static DurableTaskExtension CreateExtension(bool allowExternalActivities = false)
         {
             var options = new DurableTaskOptions
             {
                 HubName = "TestHub",
                 WebhookUriProviderOverride = () => new Uri("https://localhost"),
+                AllowExternalActivities = allowExternalActivities,
             };
 
             return new DurableTaskExtension(

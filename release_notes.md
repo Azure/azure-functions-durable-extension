@@ -41,6 +41,7 @@
 - Added `IServiceCollection.AddDurableTaskTelemetryInitializer` overloads for explicitly enriching distributed tracing V2 requests and dependencies with Application Insights telemetry initializers or service-provider factories. Host initializers and processors are not inherited automatically. (#1792)
 - Added `ClientOperationReceived` trace event to `DurableFunctionsEvents` for correlating out-of-process worker invocations with orchestration events. The event includes `FunctionInvocationId`, `OperationType`, and `InstanceId` fields for cross-log correlation. (#3317)
 - Existing extension-generated `FunctionScheduled` trace events now include a `TargetInstanceId` field for entity, sub-orchestration, and Durable Client scheduling paths when the target ID is known. Sub-orchestrations without an explicit ID report the target as not supplied because DTFx generates it downstream. This change does not add `FunctionScheduled` events to modern gRPC worker middleware paths, which do not currently emit that event. (#1496)
+- Added the `allowExternalActivities` host.json setting (`durableTask`), default `false`. When enabled, orchestrators in Python, Node.js and PowerShell (HTTP protocol) can schedule activities hosted by another worker on the same task hub, for example with Durable Task Scheduler work item filtering, as .NET isolated and Java orchestrators already can. (#3584)
 
 ### Bug Fixes
 

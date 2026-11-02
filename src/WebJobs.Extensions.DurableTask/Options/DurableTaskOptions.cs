@@ -259,6 +259,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public bool StoreInputsInOrchestrationHistory { get; set; } = false;
 
         /// <summary>
+        /// If <c>true</c>, orchestrators may schedule activities that are not registered in this app, so that another worker sharing the task hub can run them, for example with Durable Task Scheduler work item filtering. An activity that no worker hosts stays pending. The default value is <c>false</c>.
+        /// </summary>
+        public bool AllowExternalActivities { get; set; } = false;
+
+        /// <summary>
         /// If UseAppLease is true, gets or sets the AppLeaseOptions used for acquiring the lease to start the application.
         /// </summary>
         public AppLeaseOptions AppLeaseOptions { get; set; } = AppLeaseOptions.DefaultOptions;
@@ -442,6 +447,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 { nameof(this.ThrowStatusExceptionsOnRaiseEvent), this.ThrowStatusExceptionsOnRaiseEvent },
                 { nameof(this.UseAppLease), this.UseAppLease },
                 { nameof(this.StoreInputsInOrchestrationHistory), this.StoreInputsInOrchestrationHistory },
+                { nameof(this.AllowExternalActivities), this.AllowExternalActivities },
                 { nameof(this.LocalRpcEndpointEnabled), this.LocalRpcEndpointEnabled },
                 { nameof(this.MaxGrpcMessageSizeInBytes), this.MaxGrpcMessageSizeInBytes },
                 { nameof(this.GrpcHttpClientTimeout), this.GrpcHttpClientTimeout },
