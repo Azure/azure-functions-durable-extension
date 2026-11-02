@@ -259,7 +259,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public bool StoreInputsInOrchestrationHistory { get; set; } = false;
 
         /// <summary>
-        /// If <c>true</c>, orchestrators may schedule activities that are not registered in this app, so that another worker sharing the task hub can run them, for example with Durable Task Scheduler work item filtering. An activity that no worker hosts stays pending. The default value is <c>false</c>.
+        /// If <c>true</c>, orchestrators may schedule activities that are not registered in this app, so that another worker sharing the task hub can run them. This only skips the local name check; routing is the backend's responsibility. With Durable Task Scheduler work item filtering enabled, an activity that no worker hosts stays pending. Without filtering, this app may receive the work item and fail it. The default value is <c>false</c>.
         /// </summary>
         public bool AllowExternalActivities { get; set; } = false;
 

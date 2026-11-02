@@ -14,8 +14,10 @@ Draft documentation for the unreleased `allowExternalActivities` host.json
 setting (`durableTask`, default `false`), for the Durable Task Scheduler work
 item filtering page: when enabled, HTTP-protocol orchestrators (Python, Node.js,
 PowerShell) can schedule activities that are not registered in the app, so a
-worker sharing the task hub can run them. An activity that no worker hosts
-stays pending.
+worker sharing the task hub can run them. The setting only skips the local name
+check; it does not route work. With work item filtering enabled, an activity
+that no worker hosts stays pending. Without filtering, the app itself may
+receive the work item and fail it.
 
 - [ ] Companion docs PR approved (required before merging this feature).
 
