@@ -36,6 +36,7 @@
 
 ### New Features
 
+- Added the default-off `DurabilityProvider.AllowsExternalActivityScheduling` policy for providers that route activities to other workers. Opting in skips only the local activity registration check in classic/in-process and HTTP-protocol orchestration scheduling; activity name validation, orchestrator/entity validation, and local execution availability checks remain unchanged. No global setting is added, and gRPC action passthrough is unchanged. Azure Managed support requires a companion provider release.
 - Added provider-backed external payload auto-purge control and tombstone fetch/report RPCs for .NET isolated Functions. Blob deletion runs in the isolated worker, not the common Functions host. (#3556)
 - Allow overriding orchestration version when starting orchestrations via APIs in PowerShell, Python, and Node.js (https://github.com/Azure/azure-functions-durable-extension/pull/3213)
 - Added `IServiceCollection.AddDurableTaskTelemetryInitializer` overloads for explicitly enriching distributed tracing V2 requests and dependencies with Application Insights telemetry initializers or service-provider factories. Host initializers and processors are not inherited automatically. (#1792)

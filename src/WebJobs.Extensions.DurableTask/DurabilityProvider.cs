@@ -76,6 +76,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public virtual bool SupportsEntities => this.entityOrchestrationService?.EntityBackendProperties != null;
 
         /// <summary>
+        /// Specifies whether activity functions can be scheduled without being registered in the current app.
+        /// </summary>
+        /// <remarks>
+        /// The default is <c>false</c>. Providers can override this policy when activities can be routed to other workers.
+        /// Only the scheduling-time registration check is skipped; activity name validation and local execution
+        /// availability checks still apply. If no worker can execute an activity, it may remain pending.
+        /// </remarks>
+        public virtual bool AllowsExternalActivityScheduling => false;
+
+        /// <summary>
         /// Specifies whether the backend's WaitForOrchestration is implemented without polling.
         /// </summary>
         public virtual bool SupportsPollFreeWait => false;
