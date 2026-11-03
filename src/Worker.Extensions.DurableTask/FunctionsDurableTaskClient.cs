@@ -134,6 +134,12 @@ internal sealed class FunctionsDurableTaskClient : DurableTaskClient, ILargePayl
         return this.inner.RestartAsync(instanceId, restartWithNewInstanceId, cancellation);
     }
 
+    public override Task<string> RestartAsync(
+        string instanceId, RestartOrchestrationOptions options, CancellationToken cancellation = default)
+    {
+        return this.inner.RestartAsync(instanceId, options, cancellation);
+    }
+
     public override Task RewindInstanceAsync(
         string instanceId, string reason, CancellationToken cancellation = default)
     {

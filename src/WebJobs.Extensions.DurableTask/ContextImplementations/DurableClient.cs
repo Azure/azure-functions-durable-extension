@@ -1292,6 +1292,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return this.RestartCoreAsync(sourceInstanceId, newInstanceId, version);
         }
 
+        /// <inheritdoc/>
+        Task<string> IDurableOrchestrationClient.RestartAsync(string instanceId, RestartOrchestrationOptions options)
+        {
+            if (options == null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+
+            return this.RestartWithOptionsAsync(instanceId, options.NewInstanceId, options.Version);
+        }
+
         private async Task<string> RestartCoreAsync(string sourceInstanceId, string newInstanceId, string version)
         {
             // GetOrchestrationInstanceStateAsync will throw ArgumentException if the provided instance ID is not found.

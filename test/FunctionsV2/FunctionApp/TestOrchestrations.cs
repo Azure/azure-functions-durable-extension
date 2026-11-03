@@ -44,6 +44,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return new[] { sourceBeforeChild, childSource, ctx.SourceInstanceId };
         }
 
+        public static async Task<string[]> ReadCloneDetailsWithChild([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            string sourceBeforeChild = ctx.SourceInstanceId;
+            string childSource = await ctx.CallSubOrchestratorAsync<string>(nameof(ReadSourceInstanceId), null);
+            return new[] { ctx.GetInput<string>(), ctx.Version ?? string.Empty, sourceBeforeChild, childSource, ctx.SourceInstanceId };
+        }
+
         public static async Task<string> CallActivityWithorWithoutInput([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             await ctx.CallActivityAsync<string>(nameof(TestActivities.Hello), "Tokyo");

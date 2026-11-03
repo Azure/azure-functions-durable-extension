@@ -28,7 +28,7 @@ public class RestartOrchestrationTests
     [Trait("Java", "Skip")] // RestartAsync not yet implemented in Java
     [Trait("Python", "Skip")] // RestartAsync not supported in Python
     [Trait("Node", "Skip")] // RestartAsync not supported in Node
-    [Trait("MSSQL", "Skip")] // MSSQL doesn't support tags at ExecutionStarted Event.
+    [Trait("MSSQL", "Skip")] // The pinned MSSQL provider predates orchestration tag support added in 1.6.0.
     // Test behavior of restartasync of durabletaskclient.
     // When restart with a instanceid and startwithnewinstanceid is false, the orchestration should be restarted with the same instance id.
     // When restart with a instanceid and startwithnewinstanceid is true, the orchestration should be restarted with a new instance id.
@@ -106,6 +106,47 @@ public class RestartOrchestrationTests
         // Content: { "output": "...", "tags": { "testtag": "true" } }
         Assert.Contains("output", content);
         Assert.Contains("testtag", content);
+    }
+
+    [Fact]
+    [Trait("PowerShell", "Skip")] // This scenario exercises the .NET isolated native client and context.
+    [Trait("Java", "Skip")] // This scenario exercises the .NET isolated native client and context.
+    [Trait("Python", "Skip")] // This scenario exercises the .NET isolated native client and context.
+    [Trait("Node", "Skip")] // This scenario exercises the .NET isolated native client and context.
+    [Trait("MSSQL", "Skip")] // The pinned MSSQL provider predates orchestration tag support added in 1.6.0.
+    public async Task CloneOrchestration_UsesExplicitIdVersionAndImmediateSource()
+    {
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(
+            "RestarttOrchestration_HttpStart/CloneDetailsOrchestrator");
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        string sourceId = await DurableHelpers.ParseInstanceIdAsync(response);
+        string sourceStatusUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
+        await DurableHelpers.WaitForOrchestrationStateAsync(sourceStatusUri, "Completed", 30);
+        var sourceDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(sourceStatusUri);
+        Assert.Equal(
+            new string?[] { "original-input", "2.0", null, null, null },
+            JsonSerializer.Deserialize<string?[]>(sourceDetails.Output));
+
+        string cloneId = await CloneAndAssertAsync(sourceId, "1.0");
+        await CloneAndAssertAsync(cloneId, "");
+
+        async Task<string> CloneAndAssertAsync(string sourceInstanceId, string version)
+        {
+            string targetId = Guid.NewGuid().ToString("N");
+            using HttpResponseMessage cloneResponse = await HttpHelpers.InvokeHttpTriggerWithBody(
+                "RestartOrchestration_HttpRestart",
+                JsonSerializer.Serialize(new { InstanceId = sourceInstanceId, NewInstanceId = targetId, Version = version }),
+                "application/json");
+            Assert.Equal(HttpStatusCode.Accepted, cloneResponse.StatusCode);
+            Assert.Equal(targetId, await DurableHelpers.ParseInstanceIdAsync(cloneResponse));
+            string cloneStatusUri = await DurableHelpers.ParseStatusQueryGetUriAsync(cloneResponse);
+            await DurableHelpers.WaitForOrchestrationStateAsync(cloneStatusUri, "Completed", 30);
+            var details = await DurableHelpers.GetRunningOrchestrationDetailsAsync(cloneStatusUri);
+            Assert.Equal(
+                new string?[] { "original-input", version, sourceInstanceId, null, sourceInstanceId },
+                JsonSerializer.Deserialize<string?[]>(details.Output));
+            return targetId;
+        }
     }
 
     [Fact]

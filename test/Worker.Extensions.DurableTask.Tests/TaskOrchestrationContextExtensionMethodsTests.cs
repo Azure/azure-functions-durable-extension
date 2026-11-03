@@ -18,6 +18,19 @@ namespace Microsoft.Azure.Functions.Worker.Tests;
 
 public class TaskOrchestrationContextExtensionMethodsTests
 {
+    [Theory]
+    [InlineData(null)]
+    [InlineData("immediate-source")]
+    public void SourceInstanceId_ForwardsInnerContext(string? sourceInstanceId)
+    {
+        var inner = new Mock<TaskOrchestrationContext>();
+        inner.SetupGet(context => context.SourceInstanceId).Returns(sourceInstanceId);
+        var context = new FunctionsOrchestrationContext(inner.Object, CreateMockFunctionContext());
+
+        Assert.Equal(sourceInstanceId, context.SourceInstanceId);
+        inner.VerifyGet(context => context.SourceInstanceId, Times.Once);
+    }
+
     [Fact]
     public void GetFunctionContext_WithNullContext_ShouldThrowArgumentNullException()
     {

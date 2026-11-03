@@ -51,6 +51,8 @@ internal sealed partial class FunctionsOrchestrationContext : TaskOrchestrationC
 
     public override ParentOrchestrationInstance? Parent => this.innerContext.Parent;
 
+    public override string? SourceInstanceId => this.innerContext.SourceInstanceId;
+
     public override string Version => this.innerContext.Version;
 
     public override IReadOnlyDictionary<string, object?> Properties => this.innerContext.Properties;

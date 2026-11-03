@@ -528,9 +528,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.LogClientOperationReceived(context, "Restart", request.InstanceId);
 
+            if (request.NewInstanceId == null && request.Version != null)
+            {
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "A target instance ID is required when specifying a restart version."));
+            }
+
             try
             {
-                string newInstanceId = await this.GetClient(context).RestartAsync(request.InstanceId, request.RestartWithNewInstanceId);
+                IDurableOrchestrationClient client = this.GetClient(context);
+                string newInstanceId;
+                if (request.NewInstanceId != null)
+                {
+                    newInstanceId = await client.RestartAsync(request.InstanceId, new RestartOrchestrationOptions
+                    {
+                        NewInstanceId = request.NewInstanceId,
+                        Version = request.Version,
+                    });
+                }
+                else
+                {
+                    newInstanceId = await client.RestartAsync(request.InstanceId, request.RestartWithNewInstanceId);
+                }
+
                 return new P.RestartInstanceResponse { InstanceId = newInstanceId };
             }
             catch (OrchestratorFunctionUnavailableException ex)
@@ -539,7 +558,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             catch (ArgumentException ex)
             {
-                // Thrown when th instanceId is not found.
+                if (ex.ParamName == "newInstanceId")
+                {
+                    throw new RpcException(new Status(StatusCode.InvalidArgument, ex.Message));
+                }
+
+                // Thrown when the source instance ID is not found.
                 throw new RpcException(new Status(StatusCode.NotFound, $"ArgumentException: {ex.Message}"));
             }
             catch (OrchestrationAlreadyExistsException ex)

@@ -318,7 +318,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 extension.HttpApiHandler,
                 new DurableClientAttribute());
 
-            string result = await client.RestartWithOptionsAsync(SourceInstanceId, NewInstanceId, version);
+            string result = await ((IDurableOrchestrationClient)client).RestartAsync(
+                SourceInstanceId, new RestartOrchestrationOptions { NewInstanceId = NewInstanceId, Version = version });
 
             Assert.Equal(NewInstanceId, result);
             Assert.NotNull(capturedEvent);
@@ -384,7 +385,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 extension.HttpApiHandler,
                 new DurableClientAttribute());
 
-            string result = await client.RestartWithOptionsAsync(InstanceId, InstanceId, version: "2.0");
+            string result = await ((IDurableOrchestrationClient)client).RestartAsync(
+                InstanceId, new RestartOrchestrationOptions { NewInstanceId = InstanceId, Version = "2.0" });
 
             Assert.Equal(InstanceId, result);
             Assert.NotNull(capturedEvent);
@@ -457,7 +459,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 extension.HttpApiHandler,
                 new DurableClientAttribute());
 
-            string result = await client.RestartWithOptionsAsync(InstanceId, InstanceId, version: null);
+            string result = await ((IDurableOrchestrationClient)client).RestartAsync(
+                InstanceId, new RestartOrchestrationOptions { NewInstanceId = InstanceId });
 
             Assert.Equal(InstanceId, result);
             Assert.NotNull(capturedEvent);
@@ -491,7 +494,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             (DurableClient client, Mock<IOrchestrationServiceClient> serviceClient, _) = CreateClient();
 
             ArgumentException exception = await Assert.ThrowsAsync<ArgumentException>(
-                () => client.RestartWithOptionsAsync(SourceInstanceId, newInstanceId, version: null));
+                () => ((IDurableOrchestrationClient)client).RestartAsync(
+                    SourceInstanceId, new RestartOrchestrationOptions { NewInstanceId = newInstanceId }));
 
             Assert.Equal("newInstanceId", exception.ParamName);
             serviceClient.Verify(
@@ -500,6 +504,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             serviceClient.Verify(
                 x => x.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()),
                 Times.Never());
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task RestartAsync_NullOptions_ThrowsBeforeAccessingProvider()
+        {
+            (DurableClient client, Mock<IOrchestrationServiceClient> serviceClient, _) = CreateClient();
+
+            ArgumentNullException exception = await Assert.ThrowsAsync<ArgumentNullException>(
+                () => ((IDurableOrchestrationClient)client).RestartAsync("source", (RestartOrchestrationOptions)null));
+
+            Assert.Equal("options", exception.ParamName);
+            serviceClient.VerifyNoOtherCalls();
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task RestartAsync_OptionsWithoutTarget_ThrowsBeforeAccessingProvider()
+        {
+            (DurableClient client, Mock<IOrchestrationServiceClient> serviceClient, _) = CreateClient();
+
+            ArgumentException exception = await Assert.ThrowsAsync<ArgumentException>(
+                () => ((IDurableOrchestrationClient)client).RestartAsync("source", new RestartOrchestrationOptions()));
+
+            Assert.Equal("newInstanceId", exception.ParamName);
+            serviceClient.VerifyNoOtherCalls();
         }
 
         [Theory]

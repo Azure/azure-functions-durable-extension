@@ -13,6 +13,39 @@ namespace Microsoft.Azure.Functions.Worker.Tests
     /// </summary>
     public class FunctionsDurableTaskClientTests
     {
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("2.0")]
+        public async Task RestartWithOptions_ForwardsOptionsAndCancellation(string? version)
+        {
+            var inner = new Mock<DurableTaskClient>("test-client");
+            var options = new RestartOrchestrationOptions { NewInstanceId = "clone", Version = version };
+            using var cts = new CancellationTokenSource();
+            inner.Setup(client => client.RestartAsync("source", options, cts.Token)).ReturnsAsync("clone");
+            var client = new FunctionsDurableTaskClient(inner.Object, queryString: null, httpBaseUrl: null);
+
+            Assert.Equal("clone", await client.RestartAsync("source", options, cts.Token));
+
+            inner.Verify(client => client.RestartAsync("source", options, cts.Token), Times.Once);
+            inner.Verify(client => client.RestartAsync(
+                It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task RestartWithBoolean_PreservesLegacyOverload(bool newInstanceId)
+        {
+            var inner = new Mock<DurableTaskClient>("test-client");
+            inner.Setup(client => client.RestartAsync("source", newInstanceId, default)).ReturnsAsync("result");
+            var client = new FunctionsDurableTaskClient(inner.Object, queryString: null, httpBaseUrl: null);
+
+            Assert.Equal("result", await client.RestartAsync("source", newInstanceId));
+
+            inner.Verify(client => client.RestartAsync("source", newInstanceId, default), Times.Once);
+        }
+
         private FunctionsDurableTaskClient GetTestFunctionsDurableTaskClient(string? baseUrl = null, OrchestrationMetadata? orchestrationMetadata = null)
         {
             // construct mock client
