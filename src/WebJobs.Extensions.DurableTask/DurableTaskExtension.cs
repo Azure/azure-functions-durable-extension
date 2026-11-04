@@ -1576,12 +1576,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return;
             }
 
+            var functionName = new FunctionName(name);
+
             if (functionType == FunctionType.Activity && this.Options.AllowExternalActivities)
             {
+                if (string.IsNullOrWhiteSpace(name))
+                {
+                    throw new ArgumentException(this.GetInvalidActivityFunctionMessage(name));
+                }
+
                 return;
             }
-
-            var functionName = new FunctionName(name);
 
             if (functionType == FunctionType.Activity && !this.knownActivities.ContainsKey(functionName))
             {

@@ -4,9 +4,14 @@
 #nullable enable
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using DurableTask.AzureStorage;
 using DurableTask.Core;
+using DurableTask.Core.Command;
 using DurableTask.Core.Exceptions;
+using DurableTask.Core.History;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener;
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -155,6 +160,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CallActivityAsync_NullName_Throws_AndSchedulesNothing_WhenAllowExternalActivities()
+        {
+            (Task<string> call, ScheduleTaskOrchestratorAction[] scheduledTasks) = CallActivityWithExternalActivitiesAllowed(null);
+
+            Assert.True(call.IsFaulted);
+            await Assert.ThrowsAsync<ArgumentNullException>(() => call);
+            Assert.Empty(scheduledTasks);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task CallActivityAsync_EmptyName_Throws_AndSchedulesNothing_WhenAllowExternalActivities()
+        {
+            (Task<string> call, ScheduleTaskOrchestratorAction[] scheduledTasks) = CallActivityWithExternalActivitiesAllowed(string.Empty);
+
+            Assert.True(call.IsFaulted);
+            await Assert.ThrowsAsync<ArgumentException>(() => call);
+            Assert.Empty(scheduledTasks);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void CallActivityAsync_UnregisteredActivity_Schedules_WhenAllowExternalActivities()
+        {
+            (Task<string> call, ScheduleTaskOrchestratorAction[] scheduledTasks) = CallActivityWithExternalActivitiesAllowed("ExternalActivity");
+
+            Assert.False(call.IsCompleted);
+            ScheduleTaskOrchestratorAction scheduledTask = Assert.Single(scheduledTasks);
+            Assert.Equal("ExternalActivity", scheduledTask.Name);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void DisabledEntity_IsTreatedAsUnavailableByClassicDispatch()
         {
             // The classic (in-proc / HTTP-protocol) entity dispatch path in EntityMiddleware treats an
@@ -234,6 +272,70 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 new TestHostShutdownNotificationService(),
                 new DurableHttpMessageHandlerFactory(),
                 platformInformationService: TestHelpers.GetMockPlatformInformationService());
+        }
+
+        private static (Task<string> Call, ScheduleTaskOrchestratorAction[] ScheduledTasks) CallActivityWithExternalActivitiesAllowed(string? activityName)
+        {
+            var extension = CreateExtension(allowExternalActivities: true);
+            var durabilityProvider = new DurabilityProvider(
+                "test",
+                new Mock<IOrchestrationService>().Object,
+                new Mock<IOrchestrationServiceClient>().Object,
+                "test");
+
+            Task<string>? call = null;
+            var orchestration = new DelegateOrchestration(innerContext =>
+            {
+                var context = new DurableOrchestrationContext(extension, durabilityProvider, "TestOrchestrator")
+                {
+                    InnerContext = innerContext,
+                };
+                call = ((IDurableOrchestrationContext)context).CallActivityAsync<string>(activityName!, "input");
+            });
+
+            var runtimeState = new OrchestrationRuntimeState(new List<HistoryEvent>
+            {
+                new OrchestratorStartedEvent(-1),
+                new ExecutionStartedEvent(-1, null)
+                {
+                    Name = "TestOrchestrator",
+                    Version = string.Empty,
+                    OrchestrationInstance = new OrchestrationInstance { InstanceId = "test-instance", ExecutionId = "test-execution" },
+                },
+            });
+
+            OrchestratorExecutionResult result = new TaskOrchestrationExecutor(
+                runtimeState,
+                orchestration,
+                BehaviorOnContinueAsNew.Carryover,
+                ErrorPropagationMode.SerializeExceptions).Execute();
+
+            return (call!, result.Actions.OfType<ScheduleTaskOrchestratorAction>().ToArray());
+        }
+
+        private sealed class DelegateOrchestration : TaskOrchestration
+        {
+            private readonly Action<OrchestrationContext> body;
+
+            public DelegateOrchestration(Action<OrchestrationContext> body)
+            {
+                this.body = body;
+            }
+
+            public override Task<string> Execute(OrchestrationContext context, string input)
+            {
+                this.body(context);
+                return Task.FromResult(string.Empty);
+            }
+
+            public override string GetStatus()
+            {
+                return string.Empty;
+            }
+
+            public override void RaiseEvent(OrchestrationContext context, string name, string input)
+            {
+            }
         }
     }
 }
