@@ -483,9 +483,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Contains("TestEntity", result.FailureDetails.ErrorMessage);
         }
 
-        [Fact]
+        [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void TryGetStructuredFailureDetails_StructuredPayload_ReturnsFailureDetailsWithProperties()
+        [InlineData("")]
+        [InlineData("ActivityMiddleware.StructuredActivityFailure: ")]
+        public void TryGetStructuredFailureDetails_StructuredPayload_ReturnsFailureDetailsWithProperties(string exceptionPrefix)
         {
             // Arrange: an out-of-proc worker exception whose message embeds a serialized
             // TaskFailureDetails JSON payload (including custom Properties), in the
@@ -493,7 +495,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             const string serializedFailureDetails =
                 """{"errorType":"BusinessValidationException","errorMessage":"Business logic validation failed","stackTrace":"at BusinessActivity.Run()","isNonRetriable":false,"properties":{"StringProperty":"validation-error-123","IntProperty":100,"NullProperty":null}}""";
             var exception = new Exception(
-                $"Result: failure\nException: {serializedFailureDetails}\nStack: at Worker.Invoke()");
+                $"Result: failure\nException: {exceptionPrefix}{serializedFailureDetails}\nStack: at Worker.Invoke()");
 
             // Act
             FailureDetails details = OutOfProcMiddleware.TryGetStructuredFailureDetails(exception);
@@ -511,6 +513,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // A JSON null property is preserved as a null value (not dropped).
             Assert.True(details.Properties.ContainsKey("NullProperty"));
             Assert.Null(details.Properties["NullProperty"]);
+        }
+
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData("IllegalStateException")]
+        [InlineData("StructuredActivityFailure")]
+        [InlineData("OtherMiddleware.StructuredActivityFailure")]
+        public async Task CallActivityAsync_OrdinaryErrorContainingJson_PreservesLegacyFailureDetails(string exceptionType)
+        {
+            const string exceptionMessage = """Response was {"errorType":"BadRequest","errorMessage":"invalid"}""";
+            const string stackTrace = "at Worker.Invoke()\nat Caller.Run()";
+            var exception = new Exception(
+                "Function invocation failed.",
+                new Exception($"Result: failure\nException: {exceptionType}: {exceptionMessage}\nStack: {stackTrace}"));
+
+            Assert.Null(OutOfProcMiddleware.TryGetStructuredFailureDetails(exception));
+
+            (OutOfProcMiddleware middleware, DispatchMiddlewareContext dispatchContext) = this.SetupActivityTest(exception);
+            await middleware.CallActivityAsync(dispatchContext, () => Task.CompletedTask);
+
+            ActivityExecutionResult result = dispatchContext.GetProperty<ActivityExecutionResult>();
+            TaskFailedEvent failedEvent = Assert.IsType<TaskFailedEvent>(result.ResponseEvent);
+            Assert.NotNull(failedEvent.FailureDetails);
+            Assert.Equal(exceptionType, failedEvent.FailureDetails.ErrorType);
+            Assert.Equal(exceptionMessage, failedEvent.FailureDetails.ErrorMessage);
+            Assert.Equal(stackTrace, failedEvent.FailureDetails.StackTrace);
+            Assert.Null(failedEvent.FailureDetails.Properties);
         }
 
         [Fact]
