@@ -248,23 +248,22 @@ public class ErrorHandlingTests
         Assert.NotNull(failureDetails.Properties);
 
         // Verify string property
-        Assert.True(failureDetails.Properties.ContainsKey("StringProperty"));
-        Assert.Equal("validation-error-123", failureDetails.Properties["StringProperty"]);
+        Assert.True(failureDetails.Properties.TryGetValue("StringProperty", out var stringPropertyValue));
+        Assert.Equal("validation-error-123", stringPropertyValue);
 
-        Assert.True(failureDetails.Properties.ContainsKey("IntProperty"));
-        Assert.True(failureDetails.Properties.ContainsKey("LongProperty"));
-        Assert.True(failureDetails.Properties.ContainsKey("DateTimeProperty"));
-        Assert.True(failureDetails.Properties.ContainsKey("DictionaryProperty"));
-        Assert.True(failureDetails.Properties.ContainsKey("ListProperty"));
+        Assert.True(failureDetails.Properties.TryGetValue("IntProperty", out var intPropertyValue));
+        Assert.True(failureDetails.Properties.TryGetValue("LongProperty", out var longPropertyValue));
+        Assert.True(failureDetails.Properties.TryGetValue("DateTimeProperty", out var dateTimePropertyValue));
+        Assert.True(failureDetails.Properties.TryGetValue("DictionaryProperty", out var dictionaryPropertyValue));
+        Assert.True(failureDetails.Properties.TryGetValue("ListProperty", out var listPropertyValue));
 
         if (this.fixture.functionLanguageLocalizer.GetLanguageType() is LanguageType.Node or LanguageType.Java)
         {
             // Java and Node round-trip properties through protobuf Values. Numbers may
             // deserialize as doubles, and timestamps are sent as ISO-8601 strings.
-            Assert.Equal(100L, Convert.ToInt64(failureDetails.Properties["IntProperty"]));
-            Assert.Equal(999999999L, Convert.ToInt64(failureDetails.Properties["LongProperty"]));
+            Assert.Equal(100L, Convert.ToInt64(intPropertyValue));
+            Assert.Equal(999999999L, Convert.ToInt64(longPropertyValue));
 
-            var dateTimePropertyValue = failureDetails.Properties["DateTimeProperty"];
             var dateTimeProperty = dateTimePropertyValue is DateTime dateTime
                 ? dateTime
                 : DateTime.Parse(Assert.IsType<string>(dateTimePropertyValue), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
@@ -272,13 +271,13 @@ public class ErrorHandlingTests
                 new DateTime(2025, 10, 15, 14, 30, 0, DateTimeKind.Utc),
                 dateTimeProperty.ToUniversalTime());
 
-            var dictProperty = JsonConvert.DeserializeObject<Dictionary<string, object>>(failureDetails.Properties["DictionaryProperty"]!.ToString()!);
+            var dictProperty = JsonConvert.DeserializeObject<Dictionary<string, object>>(dictionaryPropertyValue!.ToString()!);
             Assert.NotNull(dictProperty);
             Assert.Equal("VALIDATION_FAILED", dictProperty["error_code"]);
             Assert.Equal(3L, Convert.ToInt64(dictProperty["retry_count"]));
             Assert.Equal(true, dictProperty["is_critical"]);
 
-            var listProperty = JsonConvert.DeserializeObject<List<object>>(failureDetails.Properties["ListProperty"]!.ToString()!);
+            var listProperty = JsonConvert.DeserializeObject<List<object>>(listPropertyValue!.ToString()!);
             Assert.NotNull(listProperty);
             Assert.Equal(4, listProperty.Count);
             Assert.Equal("error1", listProperty[0]);
@@ -289,23 +288,23 @@ public class ErrorHandlingTests
         else
         {
             // Verify int property
-            Assert.Equal((long)100, failureDetails.Properties["IntProperty"]);
+            Assert.Equal((long)100, intPropertyValue);
 
             // Verify long property
-            Assert.Equal(999999999L, failureDetails.Properties["LongProperty"]);
+            Assert.Equal(999999999L, longPropertyValue);
 
             // Verify DateTime property
-            Assert.Equal(new DateTime(2025, 10, 15, 14, 30, 0, DateTimeKind.Utc), failureDetails.Properties["DateTimeProperty"]);
+            Assert.Equal(new DateTime(2025, 10, 15, 14, 30, 0, DateTimeKind.Utc), dateTimePropertyValue);
 
             // Verify dictionary property
-            var dictProperty = JsonConvert.DeserializeObject<Dictionary<string, object>>(failureDetails.Properties["DictionaryProperty"]!.ToString()!);
+            var dictProperty = JsonConvert.DeserializeObject<Dictionary<string, object>>(dictionaryPropertyValue!.ToString()!);
             Assert.NotNull(dictProperty);
             Assert.Equal("VALIDATION_FAILED", dictProperty["error_code"]);
             Assert.Equal((long)3, dictProperty["retry_count"]);
             Assert.Equal(true, dictProperty["is_critical"]);
 
             // Verify list property
-            var listProperty = JsonConvert.DeserializeObject<List<object>>(failureDetails.Properties["ListProperty"]!.ToString()!);
+            var listProperty = JsonConvert.DeserializeObject<List<object>>(listPropertyValue!.ToString()!);
             Assert.NotNull(listProperty);
             Assert.Equal(4, listProperty.Count);
             Assert.Equal("error1", listProperty[0]);
@@ -315,8 +314,8 @@ public class ErrorHandlingTests
         }
 
         // Verify null property
-        Assert.True(failureDetails.Properties.ContainsKey("NullProperty"));
-        Assert.Null(failureDetails.Properties["NullProperty"]);
+        Assert.True(failureDetails.Properties.TryGetValue("NullProperty", out var nullPropertyValue));
+        Assert.Null(nullPropertyValue);
     }
 
     [Fact]

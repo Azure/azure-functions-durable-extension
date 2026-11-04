@@ -849,14 +849,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             try
             {
-                // Most out-of-proc workers (for example .NET isolated and Node) report the serialized
-                // TaskFailureDetails JSON payload verbatim, so the message starts with '{'. The Java
-                // worker, however, prefixes the message with "{ExceptionType}: " (via Apache Commons
-                // ExceptionUtils.getRootCauseMessage), so we also look for the first '{' and attempt to
-                // parse from there. If the located text isn't a valid TaskFailureDetails payload, parsing
-                // throws and we fall back to legacy handling below.
-                int jsonStart = exception.Length > 0 && exception[0] == '{' ? 0 : exception.IndexOf('{');
-                if (jsonStart < 0)
+                // Only the Java SDK's structured-failure wrapper may prefix the JSON payload.
+                // Ordinary errors containing JSON must retain their original exception details.
+                const string JavaStructuredFailurePrefix = "ActivityMiddleware.StructuredActivityFailure: ";
+                int jsonStart = exception.StartsWith(JavaStructuredFailurePrefix, StringComparison.Ordinal)
+                    ? JavaStructuredFailurePrefix.Length
+                    : 0;
+                if (jsonStart >= exception.Length || exception[jsonStart] != '{')
                 {
                     details = null;
                     return false;
