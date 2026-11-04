@@ -316,7 +316,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             async Task ExecuteOperationsInBatch()
             {
-                if (this.GetFunctionInfo().IsOutOfProc)
+                // A disabled/deleted entity is registered with a null executor. In that case, fall
+                // through to the per-operation loop below, which runs EntityMiddleware's throwing
+                // callback inside a per-operation try/catch and records a deterministic failure.
+                // ExecuteOutOfProcBatch would instead let that throw abort + retry the batch (the
+                // poison loop this guards against). See https://github.com/Azure/azure-functions-durable-extension/issues/3471.
+                RegisteredFunctionInfo functionInfo = this.GetFunctionInfo();
+                if (functionInfo?.Executor != null && functionInfo.IsOutOfProc)
                 {
                     // process all operations in the batch using a single function call
                     await this.ExecuteOutOfProcBatch();

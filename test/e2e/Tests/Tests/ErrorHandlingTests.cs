@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
+using System.Globalization;
 using System.Net;
 using Microsoft.DurableTask;
 using Newtonsoft.Json;
@@ -224,8 +225,6 @@ public class ErrorHandlingTests
     [Fact]
     [Trait("PowerShell", "Skip")] // FailureDetails is a dotnet-isolated implementation detail
     [Trait("Python", "Skip")] // FailureDetails is a dotnet-isolated implementation detail
-    [Trait("Node", "Skip")] // Enabling Node is tracked in a follow-up PR (needs durable-functions >= 3.5.0 and the JS app function).
-    [Trait("DTS", "Skip")] // Enabling DTS is tracked in a follow-up PR.
     public async Task CustomExceptionPropertiesInFailureDetails()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=OrchestrationWithCustomException");
@@ -258,16 +257,20 @@ public class ErrorHandlingTests
         Assert.True(failureDetails.Properties.ContainsKey("DictionaryProperty"));
         Assert.True(failureDetails.Properties.ContainsKey("ListProperty"));
 
-        if (this.fixture.functionLanguageLocalizer.GetLanguageType() == LanguageType.Java)
+        if (this.fixture.functionLanguageLocalizer.GetLanguageType() is LanguageType.Node or LanguageType.Java)
         {
-            // The Java worker surfaces custom properties through the protobuf Struct/Value
-            // contract, so every number arrives as a double regardless of its original Java type.
-            // Assert on the numeric values in a representation-tolerant way.
+            // Java and Node round-trip properties through protobuf Values. Numbers may
+            // deserialize as doubles, and timestamps are sent as ISO-8601 strings.
             Assert.Equal(100L, Convert.ToInt64(failureDetails.Properties["IntProperty"]));
             Assert.Equal(999999999L, Convert.ToInt64(failureDetails.Properties["LongProperty"]));
+
+            var dateTimePropertyValue = failureDetails.Properties["DateTimeProperty"];
+            var dateTimeProperty = dateTimePropertyValue is DateTime dateTime
+                ? dateTime
+                : DateTime.Parse(Assert.IsType<string>(dateTimePropertyValue), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
             Assert.Equal(
                 new DateTime(2025, 10, 15, 14, 30, 0, DateTimeKind.Utc),
-                Convert.ToDateTime(failureDetails.Properties["DateTimeProperty"]).ToUniversalTime());
+                dateTimeProperty.ToUniversalTime());
 
             var dictProperty = JsonConvert.DeserializeObject<Dictionary<string, object>>(failureDetails.Properties["DictionaryProperty"]!.ToString()!);
             Assert.NotNull(dictProperty);
@@ -314,5 +317,64 @@ public class ErrorHandlingTests
         // Verify null property
         Assert.True(failureDetails.Properties.ContainsKey("NullProperty"));
         Assert.Null(failureDetails.Properties["NullProperty"]);
+    }
+
+    [Fact]
+    [Trait("Dotnet", "Skip")] // NestedOrchestrationWithCustomException is only registered in the BasicNode app.
+    [Trait("PowerShell", "Skip")] // FailureDetails is a dotnet-isolated implementation detail
+    [Trait("Python", "Skip")] // FailureDetails is a dotnet-isolated implementation detail
+    [Trait("Java", "Skip")] // NestedOrchestrationWithCustomException is only registered in the BasicNode app.
+    public async Task NestedCustomExceptionPropertiesInFailureDetails()
+    {
+        // A parent orchestration calls a sub-orchestration, which calls the failing
+        // activity. The activity's custom exception properties must survive being
+        // nested inside the sub-orchestration's FailureDetails.InnerFailure chain so
+        // the parent can still observe them.
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=NestedOrchestrationWithCustomException");
+
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+
+        string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
+
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
+
+        var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
+        // Deserialize the output (the sub-orchestration's FailureDetails) returned by the parent.
+        var failureDetails = JsonConvert.DeserializeObject<TaskFailureDetails>(orchestrationDetails.Output);
+        Assert.NotNull(failureDetails);
+
+        // Walk the InnerFailure chain to find the original activity exception that
+        // carries the custom properties.
+        static TaskFailureDetails? FindFailureByErrorType(TaskFailureDetails? details, string errorTypeSubstring)
+        {
+            for (TaskFailureDetails? current = details; current != null; current = current.InnerFailure)
+            {
+                if (current.ErrorType != null && current.ErrorType.Contains(errorTypeSubstring))
+                {
+                    return current;
+                }
+            }
+
+            return null;
+        }
+
+        var businessFailure = FindFailureByErrorType(failureDetails, "BusinessValidationException");
+        Assert.NotNull(businessFailure);
+        Assert.Equal("Business logic validation failed", businessFailure!.ErrorMessage);
+
+        // The custom properties must be preserved on the nested activity failure.
+        Assert.NotNull(businessFailure.Properties);
+
+        Assert.True(businessFailure.Properties.TryGetValue("StringProperty", out var stringPropertyValue));
+        Assert.Equal("validation-error-123", stringPropertyValue);
+
+        Assert.True(businessFailure.Properties.TryGetValue("IntProperty", out var intPropertyValue));
+        Assert.Equal(100L, Convert.ToInt64(intPropertyValue));
+
+        Assert.True(businessFailure.Properties.TryGetValue("LongProperty", out var longPropertyValue));
+        Assert.Equal(999999999L, Convert.ToInt64(longPropertyValue));
+
+        Assert.True(businessFailure.Properties.TryGetValue("NullProperty", out var nullPropertyValue));
+        Assert.Null(nullPropertyValue);
     }
 }

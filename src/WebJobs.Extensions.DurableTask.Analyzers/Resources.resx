@@ -153,6 +153,15 @@
   <data name="ActivityReturnTypeAnalyzerTitle" xml:space="preserve">
     <value>Activity function call return type doesn't match function definition return type</value>
   </data>
+  <data name="ActivityTriggerParameterAnalyzerDescription" xml:space="preserve">
+    <value>The Durable Functions activity binding reserves the name 'data' for the raw JSON representation of the activity input. Naming an ActivityTrigger parameter 'data' overwrites that binding and causes a function indexing error at startup. Use a different parameter name.</value>
+  </data>
+  <data name="ActivityTriggerParameterAnalyzerMessageFormat" xml:space="preserve">
+    <value>The parameter name '{0}' is reserved by the activity trigger binding; rename the ActivityTrigger parameter to avoid a function indexing error</value>
+  </data>
+  <data name="ActivityTriggerParameterAnalyzerTitle" xml:space="preserve">
+    <value>ActivityTrigger parameter must not use the reserved name 'data'</value>
+  </data>
   <data name="AwaitAnalyzerMessageFormat" xml:space="preserve">
     <value>Code used in an orchestrator must not use await on non-Durable Functions methods</value>
   </data>
@@ -170,6 +179,9 @@
   </data>
   <data name="CancellationTokenAnalyzerTitle" xml:space="preserve">
     <value>CancellationToken should not be used as an orchestrator function parameter</value>
+  </data>
+  <data name="ConfigureAwaitAnalyzerTitle" xml:space="preserve">
+    <value>ConfigureAwait(false) should not be used inside an orchestrator function</value>
   </data>
   <data name="DateTimeAnalyzerTitle" xml:space="preserve">
     <value>DateTime calls must be deterministic inside an orchestrator function</value>

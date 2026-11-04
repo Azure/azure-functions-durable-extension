@@ -10,6 +10,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// <summary>
     /// Provides functionality available to durable entity clients.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Signal tasks complete when the operation message has been reliably enqueued, not when the
+    /// entity operation has executed. Signals are one-way: an exception in the entity operation is
+    /// not returned to the client that sent the signal.
+    /// </para>
+    /// <para>
+    /// Entity operations that fail with an unhandled application exception are not automatically
+    /// retried, even when their state changes are rolled back. Applications that require retries
+    /// must implement them explicitly.
+    /// </para>
+    /// </remarks>
     public interface IDurableEntityClient
     {
         /// <summary>

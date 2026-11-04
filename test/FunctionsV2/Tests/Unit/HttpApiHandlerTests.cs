@@ -508,14 +508,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     new DurableOrchestrationStatus
                     {
                         Name = "DoThis",
+                        Version = "1.0",
                         InstanceId = "01",
                         RuntimeStatus = OrchestrationRuntimeStatus.Running,
                     },
                     new DurableOrchestrationStatus
                     {
                         Name = "DoThat",
+                        Version = "2.0",
                         InstanceId = "02",
                         RuntimeStatus = OrchestrationRuntimeStatus.Completed,
+                    },
+                    new DurableOrchestrationStatus
+                    {
+                        Name = "DoOther",
+                        InstanceId = "03",
+                        RuntimeStatus = OrchestrationRuntimeStatus.Pending,
                     },
                 },
             };
@@ -538,14 +546,66 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 CancellationToken.None);
             Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
             Assert.Equal(string.Empty, responseMessage.Headers.GetValues("x-ms-continuation-token").FirstOrDefault());
-            var actual = JsonConvert.DeserializeObject<IList<StatusResponsePayload>>(await responseMessage.Content.ReadAsStringAsync());
+            string responseContent = await responseMessage.Content.ReadAsStringAsync();
+            var actual = JsonConvert.DeserializeObject<IList<StatusResponsePayload>>(responseContent);
+            JArray responsePayload = JArray.Parse(responseContent);
 
             Assert.Equal("DoThis", actual[0].Name);
+            Assert.Equal("1.0", actual[0].Version);
             Assert.Equal("01", actual[0].InstanceId);
             Assert.Equal("Running", actual[0].RuntimeStatus);
             Assert.Equal("DoThat", actual[1].Name);
+            Assert.Equal("2.0", actual[1].Version);
             Assert.Equal("02", actual[1].InstanceId);
             Assert.Equal("Completed", actual[1].RuntimeStatus);
+            Assert.Null(((JObject)responsePayload[2]).Property("version"));
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task GetAllStatus_IncludesParentInstanceId()
+        {
+            const string ParentInstanceId = "parent-instance";
+            DurableOrchestrationStatus childStatus = DurableClient.ConvertOrchestrationStateToStatus(
+                new OrchestrationState
+                {
+                    Name = "ChildOrchestration",
+                    OrchestrationInstance = new OrchestrationInstance
+                    {
+                        InstanceId = "child-instance",
+                    },
+                    ParentInstance = new ParentInstance
+                    {
+                        OrchestrationInstance = new OrchestrationInstance
+                        {
+                            InstanceId = ParentInstanceId,
+                        },
+                    },
+                    OrchestrationStatus = OrchestrationStatus.Running,
+                });
+            var result = new OrchestrationStatusQueryResult
+            {
+                DurableOrchestrationState = new List<DurableOrchestrationStatus> { childStatus },
+            };
+            var clientMock = new Mock<IDurableClient>();
+            clientMock
+                .Setup(x => x.ListInstancesAsync(It.IsAny<OrchestrationStatusQueryCondition>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(result));
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+            var getStatusRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+            getStatusRequestUriBuilder.Path += "/Instances/";
+
+            HttpResponseMessage responseMessage = await httpApiHandler.HandleRequestAsync(
+                new HttpRequestMessage
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = getStatusRequestUriBuilder.Uri,
+                },
+                CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
+            JArray responsePayload = JArray.Parse(await responseMessage.Content.ReadAsStringAsync());
+            Assert.Equal(ParentInstanceId, (string)responsePayload[0]["parentInstanceId"]);
         }
 
         [Fact]
@@ -824,6 +884,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 new DurableOrchestrationStatus
                 {
                     Name = "DoThis",
+                    Version = "2.0",
                     InstanceId = instanceId,
                     RuntimeStatus = OrchestrationRuntimeStatus.Completed,
                 },
@@ -849,6 +910,174 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var actual = JsonConvert.DeserializeObject<StatusResponsePayload>(await responseMessage.Content.ReadAsStringAsync());
             Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
             Assert.Equal(instanceId, actual.InstanceId);
+            Assert.Equal("2.0", actual.Version);
+        }
+
+        [Theory]
+        [InlineData("1-01-01T00:00:00.000000Z", 1)]
+        [InlineData("12-01-01T00:00:00.000000Z", 12)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task PurgeHistoryWithShortYearDate_Succeeds(string createdTimeFrom, int expectedYear)
+        {
+            DateTime actualCreatedTimeFrom = default;
+            var clientMock = new Mock<IDurableClient>();
+            clientMock
+                .Setup(x => x.PurgeInstanceHistoryAsync(
+                    It.IsAny<DateTime>(),
+                    It.IsAny<DateTime?>(),
+                    It.IsAny<IEnumerable<OrchestrationStatus>>()))
+                .Callback((DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationStatus> runtimeStatus) =>
+                {
+                    actualCreatedTimeFrom = createdTimeFrom;
+                })
+                .Returns(Task.FromResult(new PurgeHistoryResult(1)));
+
+            var purgeRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+            purgeRequestUriBuilder.Path += "/Instances/";
+            purgeRequestUriBuilder.Query = $"createdTimeFrom={WebUtility.UrlEncode(createdTimeFrom)}";
+
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+            HttpResponseMessage responseMessage = await httpApiHandler.HandleRequestAsync(
+                new HttpRequestMessage
+                {
+                    Method = HttpMethod.Delete,
+                    RequestUri = purgeRequestUriBuilder.Uri,
+                },
+                CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
+            Assert.Equal(new DateTime(expectedYear, 1, 1), actualCreatedTimeFrom);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task PurgeHistoryWithoutCreatedTimeFrom_ReturnsBadRequest()
+        {
+            var clientMock = new Mock<IDurableClient>(MockBehavior.Strict);
+            var purgeRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+            purgeRequestUriBuilder.Path += "/Instances/";
+
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+            HttpResponseMessage responseMessage = await httpApiHandler.HandleRequestAsync(
+                new HttpRequestMessage
+                {
+                    Method = HttpMethod.Delete,
+                    RequestUri = purgeRequestUriBuilder.Uri,
+                },
+                CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.BadRequest, responseMessage.StatusCode);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task PurgeHistoryWithInvalidCreatedTimeFrom_ReturnsBadRequest()
+        {
+            var clientMock = new Mock<IDurableClient>(MockBehavior.Strict);
+            var purgeRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+            purgeRequestUriBuilder.Path += "/Instances/";
+            purgeRequestUriBuilder.Query = "createdTimeFrom=invalid";
+
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+            HttpResponseMessage responseMessage = await httpApiHandler.HandleRequestAsync(
+                new HttpRequestMessage
+                {
+                    Method = HttpMethod.Delete,
+                    RequestUri = purgeRequestUriBuilder.Uri,
+                },
+                CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.BadRequest, responseMessage.StatusCode);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task PurgeHistoryWithBareCreatedTimeFrom_ReturnsBadRequest()
+        {
+            var clientMock = new Mock<IDurableClient>(MockBehavior.Strict);
+            var purgeRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+            purgeRequestUriBuilder.Path += "/Instances/";
+            purgeRequestUriBuilder.Query = "createdTimeFrom";
+
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+            HttpResponseMessage responseMessage = await httpApiHandler.HandleRequestAsync(
+                new HttpRequestMessage
+                {
+                    Method = HttpMethod.Delete,
+                    RequestUri = purgeRequestUriBuilder.Uri,
+                },
+                CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.BadRequest, responseMessage.StatusCode);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task PurgeHistoryWithLegacyShortDate_PreservesExistingParsing()
+        {
+            DateTime actualCreatedTimeFrom = default;
+            var clientMock = new Mock<IDurableClient>();
+            clientMock
+                .Setup(x => x.PurgeInstanceHistoryAsync(
+                    It.IsAny<DateTime>(),
+                    It.IsAny<DateTime?>(),
+                    It.IsAny<IEnumerable<OrchestrationStatus>>()))
+                .Callback((DateTime createdTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationStatus> runtimeStatus) =>
+                {
+                    actualCreatedTimeFrom = createdTimeFrom;
+                })
+                .Returns(Task.FromResult(new PurgeHistoryResult(1)));
+
+            var purgeRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+            purgeRequestUriBuilder.Path += "/Instances/";
+            purgeRequestUriBuilder.Query = "createdTimeFrom=12-11-10";
+
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+            HttpResponseMessage responseMessage = await httpApiHandler.HandleRequestAsync(
+                new HttpRequestMessage
+                {
+                    Method = HttpMethod.Delete,
+                    RequestUri = purgeRequestUriBuilder.Uri,
+                },
+                CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
+            Assert.Equal(DateTime.Parse("12-11-10"), actualCreatedTimeFrom);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task PurgeHistoryWithPreviouslyAcceptedThreeDigitYear_PreservesExistingParsing()
+        {
+            const string createdTimeFrom = "100-01-01T00:00:00.000000Z";
+            DateTime actualCreatedTimeFrom = default;
+            var clientMock = new Mock<IDurableClient>();
+            clientMock
+                .Setup(x => x.PurgeInstanceHistoryAsync(
+                    It.IsAny<DateTime>(),
+                    It.IsAny<DateTime?>(),
+                    It.IsAny<IEnumerable<OrchestrationStatus>>()))
+                .Callback((DateTime parsedCreatedTimeFrom, DateTime? createdTimeTo, IEnumerable<OrchestrationStatus> runtimeStatus) =>
+                {
+                    actualCreatedTimeFrom = parsedCreatedTimeFrom;
+                })
+                .Returns(Task.FromResult(new PurgeHistoryResult(1)));
+
+            var purgeRequestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+            purgeRequestUriBuilder.Path += "/Instances/";
+            purgeRequestUriBuilder.Query = $"createdTimeFrom={WebUtility.UrlEncode(createdTimeFrom)}";
+
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+            HttpResponseMessage responseMessage = await httpApiHandler.HandleRequestAsync(
+                new HttpRequestMessage
+                {
+                    Method = HttpMethod.Delete,
+                    RequestUri = purgeRequestUriBuilder.Uri,
+                },
+                CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.OK, responseMessage.StatusCode);
+            Assert.Equal(DateTime.Parse(createdTimeFrom), actualCreatedTimeFrom);
         }
 
         [Fact]
@@ -1119,6 +1348,140 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(status["resumePostUri"], testResumePostUri);
         }
 
+        [Theory]
+        [InlineData("2.0", "2.0")]
+        [InlineData("", "")] // An explicit empty version represents a non-versioned orchestration.
+        [InlineData(null, "default-version")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task RestartInstanceWithOptions_Is_Success(string version, string expectedVersion)
+        {
+            const string SourceInstanceId = "source-instance";
+            const string NewInstanceId = "new-instance";
+            const string FunctionName = "RestartedOrchestrator";
+            const string Input = "{\"value\":42}";
+            var tags = new Dictionary<string, string> { ["source"] = "restart-test" };
+            string versionQuery = version == null ? string.Empty : $"&version={Uri.EscapeDataString(version)}";
+            var requestUri = new Uri(
+                $"http://localhost/runtime/webhooks/durabletask/instances/{SourceInstanceId}/restartWithOptions?newInstanceId={NewInstanceId}{versionQuery}");
+            ExecutionStartedEvent capturedEvent = null;
+            var orchestrationService = new Mock<IOrchestrationService>(MockBehavior.Strict);
+            var orchestrationServiceClient = new Mock<IOrchestrationServiceClient>();
+            orchestrationServiceClient
+                .Setup(client => client.GetOrchestrationStateAsync(SourceInstanceId, false))
+                .ReturnsAsync(
+                    new List<OrchestrationState>
+                    {
+                        new OrchestrationState
+                        {
+                            Name = FunctionName,
+                            Input = Input,
+                            Tags = tags,
+                            OrchestrationInstance = new OrchestrationInstance { InstanceId = SourceInstanceId },
+                            OrchestrationStatus = OrchestrationStatus.Completed,
+                        },
+                    });
+            orchestrationServiceClient
+                .Setup(client => client.CreateTaskOrchestrationAsync(
+                    It.IsAny<TaskMessage>(),
+                    It.IsAny<OrchestrationStatus[]>()))
+                .Callback<TaskMessage, OrchestrationStatus[]>((message, _) =>
+                {
+                    capturedEvent = message.Event as ExecutionStartedEvent;
+                })
+                .Returns(Task.CompletedTask);
+            var durabilityProvider = new DurabilityProvider(
+                "storageProviderName",
+                orchestrationService.Object,
+                orchestrationServiceClient.Object,
+                TestConstants.ConnectionName);
+            var options = new DurableTaskOptions
+            {
+                WebhookUriProviderOverride = () => new Uri("http://localhost/runtime/webhooks/durabletask"),
+                HubName = TestConstants.TaskHub,
+                DefaultVersion = "default-version",
+            };
+            var extension = TestDurableTaskExtension.CreateWithProvider(options, durabilityProvider);
+            extension.RegisterOrchestrator(
+                new FunctionName(FunctionName),
+                new RegisteredFunctionInfo(executor: null, isOutOfProc: true));
+            var httpApiHandler = new HttpApiHandler(extension, NullLogger.Instance);
+
+            HttpResponseMessage response = await httpApiHandler.HandleRequestAsync(
+                new HttpRequestMessage(HttpMethod.Post, requestUri),
+                CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+            string content = await response.Content.ReadAsStringAsync();
+            var payload = JsonConvert.DeserializeObject<JObject>(content);
+            Assert.Equal(NewInstanceId, payload["id"]);
+            Assert.NotNull(capturedEvent);
+            Assert.Equal(FunctionName, capturedEvent.Name);
+            Assert.Equal(NewInstanceId, capturedEvent.OrchestrationInstance.InstanceId);
+            Assert.Equal(expectedVersion, capturedEvent.Version);
+            Assert.True(JToken.DeepEquals(JToken.Parse(Input), JToken.Parse(capturedEvent.Input)));
+            Assert.Equal("restart-test", capturedEvent.Tags["source"]);
+            Assert.Equal(SourceInstanceId, capturedEvent.Tags[DurableClient.SourceInstanceIdTag]);
+            Assert.DoesNotContain(DurableClient.SourceInstanceIdTag, tags);
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("  ")]
+        [InlineData("\u00A0")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task RestartInstanceWithOptions_Returns_HTTP_400_On_Missing_Empty_Or_Whitespace_NewInstanceId(string newInstanceId)
+        {
+            const string SourceInstanceId = "source-instance";
+            var requestUriBuilder = new UriBuilder(TestConstants.NotificationUrl);
+            requestUriBuilder.Path += $"/Instances/{SourceInstanceId}/restartWithOptions";
+            if (newInstanceId != null)
+            {
+                requestUriBuilder.Query =
+                    $"newInstanceId={Uri.EscapeDataString(newInstanceId)}&{requestUriBuilder.Query.TrimStart('?')}";
+            }
+
+            var clientMock = new Mock<IDurableClient>(MockBehavior.Strict);
+            var httpApiHandler = new ExtendedHttpApiHandler(clientMock.Object);
+
+            HttpResponseMessage response = await httpApiHandler.HandleRequestAsync(
+                new HttpRequestMessage(HttpMethod.Post, requestUriBuilder.Uri),
+                CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            string content = await response.Content.ReadAsStringAsync();
+            var error = JsonConvert.DeserializeObject<JObject>(content);
+            Assert.Equal("A new orchestration instance ID must be provided.", error["Message"].ToString());
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task RestartInstanceWithOptions_Returns_HTTP_400_On_Invalid_NewInstanceId()
+        {
+            const string SourceInstanceId = "source-instance";
+            const string NewInstanceId = "@invalid";
+            var requestUri = new Uri(
+                $"http://localhost/runtime/webhooks/durabletask/instances/{SourceInstanceId}/restartWithOptions?newInstanceId={Uri.EscapeDataString(NewInstanceId)}");
+            var options = new DurableTaskOptions
+            {
+                WebhookUriProviderOverride = () => new Uri("http://localhost/runtime/webhooks/durabletask"),
+                HubName = TestConstants.TaskHub,
+            };
+            var extension = TestDurableTaskExtension.CreateWithMockProvider(options);
+            var httpApiHandler = new HttpApiHandler(extension, NullLogger.Instance);
+
+            HttpResponseMessage response = await httpApiHandler.HandleRequestAsync(
+                new HttpRequestMessage(HttpMethod.Post, requestUri),
+                CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            string content = await response.Content.ReadAsStringAsync();
+            var error = JsonConvert.DeserializeObject<JObject>(content);
+            Assert.StartsWith(
+                "Orchestration instance IDs must not start with @.",
+                error["Message"].ToString());
+        }
+
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task RestartInstance_Returns_HTTP_400_On_Invalid_InstanceId()
@@ -1146,6 +1509,63 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var content = await actualResponse.Content.ReadAsStringAsync();
             var error = JsonConvert.DeserializeObject<JObject>(content);
             Assert.Equal("InstanceId does not match a valid orchestration instance.", error["Message"].ToString());
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task RestartInstance_Returns_HTTP_400_On_Disabled_Function()
+        {
+            const string InstanceId = "completed-instance";
+            const string FunctionName = "DisabledOrchestrator";
+            var requestUri = new Uri(
+                $"http://localhost/runtime/webhooks/durabletask/instances/{InstanceId}/restart");
+            var orchestrationServiceMock = new Mock<IOrchestrationService>(MockBehavior.Strict);
+            var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
+            orchestrationServiceClientMock
+                .Setup(client => client.GetOrchestrationStateAsync(InstanceId, false))
+                .ReturnsAsync(
+                    new List<OrchestrationState>
+                    {
+                        new OrchestrationState
+                        {
+                            Name = FunctionName,
+                            Input = "null",
+                            OrchestrationInstance = new OrchestrationInstance { InstanceId = InstanceId },
+                            OrchestrationStatus = OrchestrationStatus.Completed,
+                        },
+                    });
+            orchestrationServiceClientMock
+                .Setup(client => client.CreateTaskOrchestrationAsync(
+                    It.IsAny<TaskMessage>(),
+                    It.IsAny<OrchestrationStatus[]>()))
+                .Returns(Task.CompletedTask);
+            var durabilityProvider = new DurabilityProvider(
+                "storageProviderName",
+                orchestrationServiceMock.Object,
+                orchestrationServiceClientMock.Object,
+                TestConstants.ConnectionName);
+            var options = new DurableTaskOptions
+            {
+                WebhookUriProviderOverride = () => new Uri("http://localhost/runtime/webhooks/durabletask"),
+                HubName = TestConstants.TaskHub,
+            };
+            var extension = TestDurableTaskExtension.CreateWithProvider(options, durabilityProvider);
+            extension.RegisterOrchestrator(new FunctionName(FunctionName), orchestratorInfo: null);
+            var httpApiHandler = new HttpApiHandler(extension, NullLogger.Instance);
+
+            HttpResponseMessage response = await httpApiHandler.HandleRequestAsync(
+                new HttpRequestMessage(HttpMethod.Post, requestUri),
+                CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            string content = await response.Content.ReadAsStringAsync();
+            var error = JsonConvert.DeserializeObject<JObject>(content);
+            Assert.Contains("doesn't exist, is disabled, or is not an orchestrator function", error["Message"].ToString());
+            orchestrationServiceClientMock.Verify(
+                client => client.CreateTaskOrchestrationAsync(
+                    It.IsAny<TaskMessage>(),
+                    It.IsAny<OrchestrationStatus[]>()),
+                Times.Never);
         }
 
         [Fact]
@@ -1781,7 +2201,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 "storageProviderName",
                 orchestrationServiceMock.Object,
                 orchestrationServiceClientMock.Object,
-                "connectionName");
+                TestConstants.ConnectionName);
 
             var options = new DurableTaskOptions
             {
@@ -1791,6 +2211,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
 
             var customExtension = TestDurableTaskExtension.CreateWithProvider(options, durabilityProvider);
+            customExtension.RegisterOrchestrator(
+                new FunctionName(functionName),
+                new RegisteredFunctionInfo(executor: null, isOutOfProc: true));
             var handler = new HttpApiHandler(customExtension, NullLogger.Instance);
             var request = new HttpRequestMessage(HttpMethod.Post, requestUri);
 
@@ -1804,6 +2227,179 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
             Assert.NotNull(capturedEvent);
             Assert.Equal(expectedVersion, capturedEvent.Version);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task StartNewInstance_Returns_HTTP_400_On_Disabled_Function()
+        {
+            const string FunctionName = "DisabledOrchestrator";
+            var requestUri = new Uri(
+                $"http://localhost/runtime/webhooks/durabletask/orchestrators/{FunctionName}");
+            var orchestrationServiceMock = new Mock<IOrchestrationService>(MockBehavior.Strict);
+            var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
+            orchestrationServiceClientMock
+                .Setup(p => p.CreateTaskOrchestrationAsync(
+                    It.IsAny<TaskMessage>(),
+                    It.IsAny<OrchestrationStatus[]>()))
+                .Returns(Task.CompletedTask);
+            var durabilityProvider = new DurabilityProvider(
+                "storageProviderName",
+                orchestrationServiceMock.Object,
+                orchestrationServiceClientMock.Object,
+                TestConstants.ConnectionName);
+            var options = new DurableTaskOptions
+            {
+                WebhookUriProviderOverride = () => new Uri("http://localhost/runtime/webhooks/durabletask"),
+                HubName = TestConstants.TaskHub,
+            };
+            var extension = TestDurableTaskExtension.CreateWithProvider(options, durabilityProvider);
+            extension.RegisterOrchestrator(new FunctionName(FunctionName), orchestratorInfo: null);
+            var handler = new HttpApiHandler(extension, NullLogger.Instance);
+
+            HttpResponseMessage response = await handler.HandleRequestAsync(
+                new HttpRequestMessage(HttpMethod.Post, requestUri),
+                CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            string content = await response.Content.ReadAsStringAsync();
+            Assert.Contains("doesn't exist, is disabled, or is not an orchestrator function", content);
+            orchestrationServiceClientMock.Verify(
+                p => p.CreateTaskOrchestrationAsync(
+                    It.IsAny<TaskMessage>(),
+                    It.IsAny<OrchestrationStatus[]>()),
+                Times.Never);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task StartNewInstance_CaseVariantTaskHub_DoesNotRejectLocallyDisabledFunction()
+        {
+            const string FunctionName = "DisabledOrchestrator";
+            var requestUri = new Uri(
+                $"http://localhost/runtime/webhooks/durabletask/orchestrators/{FunctionName}?taskHub=testhubname");
+            var orchestrationServiceMock = new Mock<IOrchestrationService>(MockBehavior.Strict);
+            var orchestrationServiceClientMock = new Mock<IOrchestrationServiceClient>();
+            orchestrationServiceClientMock
+                .Setup(p => p.CreateTaskOrchestrationAsync(
+                    It.IsAny<TaskMessage>(),
+                    It.IsAny<OrchestrationStatus[]>()))
+                .Returns(Task.CompletedTask);
+            var durabilityProvider = new DurabilityProvider(
+                "storageProviderName",
+                orchestrationServiceMock.Object,
+                orchestrationServiceClientMock.Object,
+                TestConstants.ConnectionName);
+            var options = new DurableTaskOptions
+            {
+                WebhookUriProviderOverride = () => new Uri("http://localhost/runtime/webhooks/durabletask"),
+                HubName = TestConstants.TaskHub,
+            };
+            var extension = TestDurableTaskExtension.CreateWithProvider(options, durabilityProvider);
+            extension.RegisterOrchestrator(new FunctionName(FunctionName), orchestratorInfo: null);
+            var handler = new HttpApiHandler(extension, NullLogger.Instance);
+
+            HttpResponseMessage response = await handler.HandleRequestAsync(
+                new HttpRequestMessage(HttpMethod.Post, requestUri),
+                CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+            orchestrationServiceClientMock.Verify(
+                p => p.CreateTaskOrchestrationAsync(
+                    It.IsAny<TaskMessage>(),
+                    It.IsAny<OrchestrationStatus[]>()),
+                Times.Once);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task MakePrimary_Returns_HTTP_400_When_AppLease_Is_Disabled()
+        {
+            (HttpApiHandler handler, Mock<DurabilityProvider> provider) =
+                CreateMakePrimaryHandler(useAppLease: false);
+            provider
+                .Setup(p => p.MakeCurrentAppPrimaryAsync())
+                .Returns(Task.CompletedTask);
+
+            HttpResponseMessage response = await handler.HandleRequestAsync(
+                new HttpRequestMessage(
+                    HttpMethod.Post,
+                    "http://localhost/runtime/webhooks/durabletask/makeprimary"),
+                CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            string content = await response.Content.ReadAsStringAsync();
+            var error = JsonConvert.DeserializeObject<JObject>(content);
+            Assert.Equal(
+                "Cannot make current app primary. This app is not using the AppLease feature.",
+                error["Message"].ToString());
+            provider.Verify(p => p.MakeCurrentAppPrimaryAsync(), Times.Never);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task MakePrimary_Returns_HTTP_200_When_AppLease_Is_Enabled()
+        {
+            (HttpApiHandler handler, Mock<DurabilityProvider> provider) =
+                CreateMakePrimaryHandler(useAppLease: true);
+            provider
+                .Setup(p => p.MakeCurrentAppPrimaryAsync())
+                .Returns(Task.CompletedTask);
+
+            HttpResponseMessage response = await handler.HandleRequestAsync(
+                new HttpRequestMessage(
+                    HttpMethod.Post,
+                    "http://localhost/runtime/webhooks/durabletask/makeprimary"),
+                CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Empty(await response.Content.ReadAsByteArrayAsync());
+            provider.Verify(p => p.MakeCurrentAppPrimaryAsync(), Times.Once);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task MakePrimary_Returns_HTTP_500_When_Provider_Fails()
+        {
+            (HttpApiHandler handler, Mock<DurabilityProvider> provider) =
+                CreateMakePrimaryHandler(useAppLease: true);
+            provider
+                .Setup(p => p.MakeCurrentAppPrimaryAsync())
+                .ThrowsAsync(new InvalidOperationException("Provider failure."));
+
+            HttpResponseMessage response = await handler.HandleRequestAsync(
+                new HttpRequestMessage(
+                    HttpMethod.Post,
+                    "http://localhost/runtime/webhooks/durabletask/makeprimary"),
+                CancellationToken.None);
+
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+            string content = await response.Content.ReadAsStringAsync();
+            var error = JsonConvert.DeserializeObject<JObject>(content);
+            Assert.Equal("Something went wrong while processing your request", error["Message"].ToString());
+            provider.Verify(p => p.MakeCurrentAppPrimaryAsync(), Times.Once);
+        }
+
+        private static (HttpApiHandler Handler, Mock<DurabilityProvider> Provider) CreateMakePrimaryHandler(
+            bool useAppLease)
+        {
+            var orchestrationService = new Mock<IOrchestrationService>();
+            var orchestrationServiceClient = new Mock<IOrchestrationServiceClient>();
+            var provider = new Mock<DurabilityProvider>(
+                "storageProviderName",
+                orchestrationService.Object,
+                orchestrationServiceClient.Object,
+                TestConstants.ConnectionName);
+            var options = new DurableTaskOptions
+            {
+                UseAppLease = useAppLease,
+                WebhookUriProviderOverride = () =>
+                    new Uri("http://localhost/runtime/webhooks/durabletask"),
+                HubName = TestConstants.TaskHub,
+            };
+            var extension = TestDurableTaskExtension.CreateWithProvider(options, provider.Object);
+
+            return (new HttpApiHandler(extension, NullLogger.Instance), provider);
         }
 
         private static DurableTaskExtension GetTestExtension()

@@ -304,8 +304,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // Assert log entry count
             if (this.useTestLogger)
             {
-                var logger = this.loggerProvider.CreatedLoggers.Single(l => l.Category == TestHelpers.LogCategory);
-                var logMessages = logger.LogMessages.Where(
+                var logMessages = TestHelpers.GetDurableLogMessages(this.loggerProvider).Where(
                     msg => msg.FormattedMessage.Contains(instanceId)).ToList();
 
                 int expectedLogMessageCount = extendedSessions ? 43 : 153;

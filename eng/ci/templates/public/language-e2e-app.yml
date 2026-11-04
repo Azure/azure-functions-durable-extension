@@ -1,0 +1,65 @@
+parameters:
+  - name: app
+    type: string
+  - name: language
+    type: string
+  - name: filter
+    type: string
+  - name: outputs
+    type: object
+
+steps:
+  - pwsh: |
+      $ErrorActionPreference = 'Stop'
+      Write-Host '##vso[task.setvariable variable=${{ parameters.app }}Started]true'
+      Get-PSDrive -PSProvider FileSystem | Select-Object Root, Used, Free
+      ./test/e2e/Tests/build-e2e-test.ps1 `
+        -TargetFramework '$(testTargetFramework)' -E2EAppName '${{ parameters.app }}' `
+        -SkipCoreTools -SkipStorageEmulator -SkipExtensionBuild -PreserveNuGetCache
+      exit $LASTEXITCODE
+    displayName: Build ${{ parameters.language }} E2E app
+    condition: and(succeeded(), contains(variables['e2eApps'], '${{ parameters.app }}'))
+
+  - pwsh: |
+      dotnet test ./test/e2e/Tests -f $(testTargetFramework) --no-build `
+        --filter '$(backendFilter)!=Skip&${{ parameters.filter }}!=Skip&${{ parameters.filter }}-$(backendFilter)!=Skip' `
+        --logger 'trx;LogFileName=language-e2e-$(backendName)-$(testTargetFramework)-${{ parameters.language }}.trx' `
+        --results-directory "$(Agent.TempDirectory)/TestResults"
+      exit $LASTEXITCODE
+    displayName: Test ${{ parameters.language }} E2E app
+    condition: and(succeeded(), contains(variables['e2eApps'], '${{ parameters.app }}'))
+    env:
+      E2E_TEST_FUNCTIONS_LANGUAGE: ${{ parameters.language }}
+      TEST_APP_NAME: ${{ parameters.app }}
+      E2E_TEST_DURABLE_BACKEND: $(E2E_TEST_DURABLE_BACKEND)
+      MSSQL_SA_PASSWORD: $(MSSQL_SA_PASSWORD)
+
+  - pwsh: |
+      $ErrorActionPreference = 'Stop'
+      $timer = [Diagnostics.Stopwatch]::StartNew()
+      # Test fixtures own host shutdown. Never delete output while a host is still listening.
+      while (@([Net.NetworkInformation.IPGlobalProperties]::GetIPGlobalProperties().GetActiveTcpListeners() | Where-Object Port -eq 7071).Count) {
+        if ($timer.Elapsed.TotalSeconds -ge 30) {
+          throw 'Port 7071 is still listening; refusing app cleanup and subsequent suites.'
+        }
+        Start-Sleep -Milliseconds 250
+      }
+      Write-Host 'Disk usage before cleanup:'
+      Get-PSDrive -PSProvider FileSystem | Select-Object Root, Used, Free
+      $app = Join-Path '$(Build.SourcesDirectory)/test/e2e/Apps' '${{ parameters.app }}'
+      foreach ($directory in ('${{ join(',', parameters.outputs) }}'.Split(','))) {
+        $path = Join-Path $app $directory
+        if (Test-Path -LiteralPath $path) {
+          foreach ($candidate in @($app, (Split-Path $path -Parent), $path)) {
+            if ((Get-Item -LiteralPath $candidate -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) {
+              throw "Refusing cleanup of redirected directory: $candidate"
+            }
+          }
+          Write-Host "Removing generated output: $path"
+          Remove-Item -LiteralPath $path -Recurse -Force
+        }
+      }
+      Write-Host 'Disk usage after cleanup:'
+      Get-PSDrive -PSProvider FileSystem | Select-Object Root, Used, Free
+    displayName: Clean ${{ parameters.language }} E2E app
+    condition: and(succeededOrFailed(), eq(variables['${{ parameters.app }}Started'], 'true'))

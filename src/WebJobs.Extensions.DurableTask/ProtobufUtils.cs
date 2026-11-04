@@ -27,6 +27,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal static class ProtobufUtils
     {
+        internal const string RollbackEntityOperationsOnExceptionsPropertyName = "RollbackEntityOperationsOnExceptions";
+
         public static P.HistoryEvent ToHistoryEventProto(HistoryEvent e)
         {
             var payload = new P.HistoryEvent()
@@ -217,6 +219,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                             InstanceId = historyStateEvent.State.OrchestrationInstance.InstanceId,
                             Name = historyStateEvent.State.Name,
                             Version = historyStateEvent.State.Version,
+                            ParentInstanceId = historyStateEvent.State.ParentInstance?.OrchestrationInstance?.InstanceId,
                             Input = historyStateEvent.State.Input,
                             Output = historyStateEvent.State.Output,
                             ScheduledStartTimestamp = historyStateEvent.State.ScheduledStartTime == null ? null : Timestamp.FromDateTime(historyStateEvent.State.ScheduledStartTime.Value),
@@ -525,6 +528,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     InstanceId = state.OrchestrationInstance.InstanceId,
                     Name = state.Name,
                     Version = state.Version,
+                    ParentInstanceId = state.ParentInstance?.OrchestrationInstance?.InstanceId,
                     Input = state.Input,
                     Output = state.Output,
                     ScheduledStartTimestamp = state.ScheduledStartTime == null ? null : Timestamp.FromDateTime(state.ScheduledStartTime.Value),
@@ -532,6 +536,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     LastUpdatedTimestamp = Timestamp.FromDateTime(state.LastUpdatedTime),
                     OrchestrationStatus = (P.OrchestrationStatus)state.OrchestrationStatus,
                     CustomStatus = state.Status,
+                    FailureDetails = request.Query?.FetchInputsAndOutputs == true ? GetFailureDetails(state.FailureDetails) : null,
                 };
 
                 response.OrchestrationState.Add(orchestrationState);
@@ -604,9 +609,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         /// <param name="entityBatchRequest">The operation request to convert.</param>
         /// <param name="configurations">The remote instance configuration options for this batch request.</param>
+        /// <param name="rollbackEntityOperationsOnExceptions">Whether failed entity operations should be rolled back.</param>
         /// <returns>The converted operation request.</returns>
         [return: NotNullIfNotNull("entityBatchRequest")]
-        internal static P.EntityBatchRequest? ToEntityBatchRequest(this EntityBatchRequest? entityBatchRequest, RemoteInstanceConfiguration? configurations)
+        internal static P.EntityBatchRequest? ToEntityBatchRequest(
+            this EntityBatchRequest? entityBatchRequest,
+            RemoteInstanceConfiguration? configurations,
+            bool? rollbackEntityOperationsOnExceptions = null)
         {
             if (entityBatchRequest == null)
             {
@@ -620,6 +629,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             };
 
             batchRequest.Properties.Add(ProtobufUtils.ConvertPocoToProtoMap(configurations));
+            if (rollbackEntityOperationsOnExceptions.HasValue)
+            {
+                batchRequest.Properties[RollbackEntityOperationsOnExceptionsPropertyName] =
+                    Value.ForBool(rollbackEntityOperationsOnExceptions.Value);
+            }
 
             foreach (var operation in entityBatchRequest.Operations ?? Enumerable.Empty<OperationRequest>())
             {

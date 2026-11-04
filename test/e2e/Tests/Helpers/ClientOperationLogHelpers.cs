@@ -22,7 +22,7 @@ internal static class ClientOperationLogHelpers
     /// <param name="getLogs">A function that returns the current collection of Core Tools logs (re-evaluated on each poll).</param>
     /// <param name="operationType">The expected operation type (e.g., "StartOrchestration", "Terminate").</param>
     /// <param name="instanceId">The expected instance ID.</param>
-    /// <param name="languageType">The language type of the function app under test. Non-DotnetIsolated languages skip polling.</param>
+    /// <param name="languageType">The language type of the function app under test.</param>
     /// <param name="maxWaitSeconds">Maximum time to wait for the log to appear (default: 5 seconds).</param>
     public static void AssertClientOperationLogExists(
         Func<IEnumerable<string>> getLogs,
@@ -36,10 +36,14 @@ internal static class ClientOperationLogHelpers
         // would require updating the method signature to async and changing the parameter to accept the TestLoggerProvider 
         // directly instead of a log collection function.
 
-        // Only the .NET isolated worker SDK currently emits the FunctionInvocationId header.
-        // Skip entirely for other languages to avoid unnecessary test delays.
+        // The .NET isolated SDK emits the FunctionInvocationId header for all client operations.
+        // Python also emits it except for purge operations, whose SDK methods do not yet forward it.
+        // Skip unsupported language/operation combinations to avoid unnecessary test delays.
         // Tracking issue: https://github.com/Azure/azure-functions-durable-extension/issues/3327
-        if (languageType != LanguageType.DotnetIsolated)
+        bool supportsFunctionInvocationId =
+            languageType == LanguageType.DotnetIsolated ||
+            (languageType == LanguageType.Python && operationType != "PurgeInstances");
+        if (!supportsFunctionInvocationId)
         {
             return;
         }
@@ -136,7 +140,36 @@ internal static class ClientOperationLogHelpers
     }
 
     /// <summary>
-    /// Gets the count of ClientOperationReceived logs for a specific operation type and instance ID.
+    /// Waits for client operation logs to be flushed, then asserts the exact count of logs
+    /// with valid FunctionInvocationIds for the specified operation and instance.
+    /// </summary>
+    /// <param name="getLogs">Returns the current snapshot of Core Tools logs on each poll.</param>
+    /// <param name="operationType">The operation type to count.</param>
+    /// <param name="instanceId">The instance ID to filter by.</param>
+    /// <param name="expectedCount">The expected number of matching logs.</param>
+    /// <param name="maxWaitSeconds">Maximum time to wait for the logs (default: 5 seconds).</param>
+    public static void AssertClientOperationLogCount(
+        Func<IEnumerable<string>> getLogs,
+        string operationType,
+        string instanceId,
+        int expectedCount,
+        int maxWaitSeconds = 5)
+    {
+        int logCount = 0;
+        WaitForCondition(
+            () =>
+            {
+                logCount = GetClientOperationLogCount(getLogs(), operationType, instanceId);
+                return logCount >= expectedCount;
+            },
+            maxWaitSeconds);
+
+        Assert.Equal(expectedCount, logCount);
+    }
+
+    /// <summary>
+    /// Gets the count of ClientOperationReceived logs with valid FunctionInvocationIds
+    /// for a specific operation type and instance ID.
     /// </summary>
     /// <param name="logs">The collection of Core Tools logs.</param>
     /// <param name="operationType">The operation type to count.</param>
@@ -150,7 +183,7 @@ internal static class ClientOperationLogHelpers
         return logs.Count(log =>
             log.Contains($"Client operation '{operationType}' received") &&
             log.Contains($"for instance '{instanceId}'") &&
-            log.Contains("FunctionInvocationId:"));
+            Guid.TryParse(ExtractFunctionInvocationId(log), out _));
     }
 
     /// <summary>

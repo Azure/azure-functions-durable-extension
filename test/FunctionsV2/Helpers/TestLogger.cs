@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using Microsoft.Azure.WebJobs.Logging;
 using Microsoft.Extensions.Logging;
 using Xunit.Abstractions;
 
@@ -54,8 +55,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Category = this.Category,
             });
 
-            // Only write traces specific to this extension
-            if (this.Category == TestHelpers.LogCategory)
+            // Include the function-user categories used by Durable execution traces.
+            if (this.Category == TestHelpers.LogCategory || LogCategories.IsFunctionUserCategory(this.Category))
             {
                 this.testOutput.WriteLine($"    {DateTime.Now:o}: {formattedMessage}");
             }

@@ -349,6 +349,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
             return false;
         }
 
+        public static bool IsNameOfExpression(SyntaxNode node)
+        {
+            // A nameof(...) expression parses as an InvocationExpression whose expression is the
+            // contextual keyword 'nameof'. It is compiler-verified, so it can be trusted the same
+            // way a constant string is when resolving activity function names.
+            return node is InvocationExpressionSyntax invocation
+                && invocation.Expression is IdentifierNameSyntax identifier
+                && string.Equals(identifier.Identifier.Text, "nameof", StringComparison.Ordinal);
+        }
+
         private static bool TryGetFunctionNameInNameOfOperator(SyntaxNode node, out string functionName)
         {
             if (node != null && node.IsKind(SyntaxKind.InvocationExpression))

@@ -1,0 +1,265 @@
+jobs:
+  - job: AzureStorageScale
+    displayName: Scale tests - Azure Storage
+    timeoutInMinutes: 60
+    variables:
+      AzureWebJobsStorage: UseDevelopmentStorage=true
+    steps:
+      - checkout: self
+        clean: true
+        submodules: true
+      - template: cfs-authentication.yml
+      - task: UseDotNet@2
+        displayName: Install .NET SDK from global.json
+        inputs:
+          packageType: sdk
+          useGlobalJson: true
+      - task: UseDotNet@2
+        displayName: Install .NET 8 SDK
+        inputs:
+          packageType: sdk
+          version: 8.x
+      - task: UseNode@1
+        displayName: Install Node.js 22
+        inputs:
+          version: 22.x
+      - bash: |
+          set -euo pipefail
+          project='./test/ScaleTests/Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests.csproj'
+          dotnet restore "$project"
+          dotnet build "$project" -c Release --no-restore
+          azurite_dir="$AGENT_TEMPDIRECTORY/azurite"
+          mkdir -p "$azurite_dir"
+          pushd "$azurite_dir"
+          echo '{"name":"azurite-local","private":true}' > package.json
+          npm install azurite@$(AZURITE_VERSION)
+          popd
+          "$azurite_dir/node_modules/.bin/azurite" --silent --skipApiVersionCheck \
+            --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+          azurite_pid=$!
+          trap 'kill $azurite_pid || true' EXIT
+          for i in $(seq 1 30); do
+            timeout 1 bash -c 'echo>/dev/tcp/127.0.0.1/10000' 2>/dev/null && break
+            if [ "$i" -eq 30 ]; then echo 'Azurite did not start'; exit 1; fi
+            sleep 1
+          done
+          dotnet test "$project" \
+            -c Release \
+            --no-build \
+            --verbosity normal \
+            --filter 'FullyQualifiedName!~AzureManaged&FullyQualifiedName!~Netherite&FullyQualifiedName!~Sql' \
+            --logger 'trx;LogFileName=scale-azure-storage.trx' \
+            --results-directory '$(Agent.TempDirectory)/TestResults'
+        displayName: Run Azure Storage scale tests
+      - template: publish-test-results.yml
+
+  - job: NetheriteScale
+    displayName: Scale tests - Netherite
+    timeoutInMinutes: 75
+    variables:
+      AzureWebJobsStorage: UseDevelopmentStorage=true
+      EventHubsConnection: Endpoint=sb://localhost;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;
+    steps:
+      - checkout: self
+        clean: true
+        submodules: true
+      - template: cfs-authentication.yml
+      - task: UseDotNet@2
+        displayName: Install .NET SDK from global.json
+        inputs:
+          packageType: sdk
+          useGlobalJson: true
+      - task: UseDotNet@2
+        displayName: Install .NET 8 SDK
+        inputs:
+          packageType: sdk
+          version: 8.x
+      - task: UseNode@1
+        displayName: Install Node.js 22
+        inputs:
+          version: 22.x
+      - bash: |
+          set -euo pipefail
+          npm install -g azurite@$(AZURITE_VERSION)
+          azurite --silent --skipApiVersionCheck \
+            --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+          for i in $(seq 1 30); do
+            timeout 1 bash -c 'echo>/dev/tcp/127.0.0.1/10000' 2>/dev/null && break
+            if [ "$i" -eq 30 ]; then echo 'Azurite did not start'; exit 1; fi
+            sleep 1
+          done
+        displayName: Start Azurite
+      - bash: |
+          set -euo pipefail
+          docker info
+          docker run -d \
+            --name eventhubs-emulator \
+            -p 5672:5672 \
+            -e ACCEPT_EULA=Y \
+            -e BLOB_SERVER=host.docker.internal \
+            -e METADATA_SERVER=host.docker.internal \
+            -v '$(Build.SourcesDirectory)/test/ScaleTests/Netherite/eventhubs-emulator-config.json:/Emulator/ConfigFiles/Config.json' \
+            --add-host host.docker.internal:host-gateway \
+            mcr.microsoft.com/azure-messaging/eventhubs-emulator:latest
+          for i in $(seq 1 60); do
+            timeout 1 bash -c 'echo>/dev/tcp/127.0.0.1/5672' 2>/dev/null && exit 0
+            if [ "$i" -eq 60 ]; then
+              docker logs eventhubs-emulator
+              exit 1
+            fi
+            sleep 2
+          done
+        displayName: Start Event Hubs emulator
+      - bash: |
+          set -euo pipefail
+          project='./test/ScaleTests/Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests.csproj'
+          dotnet build "$project" -c Release
+          dotnet test "$project" \
+            -c Release \
+            --no-build \
+            --verbosity normal \
+            --filter 'FullyQualifiedName~Netherite' \
+            --logger 'trx;LogFileName=scale-netherite.trx' \
+            --results-directory '$(Agent.TempDirectory)/TestResults'
+        displayName: Run Netherite scale tests
+        env:
+          EventHubsConnection: $(EventHubsConnection)
+      - template: publish-test-results.yml
+
+  - job: MSSQLScale
+    displayName: Scale tests - MSSQL
+    timeoutInMinutes: 75
+    variables:
+      AzureWebJobsStorage: UseDevelopmentStorage=true
+    steps:
+      - checkout: self
+        clean: true
+        submodules: true
+      - template: cfs-authentication.yml
+      - task: UseDotNet@2
+        displayName: Install .NET SDK from global.json
+        inputs:
+          packageType: sdk
+          useGlobalJson: true
+      - task: UseDotNet@2
+        displayName: Install .NET 8 SDK
+        inputs:
+          packageType: sdk
+          version: 8.x
+      - task: UseNode@1
+        displayName: Install Node.js 22
+        inputs:
+          version: 22.x
+      - bash: |
+          set -euo pipefail
+          npm install -g azurite@$(AZURITE_VERSION)
+          azurite --silent --skipApiVersionCheck \
+            --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+          for i in $(seq 1 30); do
+            timeout 1 bash -c 'echo>/dev/tcp/127.0.0.1/10000' 2>/dev/null && break
+            if [ "$i" -eq 30 ]; then echo 'Azurite did not start'; exit 1; fi
+            sleep 1
+          done
+        displayName: Start Azurite
+      - bash: |
+          set -euo pipefail
+          password="TEST12_${RANDOM}_${RANDOM}!"
+          echo "##vso[task.setvariable variable=MSSQL_SA_PASSWORD;issecret=true]${password}"
+        displayName: Generate SQL Server password
+      - bash: |
+          set -euo pipefail
+          docker info
+          docker pull mcr.microsoft.com/mssql/server:2022-latest
+          docker run --name mssql-server \
+            -e ACCEPT_EULA=Y \
+            -e "MSSQL_SA_PASSWORD=$MSSQL_SA_PASSWORD" \
+            -e MSSQL_PID=Express \
+            -p 1433:1433 \
+            -d mcr.microsoft.com/mssql/server:2022-latest
+          for i in $(seq 1 60); do
+            timeout 1 bash -c 'echo>/dev/tcp/127.0.0.1/1433' 2>/dev/null && exit 0
+            if [ "$i" -eq 60 ]; then docker logs mssql-server; exit 1; fi
+            sleep 2
+          done
+        displayName: Start SQL Server
+        env:
+          MSSQL_SA_PASSWORD: $(MSSQL_SA_PASSWORD)
+      - bash: |
+          set -euo pipefail
+          cd test/ScaleTests
+          dotnet build --configuration Release
+          dotnet test \
+            --configuration Release \
+            --no-build \
+            --verbosity normal \
+            --filter 'FullyQualifiedName~SqlServer' \
+            --logger 'trx;LogFileName=scale-mssql.trx' \
+            --results-directory '$(Agent.TempDirectory)/TestResults'
+        displayName: Run SQL Server scale tests
+        env:
+          SQLDB_Connection: Server=localhost,1433;Database=DurableDB;User Id=sa;Password=$(MSSQL_SA_PASSWORD);TrustServerCertificate=True;Encrypt=False;
+      - template: publish-test-results.yml
+
+  - job: DTSScale
+    displayName: Scale tests - Durable Task Scheduler
+    timeoutInMinutes: 75
+    variables:
+      AzureWebJobsStorage: UseDevelopmentStorage=true
+      DURABLE_TASK_SCHEDULER_CONNECTION_STRING: Endpoint=http://localhost:8080;Authentication=None
+    steps:
+      - checkout: self
+        clean: true
+        submodules: true
+      - template: cfs-authentication.yml
+      - task: UseDotNet@2
+        displayName: Install .NET SDK from global.json
+        inputs:
+          packageType: sdk
+          useGlobalJson: true
+      - task: UseDotNet@2
+        displayName: Install .NET 8 SDK
+        inputs:
+          packageType: sdk
+          version: 8.x
+      - task: UseNode@1
+        displayName: Install Node.js 22
+        inputs:
+          version: 22.x
+      - bash: |
+          set -euo pipefail
+          npm install -g azurite@$(AZURITE_VERSION)
+          azurite --silent --skipApiVersionCheck \
+            --blobPort 10000 --queuePort 10001 --tablePort 10002 &
+          for i in $(seq 1 30); do
+            timeout 1 bash -c 'echo>/dev/tcp/127.0.0.1/10000' 2>/dev/null && break
+            if [ "$i" -eq 30 ]; then echo 'Azurite did not start'; exit 1; fi
+            sleep 1
+          done
+        displayName: Start Azurite
+      - bash: |
+          set -euo pipefail
+          docker info
+          docker pull mcr.microsoft.com/dts/dts-emulator:latest
+          docker run -i \
+            -p 8080:8080 \
+            -p 8082:8082 \
+            -d mcr.microsoft.com/dts/dts-emulator:latest
+          for i in $(seq 1 30); do
+            timeout 1 bash -c 'echo>/dev/tcp/127.0.0.1/8080' 2>/dev/null && exit 0
+            if [ "$i" -eq 30 ]; then echo 'DTS emulator did not start'; exit 1; fi
+            sleep 1
+          done
+        displayName: Start Durable Task Scheduler emulator
+      - bash: |
+          set -euo pipefail
+          cd test/ScaleTests
+          dotnet build --configuration Release
+          dotnet test \
+            --configuration Release \
+            --no-build \
+            --verbosity normal \
+            --filter 'FullyQualifiedName~AzureManaged' \
+            --logger 'trx;LogFileName=scale-dts.trx' \
+            --results-directory '$(Agent.TempDirectory)/TestResults'
+        displayName: Run Durable Task Scheduler scale tests
+      - template: publish-test-results.yml

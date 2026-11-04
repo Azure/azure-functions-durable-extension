@@ -13,7 +13,7 @@ bp = df.Blueprint()
 
 @bp.route(route="GetAllInstances", methods=["GET", "POST"])
 @bp.durable_client_input(client_name="client")
-async def get_all_instances(req: func.HttpRequest, client: df.DurableOrchestrationClient):
+async def get_all_instances(req: func.HttpRequest, client: df.DurableOrchestrationClient, context: func.Context):
     try:
         instances = await client.get_status_all()
         # This would not be necessary if we implemnted __str__ for DurableOrchestrationStatus using to_json under the hood
@@ -35,7 +35,7 @@ async def get_all_instances(req: func.HttpRequest, client: df.DurableOrchestrati
 
 @bp.route(route="GetRunningInstances", methods=["GET", "POST"])
 @bp.durable_client_input(client_name="client")
-async def get_running_instances(req: func.HttpRequest, client: df.DurableOrchestrationClient):
+async def get_running_instances(req: func.HttpRequest, client: df.DurableOrchestrationClient, context: func.Context):
     try:
         filter_statuses = [
             df.OrchestrationRuntimeStatus.Running,

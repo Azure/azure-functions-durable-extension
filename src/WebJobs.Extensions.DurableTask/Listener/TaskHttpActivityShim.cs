@@ -38,29 +38,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public async override Task<string> RunAsync(TaskContext context, string rawInput)
         {
-            DurableHttpRequest durableHttpRequest = ReconstructDurableHttpRequest(rawInput);
+            DurableHttpRequest durableHttpRequest = this.ReconstructDurableHttpRequest(rawInput);
             HttpRequestMessage requestMessage = await this.ConvertToHttpRequestMessage(durableHttpRequest);
 
             HttpResponseMessage response;
             try
             {
-                if (durableHttpRequest.Timeout == null)
+                using (CancellationTokenSource cts = new CancellationTokenSource())
                 {
-                    response = await this.httpClient.SendAsync(requestMessage);
-                }
-                else
-                {
+                    cts.CancelAfter(durableHttpRequest.Timeout ?? TimeSpan.FromSeconds(240));
                     try
                     {
-                        using (CancellationTokenSource cts = new CancellationTokenSource())
-                        {
-                            cts.CancelAfter(durableHttpRequest.Timeout.Value);
-                            response = await this.httpClient.SendAsync(requestMessage, cts.Token);
-                        }
+                        response = await this.httpClient.SendAsync(requestMessage, cts.Token);
                     }
-                    catch (OperationCanceledException ex)
+                    catch (OperationCanceledException ex) when (durableHttpRequest.Timeout.HasValue && cts.IsCancellationRequested)
                     {
-                        TimeoutException e = new TimeoutException(ex.Message + $" Reached user specified timeout: {durableHttpRequest.Timeout.Value}.");
+                        TimeoutException e = new TimeoutException(ex.Message + $" Reached user specified timeout: {durableHttpRequest.Timeout.Value}.", ex);
 
                         string details = Utils.SerializeCause(e, this.config.ErrorDataConverter);
                         throw new TaskFailureException(e.Message, e, details);
@@ -95,11 +88,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
         }
 
-        private static DurableHttpRequest ReconstructDurableHttpRequest(string serializedRequest)
+        private DurableHttpRequest ReconstructDurableHttpRequest(string serializedRequest)
         {
-            // DeserializeObject deserializes into a List and then the first element
-            // of that list is the DurableHttpRequest
-            IList<DurableHttpRequest> input = JsonConvert.DeserializeObject<IList<DurableHttpRequest>>(serializedRequest);
+            // DTFx wraps activity inputs in a list. Use the configured converter so custom
+            // token sources are resolved by the same allowlisting binder used to serialize them.
+            IList<DurableHttpRequest> input =
+                this.config.MessageDataConverter.Deserialize<IList<DurableHttpRequest>>(serializedRequest);
             DurableHttpRequest durableHttpRequest = input.First();
             return durableHttpRequest;
         }

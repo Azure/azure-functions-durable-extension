@@ -29,6 +29,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         DurableOrchestrationClientBase // for v1 legacy compatibility.
 #pragma warning restore 618
     {
+        internal const string SourceInstanceIdTag = "MS_DurableFunctions_SourceInstanceId";
+
         private const int MaxInstanceIdLength = 256;
 
         private static readonly JValue NullJValue = JValue.CreateNull();
@@ -180,6 +182,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 this.config?.ThrowIfFunctionDoesNotExist(orchestratorFunctionName, FunctionType.Orchestrator);
             }
+
+            this.ThrowIfOrchestratorFunctionIsDisabled(orchestratorFunctionName);
 
             if (string.IsNullOrEmpty(instanceId))
             {
@@ -350,7 +354,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 EntityId.GetSchedulerIdFromEntityId(entityId),
                 reason: $"EntitySignal:{operationName}",
                 functionType: FunctionType.Entity,
-                isReplay: false);
+                isReplay: false,
+                targetInstanceId: instanceId);
         }
 
         private bool ClientReferencesCurrentApp(DurableClient client)
@@ -358,6 +363,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return !client.attribute.ExternalClient &&
                 this.TaskHubMatchesCurrentApp(client) &&
                 this.ConnectionNameMatchesCurrentApp(client);
+        }
+
+        internal void ThrowIfOrchestratorFunctionIsDisabled(string name)
+        {
+            if (this.ClientReferencesCurrentApp(this))
+            {
+                this.config?.ThrowIfOrchestratorFunctionIsDisabled(name);
+            }
         }
 
         private bool TaskHubMatchesCurrentApp(DurableClient client)
@@ -841,7 +854,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         instanceId,
                         reason: "RaiseEvent:" + eventName,
                         functionType: FunctionType.Orchestrator,
-                        isReplay: false);
+                        isReplay: false,
+                        targetInstanceId: instanceId);
                 }
                 else
                 {
@@ -942,7 +956,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     historyArray = MessagePayloadDataConverter.ConvertToJArray(history);
 
                     var eventMapper = new Dictionary<string, EventIndexDateMapping>();
-                    var indexList = new List<int>();
+                    var eventsToRemove = new int[historyArray.Count];
 
                     for (var i = 0; i < historyArray.Count; i++)
                     {
@@ -959,7 +973,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                     break;
                                 case EventType.TaskCompleted:
                                 case EventType.TaskFailed:
-                                    AddScheduledEventDataAndAggregate(ref eventMapper, "TaskScheduled", historyItem, indexList, showInput);
+                                    AddScheduledEventDataAndAggregate(ref eventMapper, "TaskScheduled", historyItem, eventsToRemove, showInput);
                                     historyItem["TaskScheduledId"]?.Parent.Remove();
                                     if (!showHistoryOutput && eventType == EventType.TaskCompleted)
                                     {
@@ -974,7 +988,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                     break;
                                 case EventType.SubOrchestrationInstanceCompleted:
                                 case EventType.SubOrchestrationInstanceFailed:
-                                    AddScheduledEventDataAndAggregate(ref eventMapper, "SubOrchestrationInstanceCreated", historyItem, indexList, showInput);
+                                    AddScheduledEventDataAndAggregate(ref eventMapper, "SubOrchestrationInstanceCreated", historyItem, eventsToRemove, showInput);
                                     historyItem.Remove("TaskScheduledId");
                                     if (!showHistoryOutput && eventType == EventType.SubOrchestrationInstanceCompleted)
                                     {
@@ -1010,7 +1024,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                                     break;
                                 case EventType.OrchestratorStarted:
                                 case EventType.OrchestratorCompleted:
-                                    indexList.Add(i);
+                                    eventsToRemove[i]++;
                                     break;
                             }
 
@@ -1024,13 +1038,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         }
                     }
 
-                    var counter = 0;
-                    indexList.Sort();
-                    foreach (var indexValue in indexList)
-                    {
-                        historyArray.RemoveAt(indexValue - counter);
-                        counter++;
-                    }
+                    CompactHistory(historyArray, eventsToRemove);
                 }
             }
 
@@ -1054,22 +1062,148 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private static void TrackNameAndScheduledTime(JObject historyItem, EventType eventType, int index, Dictionary<string, EventIndexDateMapping> eventMapper)
         {
-            eventMapper.Add($"{eventType}_{historyItem["EventId"]}", new EventIndexDateMapping { Index = index, Name = (string)historyItem["Name"], Date = (DateTime)historyItem["Timestamp"], Input = (string)historyItem["Input"] });
+            eventMapper.Add($"{eventType}_{historyItem["EventId"]}", new EventIndexDateMapping { Index = index, Name = (string)historyItem["Name"], Date = (DateTime)historyItem["Timestamp"], Input = (string)historyItem["Input"], InstanceId = (string)historyItem["InstanceId"] });
         }
 
-        private static void AddScheduledEventDataAndAggregate(ref Dictionary<string, EventIndexDateMapping> eventMapper, string prefix, JToken historyItem, List<int> indexList, bool showInput)
+        private static void AddScheduledEventDataAndAggregate(ref Dictionary<string, EventIndexDateMapping> eventMapper, string prefix, JToken historyItem, int[] eventsToRemove, bool showInput)
         {
             if (eventMapper.TryGetValue($"{prefix}_{historyItem["TaskScheduledId"]}", out EventIndexDateMapping taskScheduledData))
             {
                 historyItem["ScheduledTime"] = taskScheduledData.Date;
                 historyItem["FunctionName"] = taskScheduledData.Name;
+                if (!string.IsNullOrEmpty(taskScheduledData.InstanceId))
+                {
+                    historyItem["InstanceId"] = taskScheduledData.InstanceId;
+                }
+
                 if (showInput)
                 {
                     historyItem["Input"] = taskScheduledData.Input;
                 }
 
-                indexList.Add(taskScheduledData.Index);
+                eventsToRemove[taskScheduledData.Index]++;
             }
+        }
+
+        internal static void CompactHistory(JArray historyArray, int[] eventsToRemove)
+        {
+            bool hasRemovals = false;
+            bool hasDuplicateRemovals = false;
+
+            foreach (int removalCount in eventsToRemove)
+            {
+                if (removalCount > 0)
+                {
+                    hasRemovals = true;
+                }
+
+                if (removalCount > 1)
+                {
+                    hasDuplicateRemovals = true;
+                }
+            }
+
+            if (!hasRemovals)
+            {
+                return;
+            }
+
+            bool[] adjustedRemovals = hasDuplicateRemovals
+                ? GetAdjustedHistoryRemovals(eventsToRemove)
+                : null;
+            var retainedEvents = new List<JToken>(historyArray.Count);
+            for (int i = 0; i < historyArray.Count; i++)
+            {
+                bool removeEvent = adjustedRemovals != null
+                    ? adjustedRemovals[i]
+                    : eventsToRemove[i] > 0;
+                if (!removeEvent)
+                {
+                    retainedEvents.Add(historyArray[i]);
+                }
+            }
+
+            historyArray.RemoveAll();
+            foreach (JToken retainedEvent in retainedEvents)
+            {
+                historyArray.Add(retainedEvent);
+            }
+        }
+
+        private static bool[] GetAdjustedHistoryRemovals(int[] eventsToRemove)
+        {
+            int eventCount = eventsToRemove.Length;
+            var previousEvent = new int[eventCount];
+            var nextEvent = new int[eventCount];
+            for (int i = 0; i < eventCount; i++)
+            {
+                previousEvent[i] = i - 1;
+                nextEvent[i] = i + 1 < eventCount ? i + 1 : -1;
+            }
+
+            // Preserve the legacy adjusted-ascending RemoveAt behavior for malformed histories
+            // that reference the same scheduled event more than once, without shifting the JArray.
+            var adjustedRemovals = new bool[eventCount];
+            int currentEvent = 0;
+            int currentPosition = 0;
+            int removalsApplied = 0;
+            int remainingEvents = eventCount;
+
+            // Since source indexes are visited in order, the total cursor movement is linear:
+            // each next removal position changes by the source-index delta minus one.
+            for (int sourceIndex = 0; sourceIndex < eventCount; sourceIndex++)
+            {
+                for (int duplicate = 0; duplicate < eventsToRemove[sourceIndex]; duplicate++)
+                {
+                    int removalPosition = sourceIndex - removalsApplied;
+                    if (removalPosition < 0 || removalPosition >= remainingEvents)
+                    {
+                        throw new ArgumentOutOfRangeException(
+                            "index",
+                            removalPosition < 0
+                                ? "Index is less than 0."
+                                : "Index is equal to or greater than Count.");
+                    }
+
+                    while (currentPosition < removalPosition)
+                    {
+                        currentEvent = nextEvent[currentEvent];
+                        currentPosition++;
+                    }
+
+                    while (currentPosition > removalPosition)
+                    {
+                        currentEvent = previousEvent[currentEvent];
+                        currentPosition--;
+                    }
+
+                    int removedEvent = currentEvent;
+                    int previous = previousEvent[removedEvent];
+                    int next = nextEvent[removedEvent];
+                    adjustedRemovals[removedEvent] = true;
+                    if (previous >= 0)
+                    {
+                        nextEvent[previous] = next;
+                    }
+
+                    if (next >= 0)
+                    {
+                        previousEvent[next] = previous;
+                        currentEvent = next;
+                        currentPosition = removalPosition;
+                    }
+                    else
+                    {
+                        currentEvent = previous;
+                        currentPosition = removalPosition - 1;
+                    }
+
+                    removalsApplied++;
+                    remainingEvents--;
+                }
+            }
+
+            return adjustedRemovals;
         }
 
         internal static DurableOrchestrationStatus ConvertOrchestrationStateToStatus(OrchestrationState orchestrationState, JArray historyArray = null)
@@ -1077,7 +1211,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return new DurableOrchestrationStatus
             {
                 Name = orchestrationState.Name,
+                Version = string.IsNullOrEmpty(orchestrationState.Version) ? null : orchestrationState.Version,
                 InstanceId = orchestrationState.OrchestrationInstance.InstanceId,
+                ParentInstanceId = orchestrationState.ParentInstance?.OrchestrationInstance?.InstanceId,
                 CreatedTime = orchestrationState.CreatedTime,
                 LastUpdatedTime = orchestrationState.LastUpdatedTime,
                 RuntimeStatus = (OrchestrationRuntimeStatus)orchestrationState.OrchestrationStatus,
@@ -1137,11 +1273,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         async Task<string> IDurableOrchestrationClient.RestartAsync(string instanceId, bool restartWithNewInstanceId)
         {
-            // GetOrchestrationInstanceStateAsync will throw ArgumentException if the provided instanceid is not found.
-            OrchestrationState state = await this.GetOrchestrationInstanceStateAsync(instanceId);
-
-            JToken input = ParseToJToken(state.Input);
-
             string newInstanceId = null;
 
             if (restartWithNewInstanceId)
@@ -1149,12 +1280,71 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 newInstanceId = Guid.NewGuid().ToString("N");
             }
 
+            return await this.RestartCoreAsync(
+                sourceInstanceId: instanceId,
+                newInstanceId: restartWithNewInstanceId ? newInstanceId : instanceId,
+                version: null);
+        }
+
+        internal Task<string> RestartWithOptionsAsync(string sourceInstanceId, string newInstanceId, string version)
+        {
+            ValidateRestartTargetInstanceId(newInstanceId);
+            return this.RestartCoreAsync(sourceInstanceId, newInstanceId, version);
+        }
+
+        private async Task<string> RestartCoreAsync(string sourceInstanceId, string newInstanceId, string version)
+        {
+            // GetOrchestrationInstanceStateAsync will throw ArgumentException if the provided instance ID is not found.
+            OrchestrationState state = await this.GetOrchestrationInstanceStateAsync(sourceInstanceId);
+
+            this.ThrowIfOrchestratorFunctionIsDisabled(state.Name);
+
+            JToken input = ParseToJToken(state.Input);
+            IDictionary<string, string> tags = state.Tags;
+            if (!string.Equals(sourceInstanceId, newInstanceId, StringComparison.Ordinal))
+            {
+                tags = state.Tags == null
+                    ? new Dictionary<string, string>()
+                    : new Dictionary<string, string>(state.Tags);
+                tags[SourceInstanceIdTag] = sourceInstanceId;
+            }
+            else if (state.ParentInstance != null && state.Tags?.ContainsKey(SourceInstanceIdTag) == true)
+            {
+                var filteredTags = new Dictionary<string, string>(state.Tags);
+                filteredTags.Remove(SourceInstanceIdTag);
+                tags = filteredTags.Count == 0 ? null : filteredTags;
+            }
+
             return await this.CreateOrchestrationInstanceAndTraceAsync(
                 orchestratorFunctionName: state.Name,
-                instanceId: restartWithNewInstanceId ? newInstanceId : instanceId,
+                instanceId: newInstanceId,
                 input: input,
-                tags: state.Tags,
-                reason: "RestartInstance");
+                tags: tags,
+                reason: "RestartInstance",
+                version: version);
+        }
+
+        private static void ValidateRestartTargetInstanceId(string newInstanceId)
+        {
+            if (string.IsNullOrWhiteSpace(newInstanceId))
+            {
+                throw new ArgumentException("A new orchestration instance ID must be provided.", nameof(newInstanceId));
+            }
+
+            if (newInstanceId.StartsWith("@"))
+            {
+                throw new ArgumentException("Orchestration instance IDs must not start with @.", nameof(newInstanceId));
+            }
+
+            if (newInstanceId.Any(IsInvalidCharacter))
+            {
+                throw new ArgumentException("Orchestration instance IDs must not contain /, \\, #, ?, or control characters.", nameof(newInstanceId));
+            }
+
+            if (newInstanceId.Length > MaxInstanceIdLength)
+            {
+                throw new ArgumentException($"Instance ID lengths must not exceed {MaxInstanceIdLength} characters.", nameof(newInstanceId));
+            }
         }
 
         /// <inheritdoc/>
@@ -1217,12 +1407,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string instanceId,
             object input,
             IDictionary<string, string> tags,
-            string reason)
+            string reason,
+            string version = null)
         {
             OrchestrationStatus[] dedupeStatuses = this.GetStatusesNotToOverride();
             Task<OrchestrationInstance> createTask = this.client.CreateOrchestrationInstanceAsync(
                 orchestratorFunctionName,
-                this.durableTaskOptions.DefaultVersion,
+                version ?? this.durableTaskOptions.DefaultVersion,
                 instanceId,
                 input,
                 tags,
@@ -1234,7 +1425,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 instanceId,
                 reason: reason,
                 functionType: FunctionType.Orchestrator,
-                isReplay: false);
+                isReplay: false,
+                targetInstanceId: instanceId);
 
             OrchestrationInstance instance = await createTask;
             return instance.InstanceId;
@@ -1249,6 +1441,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             public string Name { get; set; }
 
             public string Input { get; set; }
+
+            public string InstanceId { get; set; }
         }
     }
 }

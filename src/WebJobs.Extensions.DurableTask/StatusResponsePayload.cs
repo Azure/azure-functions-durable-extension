@@ -19,10 +19,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public string Name { get; set; }
 
         /// <summary>
+        /// Orchestration version.
+        /// </summary>
+        [DataMember(Name = "version", EmitDefaultValue = false)]
+        public string Version { get; set; }
+
+        /// <summary>
         /// InstanceId.
         /// </summary>
         [DataMember(Name = "instanceId")]
         public string InstanceId { get; set; }
+
+        /// <summary>
+        /// Parent instance ID.
+        /// </summary>
+        [DataMember(Name = "parentInstanceId", EmitDefaultValue = false)]
+        public string ParentInstanceId { get; set; }
 
         /// <summary>
         /// Runtime status.

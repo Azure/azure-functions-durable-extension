@@ -52,6 +52,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     RpcBaseUrl = localRpcAddress,
                     RequiredQueryStringParameters = this.config.HttpApiHandler.GetUniversalQueryStrings(),
                     HttpBaseUrl = this.config.HttpApiHandler.GetBaseUrl(),
+                    UseForwardedHost = this.config.Options.HttpSettings?.UseForwardedHost ?? false,
                     MaxGrpcMessageSizeInBytes = this.config.Options.MaxGrpcMessageSizeInBytes,
                     GrpcHttpClientTimeout = JsonConvert.SerializeObject(this.config.Options.GrpcHttpClientTimeout),
                 });
@@ -149,6 +150,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             /// </summary>
             [JsonProperty("httpBaseUrl")]
             public string? HttpBaseUrl { get; set; }
+
+            /// <summary>
+            /// Gets or sets a value indicating whether workers should use forwarded headers for URL construction.
+            /// </summary>
+            [JsonProperty("useForwardedHost", NullValueHandling = NullValueHandling.Ignore)]
+            public bool? UseForwardedHost { get; set; }
 
             /// <summary>
             /// Optional setting that specifies the maximum gRPC receive message size (in bytes) for the DurableTaskClient.

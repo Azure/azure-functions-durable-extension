@@ -32,9 +32,18 @@ param(
     [Switch]
     $SkipBuild,
 
-    # Target a specific test app to build. Ignored if -SkipBuild is set. If not specified, all test apps will be built.
-    [string]
-    $E2EAppName = "",
+    # Skip only the initial extension baseline build. App PreBuild packaging still runs.
+    # CI uses this after building the extension for all target frameworks.
+    [Switch]
+    $SkipExtensionBuild,
+
+    # CI reuses shared NuGet caches between languages; local behavior is unchanged.
+    [Switch]
+    $PreserveNuGetCache,
+
+    # Target specific test apps to build. Ignored if -SkipBuild is set. If not specified, all test apps will be built.
+    [string[]]
+    $E2EAppName = @(),
 
     # Target framework to build (e.g., net8.0, net10.0). If not specified, builds all TFMs.
     [string]
@@ -56,6 +65,15 @@ $ProjectTemporaryPath = Join-Path ([System.IO.Path]::GetTempPath()) "DurableTask
 New-Item -Path $ProjectTemporaryPath -ItemType Directory -ErrorAction SilentlyContinue
 $WebJobsExtensionProjectDirectory = Join-Path $ProjectBaseDirectory "src\WebJobs.Extensions.DurableTask"
 $E2EAppParentDirectory = Join-Path $ProjectBaseDirectory "test\e2e\Apps"
+$CfsNpmConfigPath = (Resolve-Path (Join-Path $ProjectBaseDirectory "eng\cfs\.npmrc")).Path
+
+if (!$env:NPM_CONFIG_USERCONFIG) {
+  $env:NPM_CONFIG_USERCONFIG = $CfsNpmConfigPath
+}
+
+if (!$env:PIP_INDEX_URL) {
+  $env:PIP_INDEX_URL = "https://pkgs.dev.azure.com/azfunc/public/_packaging/upstream-public/pypi/simple/"
+}
 
 $LocalNugetCacheDirectory = $env:NUGET_PACKAGES
 if (!$LocalNugetCacheDirectory) {
@@ -142,11 +160,13 @@ function InstallExtensionAndBuildTestApp($testAppDir) {
     Push-Location $testAppDir
     try {
 
-    Write-Host "Removing cached WebJobs extension versions from nuget cache, if exists"
-    $cachedVersionFolders = Get-ChildItem -Path (Join-Path $LocalNugetCacheDirectory "microsoft.azure.webjobs.extensions.durabletask") -Directory -ErrorAction SilentlyContinue
-    $cachedVersionFolders | ForEach-Object {
-      Write-Host "Removing cached version $($_.Name) from nuget cache"
-      Remove-Item -Recurse -Force $_.FullName -ErrorAction Stop
+    if (!$PreserveNuGetCache) {
+      Write-Host "Removing cached WebJobs extension versions from nuget cache, if exists"
+      $cachedVersionFolders = Get-ChildItem -Path (Join-Path $LocalNugetCacheDirectory "microsoft.azure.webjobs.extensions.durabletask") -Directory -ErrorAction SilentlyContinue
+      $cachedVersionFolders | ForEach-Object {
+        Write-Host "Removing cached version $($_.Name) from nuget cache"
+        Remove-Item -Recurse -Force $_.FullName -ErrorAction Stop
+      }
     }
 
     if (!(Test-Path ".\app.csproj")) {
@@ -171,7 +191,7 @@ function InstallExtensionAndBuildTestApp($testAppDir) {
         .  ./.venv/bin/Activate.ps1
       }
 
-      python -m pip install --upgrade -r requirements.txt
+      python -m pip install --upgrade --requirement "requirements.txt"
       StopOnFailedExecution
 
       deactivate
@@ -185,16 +205,6 @@ function InstallExtensionAndBuildTestApp($testAppDir) {
       StopOnFailedExecution
       npm run build
       StopOnFailedExecution
-    }
-
-    if (Test-Path ".\requirements.psd1") {
-      Write-Host "Ensuring PSGallery repository is registered for managed dependencies"
-      if (-not (Get-PSRepository -Name PSGallery -ErrorAction SilentlyContinue)) {
-        Register-PSRepository -Default
-        Write-Host "PSGallery repository registered"
-      } else {
-        Write-Host "PSGallery repository already registered"
-      }
     }
 
     if (Test-Path ".\pom.xml") {
@@ -224,21 +234,25 @@ function InstallExtensionAndBuildTestApp($testAppDir) {
 
 if (!$SkipBuild)
 {
-  Write-Host "Building WebJobs extension project"
+  if (!$SkipExtensionBuild) {
+    Write-Host "Building WebJobs extension project"
   
-  # Do NOT use --output with multi-targeted projects to avoid race conditions
-  # when multiple TFMs try to write to the same output directory (MSB4018).
-  # Disable GeneratePackageOnBuild to prevent parallel TFM builds from racing
-  # to write the same .nuspec file. The E2E test apps produce their own local
-  # .nupkg via MSBuild PreBuild targets, so the package is not needed here.
+    # Do NOT use --output with multi-targeted projects to avoid race conditions
+    # when multiple TFMs try to write to the same output directory (MSB4018).
+    # Disable GeneratePackageOnBuild to prevent parallel TFM builds from racing
+    # to write the same .nuspec file. The E2E test apps produce their own local
+    # .nupkg via MSBuild PreBuild targets, so the package is not needed here.
 
-  dotnet build -c Debug /p:GeneratePackageOnBuild=false "$WebJobsExtensionProjectDirectory\WebJobs.Extensions.DurableTask.csproj"
+    dotnet build -c Debug /p:GeneratePackageOnBuild=false "$WebJobsExtensionProjectDirectory\WebJobs.Extensions.DurableTask.csproj"
 
-  if ($LASTEXITCODE -ne 0) { Set-Location $PSScriptRoot; throw "WebJobs Extension build failed" }
+    if ($LASTEXITCODE -ne 0) { Set-Location $PSScriptRoot; throw "WebJobs Extension build failed" }
+  }
 
   if ($E2EAppName)
   {
-    InstallExtensionAndBuildTestApp (Join-Path $E2EAppParentDirectory $E2EAppName)
+    foreach ($appName in $E2EAppName) {
+      InstallExtensionAndBuildTestApp (Join-Path $E2EAppParentDirectory $appName)
+    }
   }
   else {
     Get-ChildItem -Path $E2EAppParentDirectory -Directory | ForEach-Object {
@@ -297,13 +311,15 @@ function StartMSSQLContainer($mssqlPwd) {
   docker ps
 }
 
-function StartDTSContainer() {
+function StartDTSContainer([string] $containerName, [int] $port) {
   Write-Host "Pulling down the mcr.microsoft.com/dts/dts-emulator:latest image..."
   docker pull mcr.microsoft.com/dts/dts-emulator:latest
+  StopOnFailedExecution
 
   # Start the DTS Server docker container with the specified edition
-  Write-Host "Starting DTS docker container on port 8080" -ForegroundColor DarkYellow
-  docker run -i --name dts-emulator --rm -p 8080:8080 -p 8081:8081 -p 8082:8082 -d mcr.microsoft.com/dts/dts-emulator:latest
+  Write-Host "Starting DTS docker container $containerName on port $port" -ForegroundColor DarkYellow
+  # Tests only need gRPC. Publishing the dashboard/health ports conflicts with CI agent services.
+  docker run -i --name $containerName --rm -p "${port}:8080" -d mcr.microsoft.com/dts/dts-emulator:latest
 
   if ($LASTEXITCODE -ne 0) {
       exit $LASTEXITCODE
@@ -316,7 +332,7 @@ function StartDTSContainer() {
       try {
           $tcp = New-Object System.Net.Sockets.TcpClient
           try {
-              $tcp.Connect("localhost", 8080)
+              $tcp.Connect("localhost", $port)
               Write-Host "DTS emulator is ready after $i seconds." -ForegroundColor Green
               break
           } finally {
@@ -325,7 +341,7 @@ function StartDTSContainer() {
       } catch { }
       if ($i -eq $maxAttempts) {
           Write-Error "DTS emulator did not become ready within $maxAttempts seconds."
-          docker logs dts-emulator 2>&1 | Select-Object -Last 20
+          docker logs $containerName 2>&1 | Select-Object -Last 20
           exit 1
       }
       Start-Sleep -Seconds 1
@@ -352,7 +368,8 @@ if ($StartMSSqlContainer)
 
 if ($StartDTSContainer)
 {
-    StartDTSContainer
+    StartDTSContainer -containerName "dts-emulator" -port 8080
+    StartDTSContainer -containerName "dts-emulator-workitemfilters" -port 8083
 }
 
 StopOnFailedExecution

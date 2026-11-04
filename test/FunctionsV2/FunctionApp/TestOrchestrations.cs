@@ -20,10 +20,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         public static bool SayHelloWithActivityForRewindShouldFail { get; set; } = true;
 
+        [Disable]
+        public static string DisabledOrchestrator([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            return nameof(DisabledOrchestrator);
+        }
+
         public static string SayHelloInline([OrchestrationTrigger] IDurableOrchestrationContext ctx)
         {
             string input = ctx.GetInput<string>();
             return $"Hello, {input}!";
+        }
+
+        public static string ReadSourceInstanceId([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            return ctx.SourceInstanceId;
+        }
+
+        public static async Task<string[]> ReadSourceInstanceIdWithChild([OrchestrationTrigger] IDurableOrchestrationContext ctx)
+        {
+            string sourceBeforeChild = ctx.SourceInstanceId;
+            string childSource = await ctx.CallSubOrchestratorAsync<string>(nameof(ReadSourceInstanceId), null);
+            return new[] { sourceBeforeChild, childSource, ctx.SourceInstanceId };
         }
 
         public static async Task<string> CallActivityWithorWithoutInput([OrchestrationTrigger] IDurableOrchestrationContext ctx)

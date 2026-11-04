@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <AzureFunctionsVersion>v4</AzureFunctionsVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>DurableTask.GeneratedInvocationApp</RootNamespace>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\..\sign.snk</AssemblyOriginatorKeyFile>
+    <FunctionsExecutionModel>isolated</FunctionsExecutionModel>
+    <FunctionsEnableExecutorSourceGen>true</FunctionsEnableExecutorSourceGen>
+    <FunctionsGeneratedCodeNamespace>$(RootNamespace)</FunctionsGeneratedCodeNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Azure.Functions.Worker" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" ExcludeAssets="build" />
+    <ProjectReference Include="..\..\..\src\Worker.Extensions.DurableTask.AzureBlobPayloads\Worker.Extensions.DurableTask.AzureBlobPayloads.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <CompilerVisibleProperty Include="FunctionsEnableExecutorSourceGen" />
+    <CompilerVisibleProperty Include="FunctionsGeneratedCodeNamespace" />
+    <CompilerVisibleProperty Include="FunctionsExecutionModel" />
+  </ItemGroup>
+</Project>

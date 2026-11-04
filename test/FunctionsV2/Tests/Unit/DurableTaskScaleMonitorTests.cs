@@ -37,7 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             this.loggerProvider = new TestLoggerProvider(output);
             this.loggerFactory.AddProvider(this.loggerProvider);
             ILogger logger = this.loggerFactory.CreateLogger(LogCategories.CreateTriggerCategory("DurableTask"));
-            this.traceHelper = new EndToEndTraceHelper(logger, false);
+            this.traceHelper = EndToEndTraceHelper.CreateHostOnly(logger, false);
             this.performanceMonitor = new Mock<DisconnectedPerformanceMonitor>(MockBehavior.Strict, new AzureStorageOrchestrationServiceSettings
             {
                 StorageAccountClientProvider = this.clientProvider,

@@ -40,5 +40,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// True if gRPC is required; otherwise, false.
         /// </value>
         public bool DurableRequiresGrpc { get; set; }
+
+        /// <summary>
+        /// Gets or sets the name of the Durable SDK package that produced this binding metadata.
+        /// </summary>
+        public string DurableSdkName { get; set; }
+
+        /// <summary>
+        /// Gets or sets the version of the Durable SDK package that produced this binding metadata.
+        /// </summary>
+        public string DurableSdkVersion { get; set; }
     }
 }

@@ -15,8 +15,6 @@ jobs:
       buildConfiguration: 'Release'
 
     steps:
-    - task: NuGetToolInstaller@1
-
     - task: UseDotNet@2
       displayName: 'Use the .NET 6 SDK'
       inputs:
@@ -70,8 +68,6 @@ jobs:
       buildConfiguration: 'Release'
 
     steps:
-    - task: NuGetToolInstaller@1
-
     - task: UseDotNet@2
       displayName: 'Use the .NET 6 SDK'
       inputs:
@@ -123,8 +119,6 @@ jobs:
       buildConfiguration: 'Release'
 
     steps:
-    - task: NuGetToolInstaller@1
-
     - task: UseDotNet@2
       displayName: 'Use the .NET 6 SDK'
       inputs:

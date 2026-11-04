@@ -31,9 +31,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         {
             foreach (var invocation in functionInvocations)
             {
-                // If invocation uses constant and there is no matching function name in function definition, trust the customer for correctness in case they are using 
-                // <FunctionsInDependencies>true</FunctionsInDependencies>
-                if (!functionDefinitions.Select(x => x.FunctionName).Contains(invocation.FunctionName) && !IsConstant(semanticModel, invocation.NameNode))
+                // If invocation uses a constant or nameof() and there is no matching function name in function definition, trust the customer for correctness in case they are using 
+                // <FunctionsInDependencies>true</FunctionsInDependencies>. nameof() is compiler-verified, so it is at least as safe as a constant string.
+                if (!functionDefinitions.Select(x => x.FunctionName).Contains(invocation.FunctionName) && !IsConstant(semanticModel, invocation.NameNode) && !IsNameOf(invocation.NameNode))
                 {
                     if (SyntaxNodeUtils.TryGetClosestString(invocation.FunctionName, functionDefinitions.Select(x => x.FunctionName), out string closestName))
                     {
@@ -54,6 +54,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers
         private static bool IsConstant(SemanticModel semanticModel, SyntaxNode nameNode)
         {
             return SyntaxNodeUtils.TryGetFunctionNameInConstant(semanticModel, nameNode, out _);
+        }
+
+        private static bool IsNameOf(SyntaxNode nameNode)
+        {
+            return SyntaxNodeUtils.IsNameOfExpression(nameNode);
         }
     }
 }

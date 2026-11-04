@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
+using System.Threading;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -18,7 +19,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             if (this.durableHttpClient == null)
             {
                 this.durableHttpClient = new HttpClient(handler.CreateHttpMessageHandler());
-                this.durableHttpClient.Timeout = TimeSpan.FromSeconds(240);
+
+                // Each HTTP activity applies its own timeout without changing the shared client.
+                this.durableHttpClient.Timeout = Timeout.InfiniteTimeSpan;
 
                 var assembly = typeof(DurableTaskExtension).Assembly;
                 Version assemblyVersion = GetAssemblyVersion(assembly);

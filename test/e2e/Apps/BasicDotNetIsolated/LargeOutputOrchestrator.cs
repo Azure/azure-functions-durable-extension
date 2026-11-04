@@ -13,6 +13,15 @@ namespace Microsoft.Azure.Durable.Tests.E2E;
 
 public static class LargeOutputOrchestrator
 {
+    // Receives the large input scheduled through the isolated worker's local gRPC connection
+    // and returns its length so the test can verify the complete input arrived without returning it.
+    [Function(nameof(LargeInputOrchestrator))]
+    public static int LargeInputOrchestrator(
+        [OrchestrationTrigger] TaskOrchestrationContext context)
+    {
+        return context.GetInput<string>()!.Length;
+    }
+
     [Function(nameof(LargeOutputOrchestrator))]
     public static async Task<List<string>> RunOrchestrator(
         [OrchestrationTrigger] TaskOrchestrationContext context)
@@ -59,6 +68,18 @@ public static class LargeOutputOrchestrator
 
         // Returns an HTTP 202 response with an instance management payload.
         // See https://learn.microsoft.com/azure/azure-functions/durable/durable-functions-http-api#start-orchestration
+        return await client.CreateCheckStatusResponseAsync(req, instanceId);
+    }
+
+    [Function("LargeInputOrchestrator_HttpStart")]
+    public static async Task<HttpResponseData> LargeInputHttpStart(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequestData req,
+        [DurableClient] DurableTaskClient client)
+    {
+        int sizeInKB = await req.ReadFromJsonAsync<int>();
+        string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(
+            nameof(LargeInputOrchestrator), input: GenerateLargeString(sizeInKB));
+
         return await client.CreateCheckStatusResponseAsync(req, instanceId);
     }
 

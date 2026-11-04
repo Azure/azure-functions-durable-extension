@@ -169,6 +169,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to The Durable Functions activity binding reserves the name &apos;data&apos; for the raw JSON representation of the activity input. Naming an ActivityTrigger parameter &apos;data&apos; overwrites that binding and causes a function indexing error at startup. Use a different parameter name.
+        /// </summary>
+        public static string ActivityTriggerParameterAnalyzerDescription {
+            get {
+                return ResourceManager.GetString("ActivityTriggerParameterAnalyzerDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The parameter name &apos;{0}&apos; is reserved by the activity trigger binding; rename the ActivityTrigger parameter to avoid a function indexing error.
+        /// </summary>
+        public static string ActivityTriggerParameterAnalyzerMessageFormat {
+            get {
+                return ResourceManager.GetString("ActivityTriggerParameterAnalyzerMessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to ActivityTrigger parameter must not use the reserved name &apos;data&apos;.
+        /// </summary>
+        public static string ActivityTriggerParameterAnalyzerTitle {
+            get {
+                return ResourceManager.GetString("ActivityTriggerParameterAnalyzerTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Code used in an orchestrator must not use await on non-Durable Functions methods.
         /// </summary>
         public static string AwaitAnalyzerMessageFormat {
@@ -219,6 +246,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers {
         public static string CancellationTokenAnalyzerTitle {
             get {
                 return ResourceManager.GetString("CancellationTokenAnalyzerTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to ConfigureAwait(false) should not be used inside an orchestrator function.
+        /// </summary>
+        public static string ConfigureAwaitAnalyzerTitle {
+            get {
+                return ResourceManager.GetString("ConfigureAwaitAnalyzerTitle", resourceCulture);
             }
         }
         

@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.functions</groupId>
+  <artifactId>durableJava</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
+  <packaging>jar</packaging>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.release>8</maven.compiler.release>
+    <azure.functions.maven.plugin.version>1.37.0</azure.functions.maven.plugin.version>
+    <azure.functions.java.library.version>3.3.0</azure.functions.java.library.version>
+    <durabletask.azure.functions.version>1.9.0</durabletask.azure.functions.version>
+    <jackson.version>2.18.10</jackson.version>
+    <opentelemetry.version>1.62.0</opentelemetry.version>
+    <functionAppName>durableJava</functionAppName>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.microsoft</groupId>
+      <artifactId>durabletask-azure-functions</artifactId>
+      <version>${durabletask.azure.functions.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.microsoft.azure.functions</groupId>
+      <artifactId>azure-functions-java-library</artifactId>
+      <version>${azure.functions.java.library.version}</version>
+    </dependency>
+  </dependencies>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>com.fasterxml.jackson</groupId>
+        <artifactId>jackson-bom</artifactId>
+        <version>${jackson.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.opentelemetry</groupId>
+        <artifactId>opentelemetry-bom</artifactId>
+        <version>${opentelemetry.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.14.1</version>
+      </plugin>
+      <plugin>
+        <groupId>com.microsoft.azure</groupId>
+        <artifactId>azure-functions-maven-plugin</artifactId>
+        <version>${azure.functions.maven.plugin.version}</version>
+        <configuration>
+          <appName>${functionAppName}</appName>
+          <skipInstallExtensions>true</skipInstallExtensions>
+          <resourceGroup>java-functions-group</resourceGroup>
+          <region>westus</region>
+          <runtime>
+            <os>windows</os>
+            <javaVersion>8</javaVersion>
+          </runtime>
+          <appSettings>
+            <property>
+              <name>FUNCTIONS_EXTENSION_VERSION</name>
+              <value>~4</value>
+            </property>
+          </appSettings>
+        </configuration>
+        <executions>
+          <execution>
+            <id>package-functions</id>
+            <goals>
+              <goal>package</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

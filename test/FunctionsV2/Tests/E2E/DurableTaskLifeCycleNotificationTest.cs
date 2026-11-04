@@ -298,9 +298,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     validator.Invoke();
                 }
 
-                // TODO: There should be two calls, but the termination notification is not being fired.
-                //       https://github.com/Azure/azure-functions-durable-extension/issues/286
-                Assert.Equal(1, callCount);
+                Assert.Equal(2, callCount);
                 await host.StopAsync();
             }
         }
@@ -787,7 +785,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
 
             var mockLogger = new Mock<ILogger>();
-            var traceHelper = new Mock<EndToEndTraceHelper>(mockLogger.Object, false, false).Object;
+            var traceHelper = EndToEndTraceHelper.CreateHostOnly(mockLogger.Object, false, false);
 
             var helper = new EventGridLifeCycleNotificationHelper(options, mockNameResolver.Object, traceHelper);
 
@@ -811,7 +809,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var options = new DurableTaskOptions();
 
             var mockLogger = new Mock<ILogger>();
-            var traceHelper = new Mock<EndToEndTraceHelper>(mockLogger.Object, false, false).Object;
+            var traceHelper = EndToEndTraceHelper.CreateHostOnly(mockLogger.Object, false, false);
 
             var helper = new EventGridLifeCycleNotificationHelper(options, mockNameResolver.Object, traceHelper);
 
@@ -837,7 +835,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var options = new DurableTaskOptions();
 
             var mockLogger = new Mock<ILogger>();
-            var traceHelper = new Mock<EndToEndTraceHelper>(mockLogger.Object, false, false).Object;
+            var traceHelper = EndToEndTraceHelper.CreateHostOnly(mockLogger.Object, false, false);
 
             var helper = new EventGridLifeCycleNotificationHelper(options, mockNameResolver.Object, traceHelper);
 
@@ -873,7 +871,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             };
 
             var mockLogger = new Mock<ILogger>();
-            var traceHelper = new EndToEndTraceHelper(mockLogger.Object, false, false);
+            var traceHelper = EndToEndTraceHelper.CreateHostOnly(mockLogger.Object, false, false);
 
             var helper = new EventGridLifeCycleNotificationHelper(options, mockNameResolver.Object, traceHelper);
 

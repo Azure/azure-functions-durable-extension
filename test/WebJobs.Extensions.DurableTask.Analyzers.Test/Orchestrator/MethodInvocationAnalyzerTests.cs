@@ -400,6 +400,45 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Analyzers.Test.Orchestr
             VerifyCSharpDiagnostic(test, expectedDiagnostics);
         }
 
+        [TestMethod]
+        public void MethodCalls_MultipleOrchestrators_DirectOrchestratorCall()
+        {
+            // Regression test for https://github.com/Azure/azure-functions-durable-extension/issues/2591:
+            // two orchestrator methods in the same class, where one directly invokes the other, used to
+            // cause the analyzer to throw a NullReferenceException while collecting orchestrator methods.
+            var test = @"
+    using System;
+    using System.Threading.Tasks;
+    using System.Collections.Generic;
+    using Microsoft.Azure.WebJobs;
+    using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+
+    namespace VSSample
+    {
+        public static class HelloSequence
+        {
+            [FunctionName(""WorkflowV1"")]
+            public static async Task<List<string>> RunOrchestratorV1(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                return new List<string>();
+            }
+
+            [FunctionName(""WorkflowV2"")]
+            public static async Task<List<string>> RunOrchestratorV2(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            {
+                return await RunOrchestratorV1(context);
+            }
+        }
+    }";
+
+            // Before the fix this scenario caused the analyzer to throw a NullReferenceException,
+            // which surfaces as an AD0001 "analyzer failure" diagnostic. After the fix no diagnostics
+            // are produced because neither orchestrator contains non-deterministic code.
+            VerifyCSharpDiagnostic(test);
+        }
+
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
             return new DeterministicMethodAnalyzer();

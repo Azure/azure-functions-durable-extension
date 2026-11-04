@@ -13,11 +13,8 @@ namespace Microsoft.Azure.Durable.Tests.DotnetIsolatedE2E;
 /// These tests exercise the new <c>LockEntities</c> / <c>ReleaseEntities</c>
 /// action types and OOProc schema V4 that this extension change adds.
 ///
-/// Today every test is skipped for every language. Reason matrix:
-///   - Node: the extension half is in this repo, but the JS worker change
-///     (durable-functions PR) has not been
-///     released. Remove <c>[Trait("Node", "Skip")]</c> once `durable-functions`
-///     ships the <c>context.df.lock</c> API.
+/// These tests run against Node, where <c>context.df.lock</c> is implemented.
+/// Exclusion matrix:
 ///   - Dotnet: the test orchestrations (CriticalSectionLockedTransfer,
 ///     CriticalSectionNestedLockViolation) are only registered in the
 ///     BasicNode app — running them against BasicDotNetIsolated would 404.
@@ -44,7 +41,6 @@ public class CriticalSectionsTests
     /// to B (seeded 0), releases, and reports the post-commit balances.
     /// </summary>
     [Fact]
-    [Trait("Node", "Skip")] // TODO: remove once durable-functions ships context.df.lock
     [Trait("Dotnet", "Skip")] // CriticalSection* orchestrations are only registered in the BasicNode app
     [Trait("Python", "Skip")] // context.df.lock is not implemented in Python
     [Trait("PowerShell", "Skip")] // Durable Entities are not implemented in PowerShell
@@ -64,8 +60,8 @@ public class CriticalSectionsTests
             await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
 
         // The orchestration seeds A=100, B=0 and transfers 30, so the post-commit balances
-        // must be exactly A=70, B=30. Quoted because the JSON output is a string.
-        Assert.Equal("\"from=70;to=30\"", orchestrationDetails.Output);
+        // must be exactly A=70, B=30.
+        Assert.Equal("from=70;to=30", orchestrationDetails.Output);
     }
 
     /// <summary>
@@ -74,7 +70,6 @@ public class CriticalSectionsTests
     /// orchestration.
     /// </summary>
     [Fact]
-    [Trait("Node", "Skip")] // TODO: remove once durable-functions ships context.df.lock
     [Trait("Dotnet", "Skip")] // CriticalSection* orchestrations are only registered in the BasicNode app
     [Trait("Python", "Skip")] // context.df.lock is not implemented in Python
     [Trait("PowerShell", "Skip")] // Durable Entities are not implemented in PowerShell
@@ -93,9 +88,9 @@ public class CriticalSectionsTests
         DurableHelpers.OrchestrationStatusDetails orchestrationDetails =
             await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
 
-        // The failure payload must mention the locking-rule violation. We assert
+        // The failure payload must identify the nested-lock rule violation. We assert
         // on a stable substring; the full message is worker-defined and may change.
-        Assert.Contains("critical section", orchestrationDetails.Output, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Cannot acquire more locks", orchestrationDetails.Output, StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>
@@ -112,7 +107,6 @@ public class CriticalSectionsTests
     /// absorbs scheduling jitter and timer granularity in the DTS emulator.
     /// </summary>
     [Fact]
-    [Trait("Node", "Skip")] // TODO: remove once durable-functions ships context.df.lock
     [Trait("Dotnet", "Skip")] // CriticalSection* orchestrations are only registered in the BasicNode app
     [Trait("Python", "Skip")] // context.df.lock is not implemented in Python
     [Trait("PowerShell", "Skip")] // Durable Entities are not implemented in PowerShell
@@ -154,8 +148,8 @@ public class CriticalSectionsTests
                 await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusUri2);
 
             Assert.NotEqual(details1.InstanceId, details2.InstanceId);
-            Assert.Equal("\"held\"", details1.Output);
-            Assert.Equal("\"held\"", details2.Output);
+            Assert.Equal("held", details1.Output);
+            Assert.Equal("held", details2.Output);
 
             TimeSpan elapsed1 = details1.LastUpdatedTime - details1.CreatedTime;
             TimeSpan elapsed2 = details2.LastUpdatedTime - details2.CreatedTime;

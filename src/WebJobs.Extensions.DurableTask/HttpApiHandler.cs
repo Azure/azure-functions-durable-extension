@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -46,6 +47,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string TerminateOperation = "terminate";
         private const string RewindOperation = "rewind";
         private const string RestartOperation = "restart";
+        private const string RestartWithOptionsOperation = "restartWithOptions";
         private const string ShowHistoryParameter = "showHistory";
         private const string ShowHistoryOutputParameter = "showHistoryOutput";
         private const string ShowInputParameter = "showInput";
@@ -59,6 +61,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private const string LastOperationTimeFrom = "lastOperationTimeFrom";
         private const string LastOperationTimeTo = "lastOperationTimeTo";
         private const string RestartWithNewInstanceId = "restartWithNewInstanceId";
+        private const string NewInstanceIdParameter = "newInstanceId";
         private const string TimeoutParameter = "timeout";
         private const string PollingInterval = "pollingInterval";
         private const string SuspendOperation = "suspend";
@@ -219,12 +222,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             DurableOrchestrationStatus status = null;
 
-            if (client is DurableClient durableClient && durableClient.DurabilityProvider.SupportsPollFreeWait)
+            if (client is DurableClient pollingClient && pollingClient.DurabilityProvider.SupportsPollFreeWait)
             {
                 // For durability providers that support long polling, WaitForOrchestrationAsync is more efficient than GetStatusAsync
                 // so we ignore the retryInterval argument and instead wait for the entire timeout duration
 
-                var state = await durableClient.DurabilityProvider.WaitForOrchestrationAsync(instanceId, null, timeout, CancellationToken.None);
+                var state = await pollingClient.DurabilityProvider.WaitForOrchestrationAsync(instanceId, null, timeout, CancellationToken.None);
                 if (state != null)
                 {
                     status = DurableClient.ConvertOrchestrationStateToStatus(state);
@@ -403,7 +406,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         }
                         else if (string.Equals(operation, RestartOperation, StringComparison.OrdinalIgnoreCase))
                         {
-                            return await this.HandleRestartInstanceRequestAsync(request, instanceId);
+                            return await this.HandleRestartInstanceRequestAsync(request, instanceId, useOptions: false);
+                        }
+                        else if (string.Equals(operation, RestartWithOptionsOperation, StringComparison.OrdinalIgnoreCase))
+                        {
+                            return await this.HandleRestartInstanceRequestAsync(request, instanceId, useOptions: true);
                         }
                         else if (string.Equals(operation, SuspendOperation, StringComparison.OrdinalIgnoreCase))
                         {
@@ -734,6 +741,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private async Task<HttpResponseMessage> HandleMakePrimaryRequestAsync(HttpRequestMessage request)
         {
+            if (!this.durableTaskOptions.UseAppLease)
+            {
+                return request.CreateErrorResponse(
+                    HttpStatusCode.BadRequest,
+                    "Cannot make current app primary. This app is not using the AppLease feature.");
+            }
+
             IDurableOrchestrationClient client = this.GetClient(request);
 
             await client.MakeCurrentAppPrimaryAsync();
@@ -746,7 +760,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return new StatusResponsePayload
             {
                 Name = status.Name,
+                Version = status.Version,
                 InstanceId = status.InstanceId,
+                ParentInstanceId = status.ParentInstanceId,
                 RuntimeStatus = status.RuntimeStatus.ToString(),
                 Input = status.Input,
                 CustomStatus = status.CustomStatus,
@@ -788,7 +804,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private static bool TryGetDateTimeQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName, out DateTime dateTimeValue)
         {
             string value = queryStringNameValueCollection[queryParameterName];
-            return DateTime.TryParse(value, out dateTimeValue);
+            if (DateTime.TryParse(value, out dateTimeValue))
+            {
+                return true;
+            }
+
+            int yearSeparatorIndex = value?.IndexOf('-') ?? -1;
+            if (value != null &&
+                yearSeparatorIndex > 0 &&
+                yearSeparatorIndex < 4 &&
+                value.Take(yearSeparatorIndex).All(char.IsDigit))
+            {
+                // Python's strftime can omit leading zeroes from years before 1000 on Linux.
+                string paddedValue = value.PadLeft(value.Length + 4 - yearSeparatorIndex, '0');
+                if (DateTime.TryParseExact(
+                        paddedValue,
+                        "yyyy-MM-dd'T'HH:mm:ss.ffffffK",
+                        CultureInfo.InvariantCulture,
+                        DateTimeStyles.RoundtripKind,
+                        out dateTimeValue))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static bool TryGetBooleanQueryParameterValue(NameValueCollection queryStringNameValueCollection, string queryParameterName, out bool boolValue)
@@ -932,6 +972,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
                 if (client is DurableClient durableClient)
                 {
+                    durableClient.ThrowIfOrchestratorFunctionIsDisabled(functionName);
+
                     var instance = new OrchestrationInstance
                     {
                         InstanceId = id,
@@ -1037,7 +1079,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private async Task<HttpResponseMessage> HandleRestartInstanceRequestAsync(
             HttpRequestMessage request,
-            string instanceId)
+            string instanceId,
+            bool useOptions)
         {
             this.LogClientOperationReceived(request, "Restart", instanceId);
 
@@ -1048,7 +1091,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 var queryNameValuePairs = request.GetQueryNameValuePairs();
 
                 string newInstanceId;
-                if (TryGetBooleanQueryParameterValue(queryNameValuePairs, RestartWithNewInstanceId, out bool restartWithNewInstanceId))
+                if (useOptions)
+                {
+                    string requestedInstanceId = queryNameValuePairs[NewInstanceIdParameter];
+                    if (string.IsNullOrWhiteSpace(requestedInstanceId))
+                    {
+                        return request.CreateErrorResponse(HttpStatusCode.BadRequest, "A new orchestration instance ID must be provided.");
+                    }
+
+                    if (client is not DurableClient durableClient)
+                    {
+                        return request.CreateErrorResponse(HttpStatusCode.NotImplemented, "The Durable Functions client does not support restart options.");
+                    }
+
+                    string version = queryNameValuePairs[VersionParameter];
+                    newInstanceId = await durableClient.RestartWithOptionsAsync(instanceId, requestedInstanceId, version);
+                }
+                else if (TryGetBooleanQueryParameterValue(queryNameValuePairs, RestartWithNewInstanceId, out bool restartWithNewInstanceId))
                 {
                     newInstanceId = await client.RestartAsync(instanceId, restartWithNewInstanceId);
                 }
@@ -1061,7 +1120,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 TryGetTimeSpanQueryParameterValue(queryNameValuePairs, PollingInterval, out TimeSpan? pollingInterval);
 
                 // for durability providers that support poll-free waiting, we override the specified polling interval
-                if (client is DurableClient durableClient && durableClient.DurabilityProvider.SupportsPollFreeWait)
+                if (client is DurableClient pollingClient && pollingClient.DurabilityProvider.SupportsPollFreeWait)
                 {
                     pollingInterval = timeout;
                 }
@@ -1074,6 +1133,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 {
                     return client.CreateCheckStatusResponse(request, newInstanceId);
                 }
+            }
+            catch (OrchestratorFunctionUnavailableException e)
+            {
+                return request.CreateErrorResponse(HttpStatusCode.BadRequest, e.Message, e);
+            }
+            catch (ArgumentException e) when (useOptions && e.ParamName == "newInstanceId")
+            {
+                return request.CreateErrorResponse(HttpStatusCode.BadRequest, e.Message, e);
             }
             catch (ArgumentException e)
             {

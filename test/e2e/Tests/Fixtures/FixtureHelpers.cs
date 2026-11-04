@@ -118,11 +118,13 @@ public static class FixtureHelpers
 
     internal static void AddDurableBackendEnvironmentVariables(Process funcProcess, ILogger testLogger)
     {
+        // Keep message-size limits from interfering with backend-agnostic E2E scenarios.
+        funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__MaxGrpcMessageSizeInBytes"] = int.MaxValue.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
         string? durableBackendEnvVarValue = Environment.GetEnvironmentVariable("E2E_TEST_DURABLE_BACKEND");
         switch ((durableBackendEnvVarValue ?? "").ToLowerInvariant())
         {
             case "azurestorage":
-                funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__MaxGrpcMessageSizeInBytes"] = "6291456";
                 return;
             case "mssql":
                 string? sqlPassword = Environment.GetEnvironmentVariable("MSSQL_SA_PASSWORD");
@@ -134,7 +136,6 @@ public static class FixtureHelpers
                 funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__storageProvider__type"] = "mssql";
                 funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__storageProvider__connectionStringName"] = "SQLDB_Connection";
                 funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__storageProvider__createDatabaseIfNotExists"] = "true";
-                funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__MaxGrpcMessageSizeInBytes"] = "6291456";
                 funcProcess.StartInfo.EnvironmentVariables["AzureFunctionsJobHost__extensions__durableTask__ThrowStatusExceptionsOnRaiseEvent"] = "true";
                 return;
             case "azuremanaged":

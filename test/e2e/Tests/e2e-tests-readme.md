@@ -66,7 +66,7 @@ build-e2e-test.ps1 includes several flags to assist setup for other storage back
 
 For MSSQL, you can use `-StartMSSqlContainer` to spin up a MSSQL docker container. Define the sa password you will use either in the MSSQL_SA_PASSWORD environment variable or with the `-MSSQLpwd` script argument.
 
-For DTS, pass `-StartDTSContainer` flag. This will create a docker container using the DTS emulator image.
+For DTS, pass `-StartDTSContainer` flag. This starts two DTS emulator containers: `dts-emulator` with `-p 8080:8080` for ordinary tests, and `dts-emulator-workitemfilters` with `-p 8083:8080` for the filtering collection. Only gRPC ports are published; the tests do not need dashboard or health-check ports, which can conflict with CI agent services. Separate emulator processes prevent filtered-worker state from stalling subsequent unfiltered workers. When starting emulators manually, start both containers with these port mappings.
 
 ### Step 4: Build the test project
 
@@ -113,6 +113,8 @@ If the behavior is a difference in output formatting, and we don't expect to eve
 
 If the behavior is with logic or is something that we need to eventually address in the language worker to improve parity, use GetLanguageType() and if/case statements in the test code instead. This will improve visibility of these kinds of inconsistencies and (hopefully) motivate eventual changes towards parity.
 
+The automatic HTTP polling test verifies the initial 202 responses, subsequent HTTP activity completions, durable timer firings, and final 200 response in persisted orchestration history (`showHistory=true&showHistoryOutput=true`). This keeps the polling check independent of replay-safe informational log delivery.
+
 ### FAQ
 
 #### Exception: GRPC max size exceeded
@@ -150,5 +152,13 @@ The build-e2e-test.ps1 script has several flags and parameters that may be helpf
 
 - `-StartMSSqlContainer` and `-StartDTSContainer` will automatically pull the docker images for MSSQL or the Durable Task Scheduler, respectively, and start them up using arguments compatible with the E2E tests. You should also use `-MSSQLpwd` to provide the SA password that will be used for the MSSQL instance.
 - `-SkipBuild` will skip building the extension and tests apps entirely, useful when you want to download Core Tools or start an emulator without waiting for these components to build.
-- `-E2EAppName` may be used to build only one of the test apps in the project, for example passing `-E2EAppName BasicJava` will only build BasicJava, saving time during build.
+- `-E2EAppName` may be used to build only selected test apps, for example `-E2EAppName BasicJava` or `-E2EAppName BasicPowerShell,BasicPython,BasicJava`. If omitted, all test apps are built. Windows CI runs .NET isolated, JavaScript, and the remaining languages in three separate jobs per framework; Linux CI continues to run all languages in each backend/framework job.
+- `-SkipExtensionBuild` skips only the initial WebJobs extension baseline build. Use it only after building the extension for all target frameworks (a single-framework E2ETests build is insufficient for app packaging); each app's local-source PreBuild packaging still runs.
+- `-PreserveNuGetCache` skips removing cached WebJobs extension packages. CI uses this to preserve shared caches between languages; the default local build behavior is unchanged.
 - `-SkipCoreTools` and `-SkipStorageEmulator` work as described, but build-e2e-test.ps1 will automatically skip these steps if Core Tools or the Storage emulator are already present/running, so these flags are useful only in niche situations.
+
+#### Sequential CI app lifecycle
+
+Both Windows shards and unsharded Linux jobs build the extension for all target frameworks and the test project once. The reusable `eng/ci/templates/public/language-e2e-app.yml` template then builds one selected app, runs its filtered suite, verifies the fixture stopped its host, and cleans that app before the next language. Cleanup also runs after build/test failure; failures prevent subsequent suites. A still-listening host prevents deletion. No process-name killing or backend restarts are added.
+
+Cleanup is restricted to the generated directories listed for each app in `language-e2e.yml`. Source, settings, shared package caches, Core Tools, extension/test binaries, and backend containers are retained. TRX files remain outside app directories and are published even on failure; console output and disk measurements remain in the pipeline step logs. Local runs of `build-e2e-test.ps1` do not perform this cleanup. Disk measurements quantify the change; this is not a fix for SQL deadlocks.

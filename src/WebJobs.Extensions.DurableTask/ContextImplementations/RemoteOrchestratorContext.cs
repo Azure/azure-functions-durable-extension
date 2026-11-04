@@ -3,6 +3,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using DurableTask.Core;
 using DurableTask.Core.Command;
@@ -40,6 +41,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         [JsonProperty("instanceId")]
         public string InstanceId => this.runtimeState.OrchestrationInstance?.InstanceId ?? string.Empty;
+
+        [JsonIgnore]
+        internal string? SourceInstanceId => DurableTaskExtension.GetSourceInstanceId(this.runtimeState);
 
         [JsonProperty("pastEvents")]
         public IEnumerable<HistoryEvent> PastEvents => this.runtimeState.PastEvents;
@@ -163,6 +167,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private void SetResultInternal(OrchestratorExecutionResult result)
         {
+            result.Actions = result.Actions.ToList();
+            foreach (IDictionary<string, string>? tags in result.Actions.Select(action => action switch
+                {
+                    CreateSubOrchestrationAction subOrchestrationAction => subOrchestrationAction.Tags,
+                    OrchestrationCompleteOrchestratorAction completeAction => completeAction.Tags,
+                    _ => null,
+                }))
+            {
+                if (tags?.ContainsKey(DurableClient.SourceInstanceIdTag) == true)
+                {
+                    throw new ArgumentException(
+                        $"The tag key '{DurableClient.SourceInstanceIdTag}' is reserved for internal use.",
+                        nameof(result));
+                }
+            }
+
             // Look for an orchestration completion action to see if we need to grab the output.
             foreach (OrchestratorAction action in result.Actions)
             {

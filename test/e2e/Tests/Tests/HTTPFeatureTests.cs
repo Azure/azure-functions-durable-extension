@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System.Net;
+using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -46,10 +47,25 @@ public class HttpFeatureTests
         // waited for the long-running HTTP call to complete rather than returning immediately.
         Assert.Contains("Long-running orchestration completed.", orchestrationDetails.Output);
 
-        // Check that logs include evidence of HTTP polling behavior.
-        await this.fixture.TestLogs.AssertLogExistsAsync(
-            l => l.Contains("Polling HTTP status at location"),
-            "Expected log containing 'Polling HTTP status at location' was not found.");
+        // Persisted history proves polling even when replay-safe informational logs are suppressed.
+        string separator = statusQueryGetUri.Contains('?') ? "&" : "?";
+        using var httpClient = new HttpClient();
+        JObject status = JObject.Parse(await httpClient.GetStringAsync(
+            $"{statusQueryGetUri}{separator}showHistory=true&showHistoryOutput=true"));
+        JArray history = Assert.IsType<JArray>(status["historyEvents"]);
+        JObject[] httpCalls = history.OfType<JObject>()
+            .Where(item => (string?)item["EventType"] == "TaskCompleted"
+                && (string?)item["FunctionName"] == "BuiltIn::HttpActivity")
+            .ToArray();
+
+        Assert.True(httpCalls.Length > 1, "Expected the initial HTTP request and at least one subsequent poll.");
+        Assert.All(
+            httpCalls[..^1],
+            item => Assert.Equal((int)HttpStatusCode.Accepted, (int?)item["Result"]?["statusCode"]));
+        Assert.Equal((int)HttpStatusCode.OK, (int?)httpCalls[^1]["Result"]?["statusCode"]);
+        Assert.Equal(
+            httpCalls.Length - 1,
+            history.OfType<JObject>().Count(item => (string?)item["EventType"] == "TimerFired"));
     }
 
     [Fact]

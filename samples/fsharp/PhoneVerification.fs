@@ -11,7 +11,6 @@ open Microsoft.Azure.WebJobs.Extensions.DurableTask
 open Microsoft.Extensions.Logging
 open Twilio.Rest.Api.V2010.Account
 open Twilio.Types
-open FSharp.Control.Tasks
 
 module PhoneVerification =
 

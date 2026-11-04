@@ -142,6 +142,47 @@ namespace VSSample
         }
         
         [TestMethod]
+        public void Name_NoDiagnostic_UsesNameOfForFunctionInDependencies()
+        {
+            // Covers https://github.com/Azure/azure-functions-durable-extension/issues/2449
+            // When <FunctionsInDependencies>true</FunctionsInDependencies> is set, the referenced
+            // activity lives in another assembly and is therefore not among the locally-collected
+            // function definitions. nameof() is compiler-verified, so - like a constant string - it
+            // is trusted for correctness and DF0109 should not fire.
+            var test = @"
+using System;
+using System.Collections.Generic;
+using System.Net;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+using Microsoft.WindowsAzure.Storage.Blob;
+using Microsoft.WindowsAzure.Storage.Queue;
+using Microsoft.WindowsAzure.Storage.Table;
+
+namespace VSSample
+{
+    public static class HelloSequence
+    {
+        [FunctionName(""NameAnalyzerTestCases"")]
+        public static async Task<string> Run(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+        {
+            return await context.CallActivityAsync<string>(nameof(FunctionInDependency), ""Seattle"");
+        }
+    }
+
+    // Simulates a type that exists (so nameof compiles) but whose activity function is
+    // defined in a referenced assembly, not in this compilation.
+    public class FunctionInDependency
+    {
+    }
+}";
+            VerifyCSharpDiagnostic(test);
+        }
+
+        [TestMethod]
         public void Name_InvalidName_CloseRule()
         {
             var test = @"

@@ -12,3 +12,4 @@ local.settings.json
 .vs
 .vscode
 node_modules
+**/.npmrc
