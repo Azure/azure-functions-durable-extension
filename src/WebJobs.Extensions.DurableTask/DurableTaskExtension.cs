@@ -1578,14 +1578,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             var functionName = new FunctionName(name);
 
-            if (functionType == FunctionType.Activity && string.IsNullOrEmpty(name))
-            {
-                throw new ArgumentException(this.GetInvalidActivityFunctionMessage(name));
-            }
-
             if (functionType == FunctionType.Activity &&
-                !this.defaultDurabilityProvider.AllowsExternalActivityScheduling &&
-                !this.knownActivities.ContainsKey(functionName))
+                (string.IsNullOrEmpty(name) ||
+                 (!this.defaultDurabilityProvider.AllowsExternalActivityScheduling &&
+                  !this.knownActivities.ContainsKey(functionName))))
             {
                 throw new ArgumentException(this.GetInvalidActivityFunctionMessage(name));
             }
