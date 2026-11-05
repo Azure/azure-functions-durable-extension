@@ -44,7 +44,7 @@ Task hub state and internal messages are trusted runtime data. The extension rel
 
 Error serialization intentionally preserves CLR type information (`TypeNameHandling.Objects`), and entity error responses resolve the exception type recorded by the runtime. This supports propagating customer-defined exception types and their data. Disabling type handling or introducing a fixed type allowlist would break existing customers and is not a substitute for protecting the backend. Ordinary input, output, and state serialization uses separate settings that default to `TypeNameHandling.None`.
 
-These error deserialization paths are not intended for arbitrary untrusted JSON. Applications must not allow untrusted callers to supply internal response metadata or write task hub messages directly. Security reviews and static-analysis triage should account for this trust boundary and compatibility requirement, rather than treating dynamic exception deserialization alone as evidence of an untrusted-input vulnerability.
+These error deserialization paths are not intended for arbitrary untrusted JSON. Applications must not allow untrusted callers to supply internal response metadata or write task hub messages directly.
 
 ## Extension Bundle Compatibility
 
