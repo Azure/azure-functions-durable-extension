@@ -28,8 +28,8 @@
 ### Dependency Updates
 
 - Updated the required host extension to `3.18.0` in worker `1.21.1`; no new worker API is introduced.
-- Updated `Microsoft.DurableTask.Client.Grpc`, `Microsoft.DurableTask.Worker.Grpc`, and `Microsoft.DurableTask.Abstractions` to 1.27.0, including external payload auto-purge support and the fix for external-event loss after canceled waits in the isolated worker.
-- Added `Microsoft.DurableTask.LargePayloadPurge.Abstractions` 1.27.0.
+- Updated `Microsoft.DurableTask.Client.Grpc`, `Microsoft.DurableTask.Worker.Grpc`, and `Microsoft.DurableTask.Abstractions` to 1.28.0, including entity-scheduled orchestration tags, external payload auto-purge support, and the fix for external-event loss after canceled waits in the isolated worker.
+- Updated `Microsoft.DurableTask.LargePayloadPurge.Abstractions` to 1.28.0 to align purge contracts with the SDK client models.
 
 ## Microsoft.Azure.Functions.Worker.Extensions.DurableTask.AzureBlobPayloads
 
@@ -55,6 +55,7 @@
 ### Bug Fixes
 
 - Fixed startup failures in non-production deployment slots when the Durable extension is referenced but no Durable bindings are used. Non-default task hub names are still required when indexing Durable bindings or using Durable clients and workers. (#2352)
+- Preserved orchestration tags when .NET isolated entities schedule new orchestrations, using the released Durable Task SDK 1.28.0 and Core 3.11.2. Empty tags remain absent, and scheduling takes a snapshot of caller tags. (https://github.com/microsoft/durabletask-dotnet/issues/807)
 - Fixed missing `FailureDetails` in .NET isolated `GetAllInstancesAsync` results when `OrchestrationQuery.FetchInputsAndOutputs` is enabled. Query results now preserve available exception types, messages, stack traces, inner failures, and custom properties. (#2047)
 - Excluded disabled activities from the function capabilities supplied to work-item filtering providers at worker startup. With DTS filtering enabled, unmatched activity work can wait for an enabled worker instead of being dispatched to a worker where the activity is disabled. Unfiltered dispatch behavior is unchanged.
 - The `/makeprimary` HTTP API now returns HTTP 400 with an actionable error when app leases are disabled, instead of returning HTTP 500. (#3534)
@@ -72,6 +73,6 @@
 - Remove LegacyLocalGrpcListener and the dependency on Grpc.Core (https://github.com/Azure/azure-functions-durable-extension/pull/3236)
 - Removed the production dependency on `Microsoft.Azure.WebJobs.Logging.ApplicationInsights` to reduce the extension's transitive dependencies while preserving Microsoft Entra authentication for distributed tracing.
 - Updated the Azure Managed SDK references to 1.10.2 for DTS sovereign-cloud token audiences and per-connection authority hosts, including the Functions scale extension and E2E apps.
-- Updated `Grpc.Net.Client` to 2.80.0 and `Microsoft.Bcl.AsyncInterfaces` to 10.0.9 to meet the Azure Managed SDK 1.10.2 dependency requirements.
+- Updated `Grpc.Net.Client` to 2.84.0 to meet the Durable Task SDK 1.28.0 dependency requirement. `Microsoft.Bcl.AsyncInterfaces` remains at 10.0.9 for Azure Managed SDK 1.10.2 compatibility.
 - Updated `Microsoft.Azure.DurableTask.AzureStorage` to 2.11.1, `Microsoft.Azure.DurableTask.Core` to 3.11.2, and `Microsoft.Azure.DurableTask.ApplicationInsights` to 0.13.1.
-- Added `Microsoft.DurableTask.LargePayloadPurge.Abstractions` 1.27.0.
+- Updated `Microsoft.DurableTask.LargePayloadPurge.Abstractions` to 1.28.0 to align purge contracts with the SDK client models.

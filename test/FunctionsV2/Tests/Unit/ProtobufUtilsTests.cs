@@ -8,6 +8,8 @@ using DurableTask.Core;
 using DurableTask.Core.Entities.OperationFormat;
 using DurableTask.Core.History;
 using DurableTask.Core.Query;
+using Google.Protobuf;
+using Google.Protobuf.Reflection;
 using Google.Protobuf.WellKnownTypes;
 using Xunit;
 using CoreOrchestrationStatus = global::DurableTask.Core.OrchestrationStatus;
@@ -21,6 +23,146 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     /// </summary>
     public class ProtobufUtilsTests
     {
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void StartNewOrchestrationAction_Tags_UsesCanonicalMapField()
+        {
+            FieldDescriptor tags = P.StartNewOrchestrationAction.Descriptor.FindFieldByNumber(8);
+
+            Assert.NotNull(tags);
+            Assert.Equal("tags", tags.Name);
+            Assert.True(tags.IsMap);
+            Assert.Equal(FieldType.String, tags.MessageType.FindFieldByNumber(1).FieldType);
+            Assert.Equal(FieldType.String, tags.MessageType.FindFieldByNumber(2).FieldType);
+        }
+
+        [Theory]
+        [InlineData(null, "host-default", "host-default")]
+        [InlineData("", "host-default", "host-default")]
+        [InlineData(" \t", "host-default", "host-default")]
+        [InlineData("explicit-version", "host-default", "explicit-version")]
+        [InlineData("explicit-version", null, "explicit-version")]
+        [InlineData(null, null, null)]
+        [InlineData(null, "", "")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void ToOperationAction_StartNewOrchestrationWithTags_PreservesSchedulingFields(
+            string protoVersion,
+            string defaultVersion,
+            string expectedVersion)
+        {
+            var scheduledTime = new DateTime(2026, 10, 6, 22, 0, 0, DateTimeKind.Utc);
+            var requestTime = new DateTimeOffset(2026, 10, 6, 21, 0, 0, TimeSpan.Zero);
+            var start = new P.StartNewOrchestrationAction
+            {
+                Name = "TaggedOrchestrator",
+                InstanceId = "tagged-instance",
+                Input = "\"preserve-input\"",
+                Version = protoVersion,
+                ScheduledTime = Timestamp.FromDateTime(scheduledTime),
+                RequestTime = Timestamp.FromDateTimeOffset(requestTime),
+                ParentTraceContext = new P.TraceContext
+                {
+                    TraceParent = "00-0123456789abcdef0123456789abcdef-0123456789abcdef-01",
+                    TraceState = "vendor=preserve",
+                },
+                Tags =
+                {
+                    { "tenant", "caller" },
+                    { "\u6807\u7b7e", "\u503c-\u03bb-\ud83d\ude80" },
+                    { "empty", "" },
+                },
+            };
+            var operation = new P.OperationAction { StartNewOrchestration = start };
+
+            var result = Assert.IsType<StartNewOrchestrationOperationAction>(
+                operation.ToOperationAction(defaultVersion));
+
+            Assert.Equal(start.Name, result.Name);
+            Assert.Equal(start.InstanceId, result.InstanceId);
+            Assert.Equal(start.Input, result.Input);
+            Assert.Equal(expectedVersion, result.Version);
+            Assert.Equal(scheduledTime, result.ScheduledStartTime);
+            Assert.Equal(requestTime, result.RequestTime);
+            Assert.NotNull(result.ParentTraceContext);
+            Assert.Equal(start.ParentTraceContext.TraceParent, result.ParentTraceContext.TraceParent);
+            Assert.Equal(start.ParentTraceContext.TraceState, result.ParentTraceContext.TraceState);
+            Assert.NotNull(result.Tags);
+            Assert.Equal(
+                start.Tags.OrderBy(tag => tag.Key, StringComparer.Ordinal),
+                result.Tags.OrderBy(tag => tag.Key, StringComparer.Ordinal));
+
+            start.Tags["tenant"] = "changed-after-conversion";
+            Assert.Equal("caller", result.Tags["tenant"]);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void ToOperationAction_StartNewOrchestrationWithoutTags_LeavesOptionalFieldsNull(bool roundTrip)
+        {
+            var operation = new P.OperationAction
+            {
+                StartNewOrchestration = new P.StartNewOrchestrationAction
+                {
+                    Name = "UntaggedOrchestrator",
+                    InstanceId = "untagged-instance",
+                },
+            };
+            if (roundTrip)
+            {
+                operation = P.OperationAction.Parser.ParseFrom(operation.ToByteArray());
+            }
+
+            var result = Assert.IsType<StartNewOrchestrationOperationAction>(operation.ToOperationAction());
+
+            Assert.Empty(operation.StartNewOrchestration.Tags);
+            Assert.Null(result.Tags);
+            Assert.Null(result.Version);
+            Assert.Null(result.Input);
+            Assert.Null(result.RequestTime);
+            Assert.Null(result.ScheduledStartTime);
+            Assert.Null(result.ParentTraceContext);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void ToEntityBatchResult_StartNewOrchestrationWithTags_PreservesTagsAcrossWire()
+        {
+            var batch = new P.EntityBatchResult { EntityState = "{}" };
+            batch.Actions.Add(new P.OperationAction
+            {
+                StartNewOrchestration = new P.StartNewOrchestrationAction
+                {
+                    Name = "TaggedOrchestrator",
+                    InstanceId = "tagged-instance",
+                    Tags = { { "tenant", "caller" }, { "\u6807\u7b7e", "\u503c" } },
+                },
+            });
+            batch.Actions.Add(new P.OperationAction
+            {
+                StartNewOrchestration = new P.StartNewOrchestrationAction
+                {
+                    Name = "UntaggedOrchestrator",
+                    InstanceId = "untagged-instance",
+                    Version = "explicit-version",
+                },
+            });
+            batch = P.EntityBatchResult.Parser.ParseFrom(batch.ToByteArray());
+
+            var result = batch.ToEntityBatchResult("host-default");
+
+            Assert.Equal(2, result.Actions.Count);
+            var tagged = Assert.IsType<StartNewOrchestrationOperationAction>(result.Actions[0]);
+            Assert.NotNull(tagged.Tags);
+            Assert.Equal("caller", tagged.Tags["tenant"]);
+            Assert.Equal("\u503c", tagged.Tags["\u6807\u7b7e"]);
+            Assert.Equal("host-default", tagged.Version);
+            var untagged = Assert.IsType<StartNewOrchestrationOperationAction>(result.Actions[1]);
+            Assert.Null(untagged.Tags);
+            Assert.Equal("explicit-version", untagged.Version);
+        }
+
         /// <summary>
         /// Tests that ToOperationAction applies the default version when the protobuf message has no version specified.
         /// were not receiving the host's default version.

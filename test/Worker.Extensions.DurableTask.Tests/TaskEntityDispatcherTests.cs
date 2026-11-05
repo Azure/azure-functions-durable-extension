@@ -3,6 +3,7 @@
 
 using System.Text.Json;
 using Google.Protobuf;
+using Microsoft.DurableTask;
 using Microsoft.DurableTask.Entities;
 using Microsoft.DurableTask.Worker;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,6 +13,114 @@ namespace Microsoft.Azure.Functions.Worker.Tests;
 
 public class TaskEntityDispatcherTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DispatchAsync_StartNewOrchestration_PreservesTagSnapshots(bool optionsOnly)
+    {
+        using var services = new ServiceCollection().AddLogging().AddOptions().BuildServiceProvider();
+        using var cache = new ExtendedSessionsCache();
+        var tags = new Dictionary<string, string>
+        {
+            ["owner"] = "first",
+            ["\u6807\u7b7e"] = "\u503c-\u03bb",
+            ["empty"] = string.Empty,
+        };
+        var options = new StartOrchestrationOptions("first") { Tags = tags };
+        var request = new P.EntityBatchRequest
+        {
+            InstanceId = "@scheduler@tags",
+            Operations =
+            {
+                new P.OperationRequest { Operation = "start", RequestId = Guid.NewGuid().ToString() },
+            },
+        };
+
+        ValueTask<object?> HandleOperation(TaskEntityOperation operation)
+        {
+            if (optionsOnly)
+            {
+                operation.Context.ScheduleNewOrchestration("Child", options);
+            }
+            else
+            {
+                operation.Context.ScheduleNewOrchestration("Child", "input", options);
+            }
+
+            tags["owner"] = "second";
+            tags.Remove("empty");
+            operation.Context.ScheduleNewOrchestration("Child", options with { InstanceId = "second" });
+            tags.Clear();
+            return new((object?)null);
+        }
+
+        var dispatcher = new TaskEntityDispatcher(
+            Convert.ToBase64String(request.ToByteArray()), services, cache);
+        await dispatcher.DispatchAsync(HandleOperation);
+        P.EntityBatchResult result = P.EntityBatchResult.Parser.ParseFrom(
+            Convert.FromBase64String(dispatcher.Result));
+
+        Assert.Null(result.FailureDetails);
+        Assert.NotNull(Assert.Single(result.Results).Success);
+        Assert.Collection(
+            result.Actions,
+            first =>
+            {
+                P.StartNewOrchestrationAction action = first.StartNewOrchestration;
+                Assert.NotNull(action);
+                Assert.Equal("Child", action.Name);
+                Assert.Equal("first", action.InstanceId);
+                Assert.Equal(optionsOnly ? null : "\"input\"", action.Input);
+                Assert.Equal(3, action.Tags.Count);
+                Assert.Equal("first", action.Tags["owner"]);
+                Assert.Equal("\u503c-\u03bb", action.Tags["\u6807\u7b7e"]);
+                Assert.Equal(string.Empty, action.Tags["empty"]);
+            },
+            second =>
+            {
+                Assert.Equal("second", second.StartNewOrchestration.InstanceId);
+                Assert.Equal(2, second.StartNewOrchestration.Tags.Count);
+                Assert.Equal("second", second.StartNewOrchestration.Tags["owner"]);
+                Assert.Equal("\u503c-\u03bb", second.StartNewOrchestration.Tags["\u6807\u7b7e"]);
+            });
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DispatchAsync_StartNewOrchestrationWithNullOrEmptyTags_EmitsEmptyMap(bool empty)
+    {
+        using var services = new ServiceCollection().AddLogging().AddOptions().BuildServiceProvider();
+        using var cache = new ExtendedSessionsCache();
+        var request = new P.EntityBatchRequest
+        {
+            InstanceId = "@scheduler@untagged",
+            Operations =
+            {
+                new P.OperationRequest { Operation = "start", RequestId = Guid.NewGuid().ToString() },
+            },
+        };
+        var options = new StartOrchestrationOptions("child");
+        if (empty)
+        {
+            options = options with { Tags = new Dictionary<string, string>() };
+        }
+
+        var dispatcher = new TaskEntityDispatcher(
+            Convert.ToBase64String(request.ToByteArray()), services, cache);
+        await dispatcher.DispatchAsync(operation =>
+        {
+            operation.Context.ScheduleNewOrchestration("Child", options);
+            return new((object?)null);
+        });
+        P.EntityBatchResult result = P.EntityBatchResult.Parser.ParseFrom(
+            Convert.FromBase64String(dispatcher.Result));
+
+        Assert.Null(result.FailureDetails);
+        Assert.NotNull(Assert.Single(result.Results).Success);
+        Assert.Empty(Assert.Single(result.Actions).StartNewOrchestration.Tags);
+    }
+
     [Theory]
     [InlineData(null, 0)]
     [InlineData("10", 10)]

@@ -370,12 +370,14 @@ message OrchestratorResponse {
     // Whether or not a history is required to complete the original OrchestratorRequest and none was provided.
     bool requiresHistory = 7;
 
+    /* Chunking logic has since been deprecated and fields related to it are marked as such */
+
     // True if this is a partial (chunked) completion. The backend must keep the work item open until the final chunk (isPartial=false).
-    bool isPartial = 8;
+    bool isPartial = 8 [deprecated=true];
 
     // Zero-based position of the current chunk within a chunked completion sequence.
     // This field is omitted for non-chunked completions.
-    google.protobuf.Int32Value chunkIndex = 9;
+    google.protobuf.Int32Value chunkIndex = 9 [deprecated=true];
 }
 
 message CreateInstanceRequest {
@@ -704,6 +706,7 @@ message StartNewOrchestrationAction {
     google.protobuf.Timestamp scheduledTime = 5;
     google.protobuf.Timestamp requestTime = 6;
     TraceContext parentTraceContext = 7;
+    map<string, string> tags = 8;
 }
 
 message AbandonActivityTaskRequest {
