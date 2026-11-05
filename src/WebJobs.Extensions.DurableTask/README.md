@@ -38,6 +38,14 @@ Azure Storage is the default backend for Durable Functions. The `DurabilityProvi
 
 The `Scale/` folder provides **runtime scaling support**, integrated via `DurableTaskListener`.
 
+## Task Hub Trust Boundary and Exception Serialization
+
+Task hub state and internal messages are trusted runtime data. The extension relies on the backend's authentication and authorization controls to prevent tampering, rather than verifying the integrity of stored data. Anyone with write access to the task hub backend can change application behavior and potentially execute code in the function app. Protect backend credentials and write permissions accordingly; see [Secure your task hub storage](https://learn.microsoft.com/azure/durable-task/durable-functions/durable-functions-serialization-and-persistence#secure-your-task-hub-storage).
+
+Error serialization intentionally preserves CLR type information (`TypeNameHandling.Objects`), and entity error responses resolve the exception type recorded by the runtime. This supports propagating customer-defined exception types and their data. Disabling type handling or introducing a fixed type allowlist would break existing customers and is not a substitute for protecting the backend. Ordinary input, output, and state serialization uses separate settings that default to `TypeNameHandling.None`.
+
+These error deserialization paths are not intended for arbitrary untrusted JSON. Applications must not allow untrusted callers to supply internal response metadata or write task hub messages directly. Security reviews and static-analysis triage should account for this trust boundary and compatibility requirement, rather than treating dynamic exception deserialization alone as evidence of an untrusted-input vulnerability.
+
 ## Extension Bundle Compatibility
 
 This extension is distributed as part of [Azure Functions extension bundles](https://learn.microsoft.com/azure/azure-functions/functions-bindings-register#extension-bundles), which are used by non-.NET language SDKs. Changes to public APIs and package dependencies must remain compatible with the extension bundle dependency graph. Breaking changes to package references can cause runtime failures for all non-.NET Durable Functions users.

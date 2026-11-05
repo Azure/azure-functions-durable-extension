@@ -59,7 +59,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             {
                 Exception e = null;
 
-                // do a best-effort attempt at deserializing this exception
+                // This path assumes a runtime-generated entity response from the protected task hub.
+                // ExceptionType is recorded by SetExceptionResult, separately from any JSON $type metadata.
+                // Dynamic type resolution is intentional: a fixed type allowlist would break propagation of
+                // customer-defined exceptions. Do not route arbitrary untrusted response metadata here.
+                // The cast and catch below provide a best-effort fallback, not a security boundary:
+                // deserialization can construct objects before the cast. Backend write access must be trusted.
+                // See "Task Hub Trust Boundary and Exception Serialization" in this extension's README.md.
                 try
                 {
                     var type = Type.GetType(this.ExceptionType, true);
