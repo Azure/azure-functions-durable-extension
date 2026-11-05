@@ -29,7 +29,7 @@
 
 - Updated the required host extension to `3.18.0` in worker `1.21.1`; no new worker API is introduced.
 - Updated `Microsoft.DurableTask.Client.Grpc`, `Microsoft.DurableTask.Worker.Grpc`, and `Microsoft.DurableTask.Abstractions` to 1.28.0, including entity-scheduled orchestration tags, external payload auto-purge support, and the fix for external-event loss after canceled waits in the isolated worker.
-- Added `Microsoft.DurableTask.LargePayloadPurge.Abstractions` 1.27.0.
+- Updated `Microsoft.DurableTask.LargePayloadPurge.Abstractions` to 1.28.0 to align purge contracts with the SDK client models.
 
 ## Microsoft.Azure.Functions.Worker.Extensions.DurableTask.AzureBlobPayloads
 
@@ -75,4 +75,4 @@
 - Updated the Azure Managed SDK references to 1.10.2 for DTS sovereign-cloud token audiences and per-connection authority hosts, including the Functions scale extension and E2E apps.
 - Updated `Grpc.Net.Client` to 2.84.0 to meet the Durable Task SDK 1.28.0 dependency requirement. `Microsoft.Bcl.AsyncInterfaces` remains at 10.0.9 for Azure Managed SDK 1.10.2 compatibility.
 - Updated `Microsoft.Azure.DurableTask.AzureStorage` to 2.11.1, `Microsoft.Azure.DurableTask.Core` to 3.11.2, and `Microsoft.Azure.DurableTask.ApplicationInsights` to 0.13.1.
-- Added `Microsoft.DurableTask.LargePayloadPurge.Abstractions` 1.27.0.
+- Updated `Microsoft.DurableTask.LargePayloadPurge.Abstractions` to 1.28.0 to align purge contracts with the SDK client models.

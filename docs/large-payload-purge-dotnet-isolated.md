@@ -6,7 +6,7 @@ The optional `Microsoft.Azure.Functions.Worker.Extensions.DurableTask.AzureBlobP
 
 Use:
 
-- The compatible Durable Task SDK `1.27.0` and Durable Task Core `3.11.2` dependency set.
+- The compatible Durable Task SDK `1.28.0` and Durable Task Core `3.11.2` dependency set, including `Microsoft.DurableTask.LargePayloadPurge.Abstractions` `1.28.0` aligned with the SDK client models.
 - Durable Functions host extension `Microsoft.Azure.WebJobs.Extensions.DurableTask` `3.17.0` or later.
 - Isolated worker extension `Microsoft.Azure.Functions.Worker.Extensions.DurableTask` `1.21.0` or later, with optional `Microsoft.Azure.Functions.Worker.Extensions.DurableTask.AzureBlobPayloads` `1.0.0` or later to supply the purge Functions.
 - A compatible storage provider package that supports external payload auto-purge.
