@@ -38,7 +38,22 @@ public static class RestartOrchestration
     {
         public string InstanceId { get; set; } = string.Empty;
         public bool RestartWithNewInstanceId { get; set; }
+        public string? NewInstanceId { get; set; }
+        public string? Version { get; set; }
     }
+
+    [Function(nameof(CloneDetailsOrchestrator))]
+    public static async Task<string?[]> CloneDetailsOrchestrator(
+        [OrchestrationTrigger] TaskOrchestrationContext context)
+    {
+        string? sourceBeforeChild = context.SourceInstanceId;
+        string? childSource = await context.CallSubOrchestratorAsync<string?>(nameof(CloneSourceChild));
+        return new[] { context.GetInput<string>(), context.Version, sourceBeforeChild, childSource, context.SourceInstanceId };
+    }
+
+    [Function(nameof(CloneSourceChild))]
+    public static string? CloneSourceChild([OrchestrationTrigger] TaskOrchestrationContext context)
+        => context.SourceInstanceId;
 
     // HTTP-triggered function that starts a new durable orchestration instance.
     [Function("RestartOrchestration_HttpStart")]
@@ -59,7 +74,7 @@ public static class RestartOrchestration
         };
 
         string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(
-            orchestratorName, options: options, CancellationToken.None);
+            orchestratorName, input: "original-input", options: options, CancellationToken.None);
 
         logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
         return await client.CreateCheckStatusResponseAsync(req, instanceId);
@@ -77,7 +92,13 @@ public static class RestartOrchestration
         {
             return req.CreateResponse(HttpStatusCode.BadRequest);
         }
-        string newInstanceId = await client.RestartAsync(data.InstanceId, data.RestartWithNewInstanceId);
+        string newInstanceId = data.NewInstanceId == null
+            ? await client.RestartAsync(data.InstanceId, data.RestartWithNewInstanceId)
+            : await client.RestartAsync(data.InstanceId, new RestartOrchestrationOptions
+            {
+                NewInstanceId = data.NewInstanceId,
+                Version = data.Version,
+            });
         
         return await client.CreateCheckStatusResponseAsync(req, newInstanceId);
     }

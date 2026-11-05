@@ -56,7 +56,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Sub-orchestrations return <c>null</c>, even when their parent was created as a clone.
         /// This value is available only when the configured durability provider persists orchestration tags.
         /// Providers that do not persist tags return <c>null</c>. For example,
-        /// Microsoft.DurableTask.SqlServer 1.5.2 does not persist orchestration tags.
+        /// Microsoft.DurableTask.SqlServer versions before 1.6.0 do not persist orchestration tags.
         /// </remarks>
         /// <value>
         /// The immediate source orchestration instance ID, or <c>null</c> if the current orchestration

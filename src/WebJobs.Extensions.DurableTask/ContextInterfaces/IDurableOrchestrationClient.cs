@@ -352,6 +352,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         Task<string> RestartAsync(string instanceId, bool restartWithNewInstanceId = true);
 
         /// <summary>
+        /// Restarts an existing orchestrator from the beginning with its original name and input,
+        /// a specified instance ID, and an optional version.
+        /// </summary>
+        /// <remarks>
+        /// This operation does not copy execution history. When the target ID differs from the source ID,
+        /// the new orchestration exposes the immediate source through
+        /// <see cref="IDurableOrchestrationContext.SourceInstanceId"/> if the provider persists orchestration tags.
+        /// Restarting a top-level clone with the same ID preserves its existing source reference.
+        /// Existing-instance conflict behavior is the same as for starting an orchestration.
+        /// </remarks>
+        /// <param name="instanceId">The ID of the source orchestration.</param>
+        /// <param name="options">The restart options, containing a required target instance ID and optional version.</param>
+        /// <returns>A task containing the target orchestration instance ID when it has been scheduled.</returns>
+        /// <exception cref="ArgumentException">The source does not exist or the target ID is invalid.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="options"/> is <c>null</c>.</exception>
+        /// <exception cref="NotSupportedException">This client implementation does not support explicit restart options.</exception>
+        Task<string> RestartAsync(string instanceId, RestartOrchestrationOptions options)
+            => throw new NotSupportedException("This client does not support restarting with an explicit instance ID and version.");
+
+        /// <summary>
         ///  Makes the current app the primary app, if it isn't already. Must be using the AppLease feature by setting UseAppLease to true in host.json.
         /// </summary>
         /// <returns>A task that completes when the operation has started.</returns>

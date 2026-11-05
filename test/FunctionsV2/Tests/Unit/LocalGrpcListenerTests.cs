@@ -413,9 +413,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 Times.Once);
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(null)]
+        [InlineData("clone-instance")]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task TestGrpcListener_RestartRejectsDisabledOrchestrator()
+        public async Task TestGrpcListener_RestartRejectsDisabledOrchestrator(string targetId)
         {
             const string InstanceId = "completed-instance";
             const string FunctionName = "DisabledOrchestrator";
@@ -444,6 +446,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     new P.RestartInstanceRequest
                     {
                         InstanceId = InstanceId,
+                        NewInstanceId = targetId,
                         RestartWithNewInstanceId = false,
                     }).ResponseAsync,
                 extension => extension.RegisterOrchestrator(
@@ -457,6 +460,126 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     It.IsAny<TaskMessage>(),
                     It.IsAny<OrchestrationStatus[]>()),
                 Times.Never);
+        }
+
+        [Theory]
+        [InlineData("clone", null, false, "host-default")]
+        [InlineData("clone", "", true, "")]
+        [InlineData("clone", "2.0", false, "2.0")]
+        [InlineData("source", "2.0", true, "2.0")]
+        [InlineData(null, null, false, "host-default")]
+        [InlineData(null, null, true, "host-default")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task TestGrpcListener_RestartRoutesExplicitAndLegacyOptions(
+            string targetId, string version, bool randomId, string expectedVersion)
+        {
+            const string SourceId = "source";
+            const string FunctionName = "RestartedOrchestrator";
+            const string Input = "{\"value\":42}";
+            var tags = new Dictionary<string, string>
+            {
+                ["custom"] = "value",
+                [DurableClient.SourceInstanceIdTag] = "earlier-source",
+            };
+            var service = new Mock<IOrchestrationServiceClient>();
+            service.Setup(client => client.GetOrchestrationStateAsync(SourceId, false))
+                .ReturnsAsync(new List<OrchestrationState>
+                {
+                    new OrchestrationState
+                    {
+                        Name = FunctionName,
+                        Version = "source-version",
+                        Input = Input,
+                        Tags = tags,
+                        OrchestrationInstance = new OrchestrationInstance { InstanceId = SourceId },
+                        OrchestrationStatus = OrchestrationStatus.Completed,
+                    },
+                });
+            ExecutionStartedEvent started = null;
+            service.Setup(client => client.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()))
+                .Callback<TaskMessage, OrchestrationStatus[]>((message, _) => started = (ExecutionStartedEvent)message.Event)
+                .Returns(Task.CompletedTask);
+            using DurableTaskExtension extension = this.CreateExtension(
+                "RestartOptions", CreateDurabilityProvider(new Mock<IOrchestrationService>().Object, service.Object));
+            extension.Options.DefaultVersion = "host-default";
+            extension.RegisterOrchestrator(new FunctionName(FunctionName), new RegisteredFunctionInfo(null, isOutOfProc: true));
+            ILocalGrpcListener listener = LocalGrpcListener.Create(extension, LocalGrpcListenerMode.AspNetCore);
+
+            try
+            {
+                await listener.StartAsync(default);
+                using GrpcChannel channel = GrpcChannel.ForAddress(listener.ListenAddress);
+                var client = new P.TaskHubSidecarService.TaskHubSidecarServiceClient(channel);
+                P.RestartInstanceResponse response = await client.RestartInstanceAsync(new P.RestartInstanceRequest
+                {
+                    InstanceId = SourceId,
+                    NewInstanceId = targetId,
+                    Version = version,
+                    RestartWithNewInstanceId = randomId,
+                });
+
+                Assert.Equal(targetId ?? (randomId ? response.InstanceId : SourceId), response.InstanceId);
+                if (targetId == null && randomId)
+                {
+                    Assert.NotEqual(SourceId, response.InstanceId);
+                    Assert.False(string.IsNullOrEmpty(response.InstanceId));
+                }
+
+                Assert.NotNull(started);
+                Assert.Equal(response.InstanceId, started.OrchestrationInstance.InstanceId);
+                Assert.Equal(FunctionName, started.Name);
+                Assert.Equal(expectedVersion, started.Version);
+                Assert.True(JToken.DeepEquals(JToken.Parse(Input), JToken.Parse(started.Input)));
+                Assert.Equal("value", started.Tags["custom"]);
+                Assert.Equal(
+                    response.InstanceId == SourceId ? "earlier-source" : SourceId,
+                    started.Tags[DurableClient.SourceInstanceIdTag]);
+                Assert.Equal("earlier-source", tags[DurableClient.SourceInstanceIdTag]);
+            }
+            finally
+            {
+                await listener.StopAsync(default);
+            }
+        }
+
+        [Theory]
+        [InlineData("", null)]
+        [InlineData(" ", null)]
+        [InlineData("invalid/id", null)]
+        [InlineData(null, "2.0")]
+        [InlineData(null, "")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task TestGrpcListener_RestartInvalidOptionsReturnInvalidArgument(string targetId, string version)
+        {
+            var service = new Mock<IOrchestrationServiceClient>(MockBehavior.Strict);
+            RpcException exception = await this.InvokeFailingRpcAsync(
+                "InvalidRestartOptions",
+                CreateDurabilityProvider(new Mock<IOrchestrationService>().Object, service.Object),
+                async client => await client.RestartInstanceAsync(new P.RestartInstanceRequest
+                {
+                    InstanceId = "source",
+                    NewInstanceId = targetId,
+                    Version = version,
+                }));
+
+            Assert.Equal(StatusCode.InvalidArgument, exception.StatusCode);
+            service.VerifyNoOtherCalls();
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task TestGrpcListener_RestartMissingSourceReturnsNotFound()
+        {
+            RpcException exception = await this.InvokeFailingRpcAsync(
+                "MissingRestartSource",
+                CreateEmptyGetStateProvider("missing-source"),
+                async client => await client.RestartInstanceAsync(new P.RestartInstanceRequest
+                {
+                    InstanceId = "missing-source",
+                    NewInstanceId = "clone",
+                }));
+
+            Assert.Equal(StatusCode.NotFound, exception.StatusCode);
         }
 
         [Theory]

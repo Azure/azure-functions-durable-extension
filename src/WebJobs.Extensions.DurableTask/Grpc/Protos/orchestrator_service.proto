@@ -531,9 +531,22 @@ message PurgeInstancesResponse {
     google.protobuf.BoolValue isComplete = 2;
 }
 
+// Restarts an orchestration from the beginning with its original name and input,
+// without copying its history.
 message RestartInstanceRequest {
     string instanceId = 1;
+
+    // When newInstanceId is absent, true generates a new instance ID and false
+    // restarts using instanceId.
     bool restartWithNewInstanceId = 2;
+
+    // An explicit target instance ID. When present, takes precedence over
+    // restartWithNewInstanceId.
+    google.protobuf.StringValue newInstanceId = 3;
+
+    // Overrides the restarted orchestration's version, including an empty string.
+    // When absent, preserves the server's default restart behavior.
+    google.protobuf.StringValue version = 4;
 }
 
 message RestartInstanceResponse {
