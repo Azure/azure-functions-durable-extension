@@ -140,7 +140,36 @@ internal static class ClientOperationLogHelpers
     }
 
     /// <summary>
-    /// Gets the count of ClientOperationReceived logs for a specific operation type and instance ID.
+    /// Waits for client operation logs to be flushed, then asserts the exact count of logs
+    /// with valid FunctionInvocationIds for the specified operation and instance.
+    /// </summary>
+    /// <param name="getLogs">Returns the current snapshot of Core Tools logs on each poll.</param>
+    /// <param name="operationType">The operation type to count.</param>
+    /// <param name="instanceId">The instance ID to filter by.</param>
+    /// <param name="expectedCount">The expected number of matching logs.</param>
+    /// <param name="maxWaitSeconds">Maximum time to wait for the logs (default: 5 seconds).</param>
+    public static void AssertClientOperationLogCount(
+        Func<IEnumerable<string>> getLogs,
+        string operationType,
+        string instanceId,
+        int expectedCount,
+        int maxWaitSeconds = 5)
+    {
+        int logCount = 0;
+        WaitForCondition(
+            () =>
+            {
+                logCount = GetClientOperationLogCount(getLogs(), operationType, instanceId);
+                return logCount >= expectedCount;
+            },
+            maxWaitSeconds);
+
+        Assert.Equal(expectedCount, logCount);
+    }
+
+    /// <summary>
+    /// Gets the count of ClientOperationReceived logs with valid FunctionInvocationIds
+    /// for a specific operation type and instance ID.
     /// </summary>
     /// <param name="logs">The collection of Core Tools logs.</param>
     /// <param name="operationType">The operation type to count.</param>
@@ -154,7 +183,7 @@ internal static class ClientOperationLogHelpers
         return logs.Count(log =>
             log.Contains($"Client operation '{operationType}' received") &&
             log.Contains($"for instance '{instanceId}'") &&
-            log.Contains("FunctionInvocationId:"));
+            Guid.TryParse(ExtractFunctionInvocationId(log), out _));
     }
 
     /// <summary>

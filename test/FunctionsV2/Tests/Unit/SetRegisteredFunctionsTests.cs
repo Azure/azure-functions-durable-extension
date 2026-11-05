@@ -5,9 +5,19 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using DurableTask.AzureStorage;
+using DurableTask.Core;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask.Listener;
+using Microsoft.Azure.WebJobs.Host.Executors;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Moq;
 using Xunit;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
@@ -46,13 +56,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             var act2 = new FunctionName("Activity2");
             var ent1 = new FunctionName("Entity1");
             var ent2 = new FunctionName("Entity2");
+            var executor = new Mock<ITriggeredFunctionExecutor>().Object;
 
-            extension.RegisterOrchestrator(orch1, new RegisteredFunctionInfo(executor: null!, isOutOfProc: true));
-            extension.RegisterOrchestrator(orch2, new RegisteredFunctionInfo(executor: null!, isOutOfProc: true));
-            extension.RegisterActivity(act1, executor: null!);
-            extension.RegisterActivity(act2, executor: null!);
-            extension.RegisterEntity(ent1, new RegisteredFunctionInfo(executor: null!, isOutOfProc: true));
-            extension.RegisterEntity(ent2, new RegisteredFunctionInfo(executor: null!, isOutOfProc: true));
+            extension.RegisterOrchestrator(orch1, new RegisteredFunctionInfo(executor, isOutOfProc: true));
+            extension.RegisterOrchestrator(orch2, new RegisteredFunctionInfo(executor, isOutOfProc: true));
+            extension.RegisterActivity(act1, executor);
+            extension.RegisterActivity(act2, executor);
+            extension.RegisterEntity(ent1, new RegisteredFunctionInfo(executor, isOutOfProc: true));
+            extension.RegisterEntity(ent2, new RegisteredFunctionInfo(executor, isOutOfProc: true));
 
             // Deregister one of each type
             extension.DeregisterOrchestrator(orch2);
@@ -89,30 +100,133 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             // throw NullReferenceException on those entries, and (2) treat them as inactive,
             // matching the null-tolerant pattern used in StopTaskHubWorkerIfIdleAsync.
             var extension = CreateExtension();
+            var executor = new Mock<ITriggeredFunctionExecutor>().Object;
 
             extension.RegisterOrchestrator(new FunctionName("DisabledOrch"), orchestratorInfo: null);
-            extension.RegisterOrchestrator(new FunctionName("ActiveOrch"), new RegisteredFunctionInfo(executor: null!, isOutOfProc: true));
+            extension.RegisterOrchestrator(new FunctionName("NullExecutorOrch"), new RegisteredFunctionInfo(executor: null!, isOutOfProc: true));
+            extension.RegisterOrchestrator(new FunctionName("ActiveOrch"), new RegisteredFunctionInfo(executor, isOutOfProc: true));
 
-            // No "DisabledActivity" case: unlike RegisterOrchestrator / RegisterEntity (which
-            // accept and store a possibly-null RegisteredFunctionInfo), RegisterActivity always
-            // wraps its executor in a non-null RegisteredFunctionInfo, so knownActivities never
-            // holds a null value through any legitimate code path. The production null-check on
-            // activities exists for symmetry / defense-in-depth only and can't be exercised here
-            // without reflection.
-            extension.RegisterActivity(new FunctionName("ActiveActivity"), executor: null!);
+            // Activity indexing stores a non-null registration with a null executor.
+            extension.RegisterActivity(new FunctionName("DisabledActivity"), executor: null!);
+            extension.RegisterActivity(new FunctionName("ActiveActivity"), executor);
 
             extension.RegisterEntity(new FunctionName("DisabledEntity"), entityInfo: null);
-            extension.RegisterEntity(new FunctionName("ActiveEntity"), new RegisteredFunctionInfo(executor: null!, isOutOfProc: true));
+            extension.RegisterEntity(new FunctionName("NullExecutorEntity"), new RegisteredFunctionInfo(executor: null!, isOutOfProc: true));
+            extension.RegisterEntity(new FunctionName("ActiveEntity"), new RegisteredFunctionInfo(executor, isOutOfProc: true));
 
             var activeFunctions = extension.GetActiveRegisteredFunctionNames();
 
-            Assert.Contains("ActiveOrch", activeFunctions.orchestratorNames);
-            Assert.DoesNotContain("DisabledOrch", activeFunctions.orchestratorNames);
+            Assert.Equal(new[] { "ActiveOrch" }, activeFunctions.orchestratorNames);
+            Assert.Equal(new[] { "ActiveActivity" }, activeFunctions.activityNames);
+            Assert.Equal(new[] { "ActiveEntity" }, activeFunctions.entityNames);
 
-            Assert.Contains("ActiveActivity", activeFunctions.activityNames);
+            // Filtering capabilities must not remove indexed functions from scheduling validation.
+            extension.ThrowIfFunctionDoesNotExist("DisabledActivity", FunctionType.Activity);
+        }
 
-            Assert.Contains("ActiveEntity", activeFunctions.entityNames);
-            Assert.DoesNotContain("DisabledEntity", activeFunctions.entityNames);
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void NoActiveActivities_ProducesEmptyActivityList(bool deregister)
+        {
+            var extension = CreateExtension();
+            var activityName = new FunctionName("OnlyActivity");
+            extension.RegisterActivity(
+                activityName,
+                deregister ? new Mock<ITriggeredFunctionExecutor>().Object : null!);
+            if (deregister)
+            {
+                extension.DeregisterActivity(activityName);
+            }
+
+            Assert.Empty(extension.GetActiveRegisteredFunctionNames().activityNames);
+        }
+
+        [Theory]
+        [InlineData(0, 1, 2, false)]
+        [InlineData(0, 2, 1, false)]
+        [InlineData(1, 0, 2, false)]
+        [InlineData(1, 2, 0, false)]
+        [InlineData(2, 0, 1, false)]
+        [InlineData(2, 1, 0, false)]
+        [InlineData(0, 1, 2, true)]
+        [InlineData(1, 0, 2, true)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task HostStartup_PassesAllActiveListenersToFactoryBeforeStartingWorker(
+            int first, int second, int third, bool disableOnlyActivity)
+        {
+            Type[] functionTypes =
+            [
+                typeof(OrchestratorFunctions),
+                typeof(ActivityFunctions),
+                typeof(EntityFunctions),
+            ];
+            var typeLocator = new Mock<ITypeLocator>();
+            typeLocator.Setup(locator => locator.GetTypes())
+                .Returns(new[] { functionTypes[first], functionTypes[second], functionTypes[third] });
+
+            var snapshots = new List<(string[] Orchestrators, string[] Activities, string[] Entities)>();
+            var service = new Mock<IOrchestrationService>();
+            service.SetupGet(s => s.MaxConcurrentTaskOrchestrationWorkItems).Returns(1);
+            service.SetupGet(s => s.MaxConcurrentTaskActivityWorkItems).Returns(1);
+            int snapshotsAtWorkerStart = 0;
+            service.Setup(s => s.StartAsync())
+                .Callback(() => snapshotsAtWorkerStart = snapshots.Count)
+                .Returns(Task.CompletedTask);
+
+            // No dispatcher pumps are needed: this test exercises actual WebJobs indexing and
+            // listener startup, but captures provider capabilities without external storage.
+            var provider = new DurabilityProvider(
+                "FilterTest", service.Object, new Mock<IOrchestrationServiceClient>().Object, "TestConnection");
+            var factory = new Mock<IDurabilityProviderFactory>();
+            factory.Setup(f => f.Name).Returns("FilterTest");
+            factory.Setup(f => f.GetDurabilityProvider()).Returns(provider);
+            factory.Setup(f => f.SetRegisteredFunctions(
+                    It.IsAny<IReadOnlyCollection<string>>(),
+                    It.IsAny<IReadOnlyCollection<string>>(),
+                    It.IsAny<IReadOnlyCollection<string>>()))
+                .Callback<IReadOnlyCollection<string>, IReadOnlyCollection<string>, IReadOnlyCollection<string>>(
+                    (orchestrators, activities, entities) =>
+                        snapshots.Add((orchestrators.ToArray(), activities.ToArray(), entities.ToArray())));
+
+            using IHost host = new HostBuilder()
+                .ConfigureAppConfiguration(builder => builder.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["AzureWebJobs.SettingDisabledActivity.Disabled"] = "true",
+                    ["AzureWebJobs.EnabledActivity.Disabled"] = disableOnlyActivity.ToString(),
+                }))
+                .ConfigureWebJobs(builder => builder.AddDurableTask(options =>
+                {
+                    options.HubName = "FilterStartupTest";
+                    options.StorageProvider["type"] = factory.Object.Name;
+                    options.LocalRpcEndpointEnabled = false;
+                    options.WebhookUriProviderOverride = () => new Uri("https://localhost");
+                }))
+                .ConfigureServices(services =>
+                {
+                    services.AddSingleton(typeLocator.Object);
+                    services.AddSingleton(factory.Object);
+                    services.AddSingleton(TestHelpers.GetMockPlatformInformationService());
+                })
+                .Build();
+
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            await host.StartAsync(timeout.Token);
+            try
+            {
+                var snapshot = Assert.Single(snapshots);
+                Assert.Equal(1, snapshotsAtWorkerStart);
+                Assert.Equal(new[] { "EnabledOrchestrator" }, snapshot.Orchestrators);
+                Assert.Equal(disableOnlyActivity ? Array.Empty<string>() : new[] { "EnabledActivity" }, snapshot.Activities);
+                Assert.Equal(new[] { "EnabledEntity" }, snapshot.Entities);
+                service.Verify(s => s.StartAsync(), Times.Once);
+            }
+            finally
+            {
+                using var stopTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+                await host.StopAsync(stopTimeout.Token);
+            }
         }
 
         private static DurableTaskExtension CreateExtension()
@@ -139,6 +253,41 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 new DurableHttpMessageHandlerFactory(),
                 platformInformationService: TestHelpers.GetMockPlatformInformationService());
         }
+
+        public static class OrchestratorFunctions
+        {
+            [FunctionName("EnabledOrchestrator")]
+            public static void Enabled([OrchestrationTrigger] IDurableOrchestrationContext context) { }
+
+            [Disable]
+            [FunctionName("DisabledOrchestrator")]
+            public static void Disabled([OrchestrationTrigger] IDurableOrchestrationContext context) { }
+        }
+
+        public static class ActivityFunctions
+        {
+            [FunctionName("EnabledActivity")]
+            public static void Enabled([ActivityTrigger] string input) { }
+
+            [Disable]
+            [FunctionName("AttributeDisabledActivity")]
+            public static void AttributeDisabled([ActivityTrigger] string input) { }
+
+            [FunctionName("SettingDisabledActivity")]
+            public static void SettingDisabled([ActivityTrigger] string input) { }
+        }
+
+#pragma warning disable DF0305 // Function-based entities do not dispatch to an entity class.
+        public static class EntityFunctions
+        {
+            [FunctionName("EnabledEntity")]
+            public static void Enabled([EntityTrigger] IDurableEntityContext context) { }
+
+            [Disable]
+            [FunctionName("DisabledEntity")]
+            public static void Disabled([EntityTrigger] IDurableEntityContext context) { }
+        }
+#pragma warning restore DF0305
 
         /// <summary>
         /// A minimal factory that does NOT override SetRegisteredFunctions,

@@ -44,6 +44,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         INameVersionObjectManager<TaskActivity>
     {
         private const string DefaultProvider = AzureStorageDurabilityProviderFactory.ProviderName;
+        internal const string LargePayloadPurgeOrchestratorName = "BlobPurgeJobOrchestrator";
 
         internal static readonly string LoggerCategoryName = LogCategories.CreateTriggerCategory("DurableTask");
 
@@ -227,12 +228,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private TaskHubWorker InitializeTaskHubWorker()
         {
-            var newTaskHubWorker = new TaskHubWorker(this.defaultDurabilityProvider, this, this, loggerFactory: this.loggerFactory, versioningSettings: new VersioningSettings
+            var versioningSettings = new VersioningSettings
             {
                 Version = this.Options.DefaultVersion, // A null (or empty) version is valid as it signifies non-versioned case.
                 MatchStrategy = this.Options.VersionMatchStrategy, // The default value for this is to no-op on versioning.
                 FailureStrategy = this.Options.VersionFailureStrategy, // The default value for this is to ignore work if there is a mismatch.
-            });
+            };
+            var newTaskHubWorker = new TaskHubWorker(this.defaultDurabilityProvider, this, this, loggerFactory: this.loggerFactory, versioningSettings: versioningSettings);
 
             // Add middleware to the DTFx dispatcher so that we can inject our own logic
             // into and customize the orchestration execution pipeline.
@@ -839,6 +841,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 context.ParentInstanceId = orchestrationRuntimeState.ParentInstance.OrchestrationInstance.InstanceId;
             }
 
+            context.SourceInstanceId = GetSourceInstanceId(orchestrationRuntimeState);
+
             context.InstanceId = orchestrationRuntimeState.OrchestrationInstance?.InstanceId;
             context.ExecutionId = orchestrationRuntimeState.OrchestrationInstance?.ExecutionId;
             context.IsReplaying = orchestrationRuntimeState.ExecutionStartedEvent.IsPlayed;
@@ -968,6 +972,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             await context.RunDeferredTasks();
+        }
+
+        internal static string GetSourceInstanceId(OrchestrationRuntimeState orchestrationRuntimeState)
+        {
+            if (orchestrationRuntimeState.ParentInstance != null)
+            {
+                return null;
+            }
+
+            if (orchestrationRuntimeState.ExecutionStartedEvent.Tags?.TryGetValue(
+                DurableClient.SourceInstanceIdTag,
+                out string sourceInstanceId) == true &&
+                !string.IsNullOrEmpty(sourceInstanceId))
+            {
+                return sourceInstanceId;
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -1346,22 +1368,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             IReadOnlyCollection<string> activityNames,
             IReadOnlyCollection<string> entityNames) GetActiveRegisteredFunctionNames()
         {
-            // Note: dictionary values can be null for functions disabled via attribute or
-            // app setting. The binding provider registers the name with a null
-            // RegisteredFunctionInfo during indexing; for disabled functions the listener
-            // factory never replaces it. Treat null entries as inactive, matching the
-            // existing pattern in StopTaskHubWorkerIfIdleAsync.
+            // Indexing registers names before listeners are created. Disabled functions retain
+            // a null registration (orchestrators/entities) or a null executor (activities).
+            // Only advertise functions with active listeners, as in StopTaskHubWorkerIfIdleAsync.
             return (
                 orchestratorNames: this.knownOrchestrators
-                    .Where(kvp => kvp.Value != null && !kvp.Value.IsDeregistered)
+                    .Where(kvp => kvp.Value?.HasActiveListener == true)
                     .Select(kvp => kvp.Key.Name)
                     .ToList(),
                 activityNames: this.knownActivities
-                    .Where(kvp => kvp.Value != null && !kvp.Value.IsDeregistered)
+                    .Where(kvp => kvp.Value?.HasActiveListener == true)
                     .Select(kvp => kvp.Key.Name)
                     .ToList(),
                 entityNames: this.knownEntities
-                    .Where(kvp => kvp.Value != null && !kvp.Value.IsDeregistered)
+                    .Where(kvp => kvp.Value?.HasActiveListener == true)
                     .Select(kvp => kvp.Key.Name)
                     .ToList());
         }
@@ -1443,6 +1463,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             else
             {
                 this.knownOrchestrators[orchestratorFunction] = orchestratorInfo;
+            }
+        }
+
+        internal void ValidateLargePayloadPurgeOrchestration(string name)
+        {
+            if (!string.Equals(name, LargePayloadPurgeOrchestratorName, StringComparison.Ordinal) ||
+                this.PlatformInformationService.GetWorkerRuntimeType() != WorkerRuntimeType.DotNetIsolated)
+            {
+                throw new InvalidOperationException("The largePayloadPurge marker is reserved for the SDK's .NET isolated BlobPurgeJobOrchestrator function.");
             }
         }
 
@@ -1549,7 +1578,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             var functionName = new FunctionName(name);
 
-            if (functionType == FunctionType.Activity && !this.knownActivities.ContainsKey(functionName))
+            if (functionType == FunctionType.Activity &&
+                (string.IsNullOrEmpty(name) ||
+                 (!this.defaultDurabilityProvider.AllowsExternalActivityScheduling &&
+                  !this.knownActivities.ContainsKey(functionName))))
             {
                 throw new ArgumentException(this.GetInvalidActivityFunctionMessage(name));
             }

@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System.Net;
+using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -108,6 +109,63 @@ public class WorkItemFilterTests
 
             terminateResponse.EnsureSuccessStatusCode();
             await DurableHelpers.WaitForOrchestrationStateAsync(unknownStatusUri, "Terminated", 30);
+        }
+    }
+
+    [Fact]
+    public async Task DisabledActivity_WaitsWhileEnabledActivitiesComplete()
+    {
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger(
+            "StartOrchestration",
+            "?orchestrationName=CallDisabledActivity");
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+
+        string statusUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
+        string instanceId = await DurableHelpers.ParseInstanceIdAsync(response);
+        var instances = new List<(string Id, string StatusUri)> { (instanceId, statusUri) };
+
+        try
+        {
+            await DurableHelpers.WaitForOrchestrationStateAsync(statusUri, "Running", 30);
+
+            using HttpResponseMessage control = await HttpHelpers.InvokeHttpTrigger(
+                "StartOrchestration",
+                "?orchestrationName=HelloCities");
+            Assert.Equal(HttpStatusCode.Accepted, control.StatusCode);
+            string controlUri = await DurableHelpers.ParseStatusQueryGetUriAsync(control);
+            instances.Add((await DurableHelpers.ParseInstanceIdAsync(control), controlUri));
+            await DurableHelpers.WaitForOrchestrationStateAsync(controlUri, "Completed", 30);
+            var controlDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(controlUri);
+            Assert.Contains("Hello Tokyo!", controlDetails.Output);
+
+            // Observe a bounded interval after the positive control; Running alone could also
+            // mean the orchestrator has not yet scheduled its activity.
+            await Task.Delay(TimeSpan.FromSeconds(5));
+            using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+            string separator = statusUri.Contains('?') ? "&" : "?";
+            JObject status = JObject.Parse(await client.GetStringAsync($"{statusUri}{separator}showHistory=true"));
+            Assert.Equal("Running", (string?)status["runtimeStatus"]);
+            JArray history = Assert.IsType<JArray>(status["historyEvents"]);
+            Assert.Single(
+                history.OfType<JObject>(),
+                item => (string?)item["EventType"] == "TaskScheduled" && (string?)item["Name"] == "DisabledActivity");
+            Assert.DoesNotContain(
+                history.OfType<JObject>(),
+                item => (string?)item["EventType"] is "TaskFailed" or "TaskCompleted");
+        }
+        finally
+        {
+            foreach (var instance in instances)
+            {
+                var details = await DurableHelpers.GetRunningOrchestrationDetailsAsync(instance.StatusUri);
+                if (details.RuntimeStatus is not ("Completed" or "Failed" or "Terminated"))
+                {
+                    using HttpResponseMessage terminate = await HttpHelpers.InvokeHttpTrigger(
+                        "TerminateInstance", $"?instanceId={instance.Id}");
+                    terminate.EnsureSuccessStatusCode();
+                    await DurableHelpers.WaitForOrchestrationStateAsync(instance.StatusUri, "Terminated", 30);
+                }
+            }
         }
     }
 

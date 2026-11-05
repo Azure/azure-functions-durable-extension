@@ -74,6 +74,13 @@ jobs:
             pattern: '*DurableTask.dll'
             signType: dll
 
+      - template: ci/sign-files.yml@eng
+        parameters:
+            displayName: Sign payload purge assemblies
+            folderPath: 'src/Worker.Extensions.DurableTask.AzureBlobPayloads/bin/Release'
+            pattern: '*DurableTask.AzureBlobPayloads.dll'
+            signType: dll
+
       # dotnet pack
       # Packaging needs to be a separate step from build.
       # This will automatically pick up the signed DLLs.
@@ -95,6 +102,15 @@ jobs:
         inputs:
             command: pack
             packagesToPack: 'src/**/Worker.Extensions.DurableTask.csproj'
+            configuration: Release
+            packDirectory: $(build.artifactStagingDirectory)
+            nobuild: true
+
+      - task: DotNetCoreCLI@2
+        displayName: 'dotnet pack Worker.Extensions.DurableTask.AzureBlobPayloads.csproj'
+        inputs:
+            command: pack
+            packagesToPack: 'src/**/Worker.Extensions.DurableTask.AzureBlobPayloads.csproj'
             configuration: Release
             packDirectory: $(build.artifactStagingDirectory)
             nobuild: true

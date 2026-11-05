@@ -12,8 +12,11 @@ using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using DurableTask.Core.Query;
 using Microsoft.Azure.WebJobs.Host.Scale;
+using Microsoft.DurableTask.LargePayloadPurge.Abstractions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using LargePayloadPurgeResult = Microsoft.DurableTask.Client.LargePayloadPurgeResult;
+using LargePayloadTombstone = Microsoft.DurableTask.Client.LargePayloadTombstone;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -29,6 +32,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         IOrchestrationServiceClient,
         IOrchestrationServiceQueryClient,
         IOrchestrationServicePurgeClient,
+        IOrchestrationServiceLargePayloadPurgeClient,
         IEntityOrchestrationService
     {
         internal const string NoConnectionDetails = "default";
@@ -70,6 +74,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Specifies whether the durability provider supports Durable Entities.
         /// </summary>
         public virtual bool SupportsEntities => this.entityOrchestrationService?.EntityBackendProperties != null;
+
+        /// <summary>
+        /// Specifies whether activity functions can be scheduled without being registered in the current app.
+        /// </summary>
+        /// <remarks>
+        /// The default is <c>false</c>. Providers can override this policy when activities can be routed to other workers.
+        /// Only the scheduling-time registration check is skipped; activity name validation and local execution
+        /// availability checks still apply. If no worker can execute an activity, it may remain pending.
+        /// </remarks>
+        public virtual bool AllowsExternalActivityScheduling => false;
 
         /// <summary>
         /// Specifies whether the backend's WaitForOrchestration is implemented without polling.
@@ -590,6 +604,48 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             else
             {
                 throw new NotSupportedException($"{this.innerServiceClient.GetType().Name} doesn't support purge operations.");
+            }
+        }
+
+        /// <inheritdoc />
+        Task IOrchestrationServiceLargePayloadPurgeClient.SetLargePayloadAutoPurgeAsync(
+            bool enabled, DateTime deadlineUtc, CancellationToken cancellationToken)
+        {
+            if (this.innerServiceClient is IOrchestrationServiceLargePayloadPurgeClient purgeClient)
+            {
+                return purgeClient.SetLargePayloadAutoPurgeAsync(enabled, deadlineUtc, cancellationToken);
+            }
+            else
+            {
+                throw new NotSupportedException($"{this.innerServiceClient.GetType().Name} doesn't support large-payload purge operations.");
+            }
+        }
+
+        /// <inheritdoc />
+        Task<List<LargePayloadTombstone>> ILargePayloadPurgeClient.GetLargePayloadTombstonesAsync(
+            int limit, DateTime deadlineUtc, CancellationToken cancellationToken)
+        {
+            if (this.innerServiceClient is IOrchestrationServiceLargePayloadPurgeClient purgeClient)
+            {
+                return purgeClient.GetLargePayloadTombstonesAsync(limit, deadlineUtc, cancellationToken);
+            }
+            else
+            {
+                throw new NotSupportedException($"{this.innerServiceClient.GetType().Name} doesn't support large-payload purge operations.");
+            }
+        }
+
+        /// <inheritdoc />
+        Task ILargePayloadPurgeClient.ReportLargePayloadPurgeResultsAsync(
+            IReadOnlyList<LargePayloadPurgeResult> results, DateTime deadlineUtc, CancellationToken cancellationToken)
+        {
+            if (this.innerServiceClient is IOrchestrationServiceLargePayloadPurgeClient purgeClient)
+            {
+                return purgeClient.ReportLargePayloadPurgeResultsAsync(results, deadlineUtc, cancellationToken);
+            }
+            else
+            {
+                throw new NotSupportedException($"{this.innerServiceClient.GetType().Name} doesn't support large-payload purge operations.");
             }
         }
 

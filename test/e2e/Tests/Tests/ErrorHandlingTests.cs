@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
+using System.Globalization;
 using System.Net;
 using Microsoft.DurableTask;
 using Newtonsoft.Json;
@@ -224,9 +225,6 @@ public class ErrorHandlingTests
     [Fact]
     [Trait("PowerShell", "Skip")] // FailureDetails is a dotnet-isolated implementation detail
     [Trait("Python", "Skip")] // FailureDetails is a dotnet-isolated implementation detail
-    [Trait("Node", "Skip")] // Custom exception properties are not yet supported by the durable-functions JS SDK.
-    [Trait("Java", "Skip")] // Include exception properties at Failure Details for Java is not supported yet.
-    [Trait("DTS", "Skip")] // DTS doesn't support this feature yet.
     public async Task CustomExceptionPropertiesInFailureDetails()
     {
         using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=OrchestrationWithCustomException");
@@ -248,44 +246,134 @@ public class ErrorHandlingTests
 
         // Check that custom properties are included
         Assert.NotNull(failureDetails.Properties);
-        
+
         // Verify string property
-        Assert.True(failureDetails.Properties.ContainsKey("StringProperty"));
-        Assert.Equal("validation-error-123", failureDetails.Properties["StringProperty"]);
-        
-        // Verify int property
-        Assert.True(failureDetails.Properties.ContainsKey("IntProperty"));
-        Assert.Equal((long)100, failureDetails.Properties["IntProperty"]);
-        
-        // Verify long property
-        Assert.True(failureDetails.Properties.ContainsKey("LongProperty"));
-        Assert.Equal(999999999L, failureDetails.Properties["LongProperty"]);
-        
-        // Verify DateTime property
+        Assert.True(failureDetails.Properties.TryGetValue("StringProperty", out var stringPropertyValue));
+        Assert.Equal("validation-error-123", stringPropertyValue);
 
-        Assert.True(failureDetails.Properties.ContainsKey("DateTimeProperty"));
-        Assert.Equal(new DateTime(2025, 10, 15, 14, 30, 0, DateTimeKind.Utc), failureDetails.Properties["DateTimeProperty"]);
+        Assert.True(failureDetails.Properties.TryGetValue("IntProperty", out var intPropertyValue));
+        Assert.True(failureDetails.Properties.TryGetValue("LongProperty", out var longPropertyValue));
+        Assert.True(failureDetails.Properties.TryGetValue("DateTimeProperty", out var dateTimePropertyValue));
+        Assert.True(failureDetails.Properties.TryGetValue("DictionaryProperty", out var dictionaryPropertyValue));
+        Assert.True(failureDetails.Properties.TryGetValue("ListProperty", out var listPropertyValue));
 
-        // Verify dictionary property
-        Assert.True(failureDetails.Properties.ContainsKey("DictionaryProperty"));
-        var dictProperty = JsonConvert.DeserializeObject<Dictionary<string, object>>(failureDetails.Properties["DictionaryProperty"]!.ToString()!);
-        Assert.NotNull(dictProperty);
-        Assert.Equal("VALIDATION_FAILED", dictProperty["error_code"]);
-        Assert.Equal((long)3, dictProperty["retry_count"]);
-        Assert.Equal(true, dictProperty["is_critical"]);
-        
-        // Verify list property
-        Assert.True(failureDetails.Properties.ContainsKey("ListProperty"));
-        var listProperty = JsonConvert.DeserializeObject<List<object>>(failureDetails.Properties["ListProperty"]!.ToString()!);
-        Assert.NotNull(listProperty);
-        Assert.Equal(4, listProperty.Count);
-        Assert.Equal("error1", listProperty[0]);
-        Assert.Equal("error2", listProperty[1]);
-        Assert.Equal((long)500, listProperty[2]);
-        Assert.Null(listProperty[3]);
-        
+        if (this.fixture.functionLanguageLocalizer.GetLanguageType() is LanguageType.Node or LanguageType.Java)
+        {
+            // Java and Node round-trip properties through protobuf Values. Numbers may
+            // deserialize as doubles, and timestamps are sent as ISO-8601 strings.
+            Assert.Equal(100L, Convert.ToInt64(intPropertyValue));
+            Assert.Equal(999999999L, Convert.ToInt64(longPropertyValue));
+
+            var dateTimeProperty = dateTimePropertyValue is DateTime dateTime
+                ? dateTime
+                : DateTime.Parse(Assert.IsType<string>(dateTimePropertyValue), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
+            Assert.Equal(
+                new DateTime(2025, 10, 15, 14, 30, 0, DateTimeKind.Utc),
+                dateTimeProperty.ToUniversalTime());
+
+            var dictProperty = JsonConvert.DeserializeObject<Dictionary<string, object>>(dictionaryPropertyValue!.ToString()!);
+            Assert.NotNull(dictProperty);
+            Assert.Equal("VALIDATION_FAILED", dictProperty["error_code"]);
+            Assert.Equal(3L, Convert.ToInt64(dictProperty["retry_count"]));
+            Assert.Equal(true, dictProperty["is_critical"]);
+
+            var listProperty = JsonConvert.DeserializeObject<List<object>>(listPropertyValue!.ToString()!);
+            Assert.NotNull(listProperty);
+            Assert.Equal(4, listProperty.Count);
+            Assert.Equal("error1", listProperty[0]);
+            Assert.Equal("error2", listProperty[1]);
+            Assert.Equal(500L, Convert.ToInt64(listProperty[2]));
+            Assert.Null(listProperty[3]);
+        }
+        else
+        {
+            // Verify int property
+            Assert.Equal((long)100, intPropertyValue);
+
+            // Verify long property
+            Assert.Equal(999999999L, longPropertyValue);
+
+            // Verify DateTime property
+            Assert.Equal(new DateTime(2025, 10, 15, 14, 30, 0, DateTimeKind.Utc), dateTimePropertyValue);
+
+            // Verify dictionary property
+            var dictProperty = JsonConvert.DeserializeObject<Dictionary<string, object>>(dictionaryPropertyValue!.ToString()!);
+            Assert.NotNull(dictProperty);
+            Assert.Equal("VALIDATION_FAILED", dictProperty["error_code"]);
+            Assert.Equal((long)3, dictProperty["retry_count"]);
+            Assert.Equal(true, dictProperty["is_critical"]);
+
+            // Verify list property
+            var listProperty = JsonConvert.DeserializeObject<List<object>>(listPropertyValue!.ToString()!);
+            Assert.NotNull(listProperty);
+            Assert.Equal(4, listProperty.Count);
+            Assert.Equal("error1", listProperty[0]);
+            Assert.Equal("error2", listProperty[1]);
+            Assert.Equal((long)500, listProperty[2]);
+            Assert.Null(listProperty[3]);
+        }
+
         // Verify null property
-        Assert.True(failureDetails.Properties.ContainsKey("NullProperty"));
-        Assert.Null(failureDetails.Properties["NullProperty"]);
+        Assert.True(failureDetails.Properties.TryGetValue("NullProperty", out var nullPropertyValue));
+        Assert.Null(nullPropertyValue);
+    }
+
+    [Fact]
+    [Trait("Dotnet", "Skip")] // NestedOrchestrationWithCustomException is only registered in the BasicNode app.
+    [Trait("PowerShell", "Skip")] // FailureDetails is a dotnet-isolated implementation detail
+    [Trait("Python", "Skip")] // FailureDetails is a dotnet-isolated implementation detail
+    [Trait("Java", "Skip")] // NestedOrchestrationWithCustomException is only registered in the BasicNode app.
+    public async Task NestedCustomExceptionPropertiesInFailureDetails()
+    {
+        // A parent orchestration calls a sub-orchestration, which calls the failing
+        // activity. The activity's custom exception properties must survive being
+        // nested inside the sub-orchestration's FailureDetails.InnerFailure chain so
+        // the parent can still observe them.
+        using HttpResponseMessage response = await HttpHelpers.InvokeHttpTrigger("StartOrchestration", "?orchestrationName=NestedOrchestrationWithCustomException");
+
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+
+        string statusQueryGetUri = await DurableHelpers.ParseStatusQueryGetUriAsync(response);
+
+        await DurableHelpers.WaitForOrchestrationStateAsync(statusQueryGetUri, "Completed", 30);
+
+        var orchestrationDetails = await DurableHelpers.GetRunningOrchestrationDetailsAsync(statusQueryGetUri);
+        // Deserialize the output (the sub-orchestration's FailureDetails) returned by the parent.
+        var failureDetails = JsonConvert.DeserializeObject<TaskFailureDetails>(orchestrationDetails.Output);
+        Assert.NotNull(failureDetails);
+
+        // Walk the InnerFailure chain to find the original activity exception that
+        // carries the custom properties.
+        static TaskFailureDetails? FindFailureByErrorType(TaskFailureDetails? details, string errorTypeSubstring)
+        {
+            for (TaskFailureDetails? current = details; current != null; current = current.InnerFailure)
+            {
+                if (current.ErrorType != null && current.ErrorType.Contains(errorTypeSubstring))
+                {
+                    return current;
+                }
+            }
+
+            return null;
+        }
+
+        var businessFailure = FindFailureByErrorType(failureDetails, "BusinessValidationException");
+        Assert.NotNull(businessFailure);
+        Assert.Equal("Business logic validation failed", businessFailure!.ErrorMessage);
+
+        // The custom properties must be preserved on the nested activity failure.
+        Assert.NotNull(businessFailure.Properties);
+
+        Assert.True(businessFailure.Properties.TryGetValue("StringProperty", out var stringPropertyValue));
+        Assert.Equal("validation-error-123", stringPropertyValue);
+
+        Assert.True(businessFailure.Properties.TryGetValue("IntProperty", out var intPropertyValue));
+        Assert.Equal(100L, Convert.ToInt64(intPropertyValue));
+
+        Assert.True(businessFailure.Properties.TryGetValue("LongProperty", out var longPropertyValue));
+        Assert.Equal(999999999L, Convert.ToInt64(longPropertyValue));
+
+        Assert.True(businessFailure.Properties.TryGetValue("NullProperty", out var nullPropertyValue));
+        Assert.Null(nullPropertyValue);
     }
 }

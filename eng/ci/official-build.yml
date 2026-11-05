@@ -1,5 +1,7 @@
 variables:
   - template: ci/variables/cfs.yml@eng
+  - name: AGENT_RESTRICT_EOL_NODE_VERSIONS
+    value: true
 
 trigger:
     batch: true

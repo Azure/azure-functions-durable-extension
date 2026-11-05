@@ -64,6 +64,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     durableClient.ThrowIfOrchestratorFunctionIsDisabled(request.Name);
                 }
 
+                if (request.Tags.ContainsKey(DurableClient.SourceInstanceIdTag))
+                {
+                    throw new ArgumentException(
+                        $"The tag key '{DurableClient.SourceInstanceIdTag}' is reserved for internal use.",
+                        nameof(request.Tags));
+                }
+
                 List<OrchestrationStatus> allStatuses = System.Enum
                     .GetValues<OrchestrationStatus>()
                     .ToList();
@@ -692,21 +699,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             };
         }
 
-        private DurableClientAttribute GetAttribute(ServerCallContext context)
-        {
-            string? taskHub = context.RequestHeaders.GetValue("Durable-TaskHub");
-            string? connectionName = context.RequestHeaders.GetValue("Durable-ConnectionName");
-            return new DurableClientAttribute() { TaskHub = taskHub, ConnectionName = connectionName };
-        }
-
         private DurabilityProvider GetDurabilityProvider(ServerCallContext context)
         {
-            return this.extension.GetDurabilityProvider(this.GetAttribute(context));
+            return this.extension.GetDurabilityProvider(GrpcClientBinding.GetAttribute(context));
         }
 
         private IDurableClient GetClient(ServerCallContext context)
         {
-            return this.extension.GetClient(this.GetAttribute(context));
+            return this.extension.GetClient(GrpcClientBinding.GetAttribute(context));
         }
 
         private static string? GetFunctionInvocationId(ServerCallContext context)

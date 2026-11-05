@@ -85,6 +85,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Azure.WebJobs.Ext
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests", "test\ScaleTests\Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale.Tests.csproj", "{F47A638F-634F-48CA-A1FC-83694327FBAE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Worker.Extensions.DurableTask.AzureBlobPayloads", "src\Worker.Extensions.DurableTask.AzureBlobPayloads\Worker.Extensions.DurableTask.AzureBlobPayloads.csproj", "{6DCACF77-3409-4DFB-8731-42FCE5250B8E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -152,6 +154,10 @@ Global
 		{F47A638F-634F-48CA-A1FC-83694327FBAE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F47A638F-634F-48CA-A1FC-83694327FBAE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F47A638F-634F-48CA-A1FC-83694327FBAE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6DCACF77-3409-4DFB-8731-42FCE5250B8E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6DCACF77-3409-4DFB-8731-42FCE5250B8E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6DCACF77-3409-4DFB-8731-42FCE5250B8E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6DCACF77-3409-4DFB-8731-42FCE5250B8E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -181,6 +187,7 @@ Global
 		{DBD5C544-70AC-5928-5DD1-C02918927439} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{CDDAD51A-3516-401E-B0A4-7688E2787AB7} = {7EC858EE-3481-4A82-AED4-CB00C34F42D0}
 		{F47A638F-634F-48CA-A1FC-83694327FBAE} = {78BCF152-C22C-408F-9FB1-0F8C99B154B5}
+		{6DCACF77-3409-4DFB-8731-42FCE5250B8E} = {7EC858EE-3481-4A82-AED4-CB00C34F42D0}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {5E9AC327-DE18-41A5-A55D-E44CB4281943}

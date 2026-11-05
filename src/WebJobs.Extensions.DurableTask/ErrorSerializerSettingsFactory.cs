@@ -28,6 +28,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 this.jsonSerializerSettings = new JsonSerializerSettings
                 {
                     ContractResolver = new ExceptionResolver(),
+
+                    // Intentional: preserve customer-defined exception types and their serialized object graphs.
+                    // Error metadata is trusted runtime data, protected by task hub backend access controls;
+                    // these settings must not be used to deserialize arbitrary untrusted request JSON.
+                    // Disabling type handling or adding a fixed type allowlist would break exception propagation
+                    // for existing customers. It would not replace the requirement to protect backend write access.
+                    // See "Task Hub Trust Boundary and Exception Serialization" in this extension's README.md.
                     TypeNameHandling = TypeNameHandling.Objects,
                     ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
                 };

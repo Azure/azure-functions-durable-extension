@@ -849,14 +849,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             try
             {
-                if (exception[0] != '{')
+                // Only the Java SDK's structured-failure wrapper may prefix the JSON payload.
+                // Ordinary errors containing JSON must retain their original exception details.
+                const string JavaStructuredFailurePrefix = "ActivityMiddleware.StructuredActivityFailure: ";
+                int jsonStart = exception.StartsWith(JavaStructuredFailurePrefix, StringComparison.Ordinal)
+                    ? JavaStructuredFailurePrefix.Length
+                    : 0;
+                if (jsonStart >= exception.Length || exception[jsonStart] != '{')
                 {
                     details = null;
                     return false;
                 }
 
-                int newlineIndex = exception.IndexOf('\n');
-                string serializedMessage = newlineIndex < 0 ? exception : exception.Substring(0, newlineIndex).Trim();
+                int newlineIndex = exception.IndexOf('\n', jsonStart);
+                string serializedMessage = newlineIndex < 0
+                    ? exception.Substring(jsonStart)
+                    : exception.Substring(jsonStart, newlineIndex - jsonStart);
+                serializedMessage = serializedMessage.Trim();
 
                 P.TaskFailureDetails? taskFailureDetails = JsonParser.Default.Parse<P.TaskFailureDetails>(serializedMessage);
                 if (taskFailureDetails != null)
