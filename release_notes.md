@@ -31,6 +31,7 @@
 
 ### Bug Fixes
 
+- Fixed legacy out-of-process orchestration failure handling selecting replay state from a copied exception instead of the worker's appended failure envelope. Invalid or completion-shaped exception payloads now preserve the original failure instead of being replayed.
 - Fixed startup failures in non-production deployment slots when the Durable extension is referenced but no Durable bindings are used. Non-default task hub names are still required when indexing Durable bindings or using Durable clients and workers. (#2352)
 - Fixed missing `FailureDetails` in .NET isolated `GetAllInstancesAsync` results when `OrchestrationQuery.FetchInputsAndOutputs` is enabled. Query results now preserve available exception types, messages, stack traces, inner failures, and custom properties. (#2047)
 - The `/makeprimary` HTTP API now returns HTTP 400 with an actionable error when app leases are disabled, instead of returning HTTP 500. (#3534)

@@ -9,7 +9,9 @@ using System.Net.Http;
 using System.Net.NetworkInformation;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Host;
+using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Azure.WebJobs.Host.TestCommon;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Microsoft.VisualBasic;
@@ -365,13 +367,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             {
                 await host.StartAsync();
 
+                var wrapper = (PlatformSpecificHelpers.FunctionsV2HostWrapper)host;
+                DurableTaskExtension extension = wrapper.InnerHost.Services
+                    .GetServices<IExtensionConfigProvider>()
+                    .OfType<DurableTaskExtension>()
+                    .Single();
+                Assert.True(extension.HttpApiHandler.TryGetRpcBaseUrl(out Uri rpcBaseUri));
+
 #pragma warning disable SYSLIB0014 // Type or member is obsolete
                 using (var client = new WebClient())
                 {
-                    string jsonString = client.DownloadString("http://localhost:17071/durabletask/instances");
+                    string jsonString = client.DownloadString(new Uri(rpcBaseUri, "instances"));
 
                     // The result is expected to be an empty array
                     JArray array = JArray.Parse(jsonString);
+                    Assert.Empty(array);
                 }
 #pragma warning restore SYSLIB0014 // Type or member is obsolete
 
