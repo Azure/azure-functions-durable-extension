@@ -23,7 +23,6 @@
   <!-- Dependencies pinned for samples -->
    <ItemGroup>
     <PackageVersion Update="Microsoft.Azure.WebJobs.Extensions.Http" Version="3.2.0" />
-    <PackageVersion Update="Microsoft.Azure.WebJobs.Extensions.DurableTask" Version="2.13.4" />
     <PackageVersion Update="Microsoft.Azure.WebJobs.Extensions.Storage" Version="3.0.10" />
     <PackageVersion Update="Microsoft.Azure.WebJobs.Script.ExtensionsMetadataGenerator" Version="1.1.0" />
     <PackageVersion Update="Microsoft.NET.Sdk.Functions" Version="4.2.0" />

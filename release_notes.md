@@ -30,6 +30,7 @@
 - Updated the required host extension to `3.18.0` in worker `1.21.1`; no new worker API is introduced.
 - Updated `Microsoft.DurableTask.Client.Grpc`, `Microsoft.DurableTask.Worker.Grpc`, and `Microsoft.DurableTask.Abstractions` to 1.28.0, including entity-scheduled orchestration tags, external payload auto-purge support, and the fix for external-event loss after canceled waits in the isolated worker.
 - Updated `Microsoft.DurableTask.LargePayloadPurge.Abstractions` to 1.28.0 to align purge contracts with the SDK client models.
+- Updated `Microsoft.DurableTask.Analyzers` to 1.28.0 and the test source generator reference to the stable `Microsoft.DurableTask.Generators` 1.0.0 release.
 
 ## Microsoft.Azure.Functions.Worker.Extensions.DurableTask.AzureBlobPayloads
 
@@ -39,7 +40,7 @@
 
 ### Dependency Updates
 
-- Version `1.0.1` requires isolated worker extension `1.21.1` or later (which references host extension `3.18.0`) and `Microsoft.DurableTask.Extensions.AzureBlobPayloads` 1.27.0; purge behavior is unchanged.
+- Version `1.0.1` requires isolated worker extension `1.21.1` or later (which references host extension `3.18.0`) and `Microsoft.DurableTask.Extensions.AzureBlobPayloads` 1.28.0; purge behavior is unchanged.
 
 ## Microsoft.Azure.WebJobs.Extensions.DurableTask
 
@@ -72,7 +73,9 @@
 
 - Remove LegacyLocalGrpcListener and the dependency on Grpc.Core (https://github.com/Azure/azure-functions-durable-extension/pull/3236)
 - Removed the production dependency on `Microsoft.Azure.WebJobs.Logging.ApplicationInsights` to reduce the extension's transitive dependencies while preserving Microsoft Entra authentication for distributed tracing.
-- Updated the Azure Managed SDK references to 1.10.2 for DTS sovereign-cloud token audiences and per-connection authority hosts, including the Functions scale extension and E2E apps.
-- Updated `Grpc.Net.Client` to 2.84.0 to meet the Durable Task SDK 1.28.0 dependency requirement. `Microsoft.Bcl.AsyncInterfaces` remains at 10.0.9 for Azure Managed SDK 1.10.2 compatibility.
-- Updated `Microsoft.Azure.DurableTask.AzureStorage` to 2.11.1, `Microsoft.Azure.DurableTask.Core` to 3.11.2, and `Microsoft.Azure.DurableTask.ApplicationInsights` to 0.13.1.
+- Updated the Azure Managed SDK and Functions extensions to 1.12.0, including the Functions scale extension and E2E apps.
+- Updated `Grpc.Net.Client` to 2.84.0 to meet the Durable Task SDK 1.28.0 dependency requirement. `Microsoft.Bcl.AsyncInterfaces` remains at 10.0.9 for Azure Managed SDK compatibility.
+- Updated `Microsoft.Azure.DurableTask.AzureStorage` to 2.11.2, `Microsoft.Azure.DurableTask.Core` to 3.11.2, and `Microsoft.Azure.DurableTask.ApplicationInsights` to 0.13.1.
+- Updated Netherite and its Azure Functions extension to 3.1.2, SQL Server and its Azure Functions extensions to 1.8.1, and the test emulator to 2.6.0.
+- Updated package-based host extension consumers to 3.18.0, retaining 2.13.7 for `netstandard2.0` projects.
 - Updated `Microsoft.DurableTask.LargePayloadPurge.Abstractions` to 1.28.0 to align purge contracts with the SDK client models.
