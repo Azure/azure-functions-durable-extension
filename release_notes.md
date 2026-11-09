@@ -4,9 +4,12 @@
 
 | Package | Version |
 |---|---|
-| `Microsoft.Azure.WebJobs.Extensions.DurableTask` | `3.18.0` |
-| `Microsoft.Azure.Functions.Worker.Extensions.DurableTask` | `1.21.1` |
-| `Microsoft.Azure.Functions.Worker.Extensions.DurableTask.AzureBlobPayloads` | `1.0.1` |
+| `Microsoft.Azure.WebJobs.Extensions.DurableTask` | `3.19.0` |
+| `Microsoft.Azure.Functions.Worker.Extensions.DurableTask` | `1.22.0` |
+| `Microsoft.Azure.Functions.Worker.Extensions.DurableTask.AzureBlobPayloads` | `1.1.0` |
+| `Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale` | `1.1.0` |
+
+These minor releases incorporate the dependency updates from #3597. FunctionsScale version metadata is prepared here, but the current official build/publish pipeline does not package or publish FunctionsScale; its release requires a separate approved distribution path.
 
 ## Microsoft.Azure.Functions.Worker.Extensions.DurableTask
 
@@ -27,7 +30,7 @@
 
 ### Dependency Updates
 
-- Updated the required host extension to `3.18.0` in worker `1.21.1`; no new worker API is introduced.
+- Updated the required host extension to `3.19.0` in worker `1.22.0` to align the dependency-update release set. (#3597)
 - Updated `Microsoft.DurableTask.Client.Grpc`, `Microsoft.DurableTask.Worker.Grpc`, and `Microsoft.DurableTask.Abstractions` to 1.28.0, including entity-scheduled orchestration tags, external payload auto-purge support, and the fix for external-event loss after canceled waits in the isolated worker.
 - Updated `Microsoft.DurableTask.LargePayloadPurge.Abstractions` to 1.28.0 to align purge contracts with the SDK client models.
 - Updated `Microsoft.DurableTask.Analyzers` to 1.28.0 and the test source generator reference to the stable `Microsoft.DurableTask.Generators` 1.0.0 release.
@@ -40,7 +43,7 @@
 
 ### Dependency Updates
 
-- Version `1.0.1` requires isolated worker extension `1.21.1` or later (which references host extension `3.18.0`) and `Microsoft.DurableTask.Extensions.AzureBlobPayloads` 1.28.0; purge behavior is unchanged.
+- Version `1.1.0` requires isolated worker extension `1.22.0` or later (which references host extension `3.19.0`) and `Microsoft.DurableTask.Extensions.AzureBlobPayloads` 1.28.0; auto-purge still requires explicit enablement. (#3597)
 
 ## Microsoft.Azure.WebJobs.Extensions.DurableTask
 
@@ -79,3 +82,9 @@
 - Updated Netherite and its Azure Functions extension to 3.1.2, SQL Server and its Azure Functions extensions to 1.8.1, and the test emulator to 2.6.0.
 - Updated package-based host extension consumers to 3.18.0, retaining 2.13.7 for `netstandard2.0` projects.
 - Updated `Microsoft.DurableTask.LargePayloadPurge.Abstractions` to 1.28.0 to align purge contracts with the SDK client models.
+
+## Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale
+
+### Dependency Updates
+
+- Version `1.1.0` updates `Microsoft.Azure.DurableTask.AzureStorage` to 2.11.2, `Microsoft.DurableTask.AzureManagedBackend` to 1.12.0, `Microsoft.Azure.DurableTask.Netherite` to 3.1.2, and `Microsoft.DurableTask.SqlServer` to 1.8.1. (#3597)
