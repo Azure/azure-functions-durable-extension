@@ -1,6 +1,5 @@
-# Manual infrastructure probe, not the public validation suite or a release build.
-# Create an internal ADO pipeline using this file on the hotfix PR's source branch.
-# No GitHub resources, automatic triggers, publishing, or isolation-policy overrides.
+# Retain this path so the existing private pipeline can run the full validation matrix.
+# Manual only: no GitHub checkout/status reporting, releases, or isolation overrides.
 trigger: none
 pr: none
 
@@ -21,6 +20,12 @@ variables:
     value: '4.16.0'
   - name: CORE_TOOLS_BUILD_ID
     value: '308342'
+  - name: AZURITE_VERSION
+    value: '3.36.0'
+  - name: NPM_CONFIG_USERCONFIG
+    value: $(Build.SourcesDirectory)/eng/cfs/.npmrc
+  - name: DOTNET_CLI_TELEMETRY_OPTOUT
+    value: 1
 
 extends:
   template: v1/1ES.Official.PipelineTemplate.yml@1es
@@ -30,82 +35,65 @@ extends:
       image: 1es-windows-2022
       os: windows
 
+    sdl:
+      codeql:
+        compiled:
+          enabled: true
+        runSourceLanguagesInSourceAnalysis: true
+
     stages:
-      - stage: DependencyProbe
-        displayName: Private CI dependency access
+      - stage: WindowsValidation
+        displayName: Windows validation
+        dependsOn: []
+        pool:
+          name: 1es-pool-azfunc
+          image: 1es-windows-2022
+          os: windows
         jobs:
-          - job: WindowsCoreTools
-            displayName: Download and execute Windows Core Tools
-            timeoutInMinutes: 45
-            steps:
-              - template: /eng/ci/templates/private/core-tools-probe.yml@self
-                parameters:
-                  platform: win-x64
+          - template: /eng/ci/templates/public/windows-validation.yml@self
 
-          - job: LinuxCoreTools
-            displayName: Download and execute Linux Core Tools
-            timeoutInMinutes: 45
-            pool:
-              name: 1es-pool-azfunc
-              image: 1es-ubuntu-24.04-min
-              os: linux
-            steps:
-              - template: /eng/ci/templates/private/core-tools-probe.yml@self
-                parameters:
-                  platform: linux-x64
+      - stage: LinuxValidation
+        displayName: Linux validation
+        dependsOn: []
+        pool:
+          name: 1es-pool-azfunc
+          image: 1es-ubuntu-24.04-min
+          os: linux
+        jobs:
+          - template: /eng/ci/templates/public/dependency-validation.yml@self
+            parameters:
+              usePrivateCoreTools: true
+          - template: /eng/ci/templates/public/smoke-tests.yml@self
+            parameters:
+              usePrivateCoreTools: true
+              linuxPool:
+                name: 1es-pool-azfunc
+                image: 1es-ubuntu-24.04-min
+                os: linux
+          - template: /eng/ci/templates/public/scale-tests.yml@self
 
-          - job: LinuxContainerPulls
-            displayName: Pull smoke and backend test images
-            timeoutInMinutes: 120
-            pool:
-              name: 1es-pool-azfunc
-              image: 1es-ubuntu-24.04-min
-              os: linux
-            steps:
-              - checkout: none
-              - pwsh: |
-                  $ErrorActionPreference = 'Stop'
-                  Write-Host "Definition commit: $env:BUILD_SOURCEVERSION"
-                  docker info
-                  if ($LASTEXITCODE -ne 0) {
-                    throw 'The Linux agent does not have a reachable Docker daemon.'
-                  }
+      - stage: WindowsLanguageE2E
+        displayName: Windows language E2E
+        dependsOn: []
+        pool:
+          name: 1es-pool-azfunc
+          image: 1es-windows-2022
+          os: windows
+        jobs:
+          - template: /eng/ci/templates/public/language-e2e.yml@self
+            parameters:
+              platform: windows
+              usePrivateCoreTools: true
 
-                  # These tags match the smoke Dockerfiles and backend test scripts.
-                  $images = @(
-                    'mcr.microsoft.com/dotnet/sdk:10.0'
-                    'mcr.microsoft.com/azure-functions/node:4-node20'
-                    'mcr.microsoft.com/azure-functions/python:4-python3.11'
-                    'mcr.microsoft.com/azure-functions/java:4-java8'
-                    'mcr.microsoft.com/azure-functions/dotnet-isolated:4-dotnet-isolated8.0'
-                    'mcr.microsoft.com/azure-functions/dotnet:4-dotnet8'
-                    'mcr.microsoft.com/azure-functions/dotnet:4-dotnet8.0'
-                    'mcr.microsoft.com/azure-storage/azurite:3.36.0'
-                    'mcr.microsoft.com/dts/dts-emulator:latest'
-                    'mcr.microsoft.com/mssql/server:2019-latest'
-                    'mcr.microsoft.com/mssql/server:2022-latest'
-                    'mcr.microsoft.com/azure-messaging/eventhubs-emulator:latest'
-                  )
-
-                  $failed = @()
-                  foreach ($image in $images) {
-                    Write-Host "##[group]Pull $image"
-                    docker pull --platform linux/amd64 $image
-                    if ($LASTEXITCODE -ne 0) {
-                      Write-Host "##vso[task.logissue type=error]Could not pull $image"
-                      $failed += $image
-                    } else {
-                      docker image inspect --format '{{.Os}}/{{.Architecture}} {{json .RepoDigests}}' $image
-                      if ($LASTEXITCODE -ne 0) {
-                        Write-Host "##vso[task.logissue type=error]Could not inspect $image"
-                        $failed += $image
-                      }
-                    }
-                    Write-Host '##[endgroup]'
-                  }
-
-                  if ($failed.Count -gt 0) {
-                    throw "Container dependency probe failed: $($failed -join ', ')"
-                  }
-                  Write-Host "All $($images.Count) image pulls succeeded. Container builds, package restores, and tests have not been run."
-                displayName: Verify registry and layer access and record image digests
+      - stage: LinuxLanguageE2E
+        displayName: Linux language E2E
+        dependsOn: []
+        pool:
+          name: 1es-pool-azfunc
+          image: 1es-ubuntu-24.04-min
+          os: linux
+        jobs:
+          - template: /eng/ci/templates/public/language-e2e.yml@self
+            parameters:
+              platform: linux
+              usePrivateCoreTools: true
