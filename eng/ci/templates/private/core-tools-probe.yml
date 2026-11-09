@@ -81,9 +81,13 @@ steps:
         throw "The downloaded archive did not contain $executable at its root."
       }
       if (-not $IsWindows) {
-        chmod +x $funcPath
-        if ($LASTEXITCODE -ne 0) {
-          throw 'Could not make the downloaded Core Tools executable.'
+        # Managed extraction also drops execute permission on the nested in-process hosts.
+        $hosts = Get-ChildItem -LiteralPath (Split-Path -Parent $funcPath) -Recurse -File -Filter func
+        foreach ($hostExecutable in $hosts) {
+          chmod +x $hostExecutable.FullName
+          if ($LASTEXITCODE -ne 0) {
+            throw "Could not make the downloaded host executable: $($hostExecutable.FullName)"
+          }
         }
       }
 
