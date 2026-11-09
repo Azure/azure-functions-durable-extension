@@ -1,3 +1,8 @@
+parameters:
+  - name: usePrivateCoreTools
+    type: boolean
+    default: false
+
 jobs:
   - job: IsolatedDependencyValidation
     displayName: Dependency validation - .NET isolated
@@ -25,8 +30,15 @@ jobs:
         inputs:
           version: 22.x
 
-      - bash: npm install -g azure-functions-core-tools@4 --unsafe-perm true
-        displayName: Install Azure Functions Core Tools
+      - ${{ if parameters.usePrivateCoreTools }}:
+          - template: /eng/ci/templates/private/core-tools-probe.yml@self
+            parameters:
+              platform: linux-x64
+              checkout: false
+              installForTests: true
+      - ${{ else }}:
+          - bash: npm install -g azure-functions-core-tools@4 --unsafe-perm true
+            displayName: Install Azure Functions Core Tools
 
       - bash: |
           set -euo pipefail
@@ -159,8 +171,15 @@ jobs:
         inputs:
           version: 22.x
 
-      - bash: npm install -g azure-functions-core-tools@4 --unsafe-perm true
-        displayName: Install Azure Functions Core Tools
+      - ${{ if parameters.usePrivateCoreTools }}:
+          - template: /eng/ci/templates/private/core-tools-probe.yml@self
+            parameters:
+              platform: linux-x64
+              checkout: false
+              installForTests: true
+      - ${{ else }}:
+          - bash: npm install -g azure-functions-core-tools@4 --unsafe-perm true
+            displayName: Install Azure Functions Core Tools
 
       - bash: |
           set -euo pipefail

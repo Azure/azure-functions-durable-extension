@@ -1,3 +1,14 @@
+parameters:
+  - name: usePrivateCoreTools
+    type: boolean
+    default: false
+  - name: linuxPool
+    type: object
+    default:
+      name: 1es-pool-azfunc-public
+      image: 1es-ubuntu-22.04
+      os: linux
+
 jobs:
   - job: NodeSmoke
     displayName: Smoke test - Node 20
@@ -75,10 +86,7 @@ jobs:
   - job: JavaSmoke
     displayName: Smoke test - Java 8
     timeoutInMinutes: 75
-    pool:
-      name: 1es-pool-azfunc-public
-      image: 1es-ubuntu-22.04
-      os: linux
+    pool: ${{ parameters.linuxPool }}
     steps:
       - checkout: self
         clean: true
@@ -112,10 +120,7 @@ jobs:
   - job: DotNetIsolatedSmoke
     displayName: Smoke test - .NET isolated
     timeoutInMinutes: 90
-    pool:
-      name: 1es-pool-azfunc-public
-      image: 1es-ubuntu-22.04
-      os: linux
+    pool: ${{ parameters.linuxPool }}
     strategy:
       matrix:
         Net8:
@@ -176,8 +181,15 @@ jobs:
             Pop-Location
           }
         displayName: Build .NET isolated smoke application
-      - bash: npm install -g azure-functions-core-tools@4 --unsafe-perm true
-        displayName: Install Azure Functions Core Tools
+      - ${{ if parameters.usePrivateCoreTools }}:
+          - template: /eng/ci/templates/private/core-tools-probe.yml@self
+            parameters:
+              platform: linux-x64
+              checkout: false
+              installForTests: true
+      - ${{ else }}:
+          - bash: npm install -g azure-functions-core-tools@4 --unsafe-perm true
+            displayName: Install Azure Functions Core Tools
       - pwsh: |
           $azuriteDirectory = Join-Path $env:AGENT_TEMPDIRECTORY 'azurite'
           New-Item -ItemType Directory -Path $azuriteDirectory -Force | Out-Null

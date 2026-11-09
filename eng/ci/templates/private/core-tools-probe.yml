@@ -1,4 +1,10 @@
 parameters:
+  - name: checkout
+    type: boolean
+    default: true
+  - name: installForTests
+    type: boolean
+    default: false
   - name: platform
     type: string
     values:
@@ -6,7 +12,8 @@ parameters:
       - linux-x64
 
 steps:
-  - checkout: none
+  - ${{ if parameters.checkout }}:
+      - checkout: none
   - task: DownloadPipelineArtifact@2
     displayName: Download pinned Core Tools release metadata
     inputs:
@@ -85,6 +92,15 @@ steps:
         throw "Expected Core Tools $env:CORE_TOOLS_VERSION; received '$actualVersion' (exit $LASTEXITCODE)."
       }
       Write-Host "Core Tools $actualVersion executed successfully. No Functions host or test suite has been started."
+      if ('${{ parameters.installForTests }}' -eq 'True') {
+        . ./test/e2e/Tests/resolve-core-tools-path.ps1
+        if (Test-Path -LiteralPath $FUNC_CLI_DIRECTORY) {
+          throw "Refusing to overwrite an existing Core Tools installation: $FUNC_CLI_DIRECTORY"
+        }
+        New-Item -ItemType Directory -Path (Split-Path -Parent $FUNC_CLI_DIRECTORY) -Force | Out-Null
+        Move-Item -LiteralPath (Split-Path -Parent $funcPath) -Destination $FUNC_CLI_DIRECTORY
+        Write-Host "##vso[task.prependpath]$FUNC_CLI_DIRECTORY"
+      }
     displayName: Execute the downloaded binary and verify its version
     env:
       CORE_TOOLS_VERSION: $(CORE_TOOLS_VERSION)
