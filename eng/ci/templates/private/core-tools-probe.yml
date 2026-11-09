@@ -47,12 +47,24 @@ steps:
       artifactName: func-cli-${{ parameters.platform }}
       targetPath: $(Agent.TempDirectory)/core-tools-artifact
 
-  - task: ExtractFiles@1
+  - pwsh: |
+      $ErrorActionPreference = 'Stop'
+      $artifactDirectory = Join-Path $env:AGENT_TEMPDIRECTORY 'core-tools-artifact'
+      $archiveName = "Azure.Functions.Cli.${{ parameters.platform }}.$env:CORE_TOOLS_VERSION.zip"
+      $archives = @(Get-ChildItem -LiteralPath $artifactDirectory -Recurse -File -Filter $archiveName)
+      if ($archives.Count -ne 1) {
+        throw "Expected one $archiveName archive; found $($archives.Count)."
+      }
+
+      # Use PowerShell's managed ZIP support; minimal Linux agents do not include unzip.
+      $destination = Join-Path $env:AGENT_TEMPDIRECTORY 'core-tools-probe'
+      if (Test-Path -LiteralPath $destination) {
+        throw "Refusing to extract into an existing directory: $destination"
+      }
+      Expand-Archive -LiteralPath $archives[0].FullName -DestinationPath $destination
     displayName: Extract Core Tools ${{ parameters.platform }}
-    inputs:
-      archiveFilePatterns: $(Agent.TempDirectory)/core-tools-artifact/**/Azure.Functions.Cli.${{ parameters.platform }}.$(CORE_TOOLS_VERSION).zip
-      destinationFolder: $(Agent.TempDirectory)/core-tools-probe
-      cleanDestinationFolder: true
+    env:
+      CORE_TOOLS_VERSION: $(CORE_TOOLS_VERSION)
 
   - pwsh: |
       $ErrorActionPreference = 'Stop'
