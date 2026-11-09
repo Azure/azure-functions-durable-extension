@@ -1,0 +1,78 @@
+parameters:
+  - name: platform
+    type: string
+    values:
+      - win-x64
+      - linux-x64
+
+steps:
+  - checkout: none
+  - task: DownloadPipelineArtifact@2
+    displayName: Download pinned Core Tools release metadata
+    inputs:
+      buildType: specific
+      project: internal
+      definition: '1288'
+      buildVersionToDownload: specific
+      pipelineId: $(CORE_TOOLS_BUILD_ID)
+      # The release run is partially successful; both x64 assembly/test jobs succeeded.
+      allowPartiallySucceededBuilds: true
+      artifactName: func-cli-metadata-json
+      targetPath: $(Agent.TempDirectory)/core-tools-metadata
+
+  - pwsh: |
+      $ErrorActionPreference = 'Stop'
+      Write-Host "Definition commit: $env:BUILD_SOURCEVERSION"
+      $metadataPath = Join-Path $env:AGENT_TEMPDIRECTORY 'core-tools-metadata/metadata.json'
+      $metadata = Get-Content -LiteralPath $metadataPath -Raw | ConvertFrom-Json
+      if ($metadata.defaultArtifactVersion -ne $env:CORE_TOOLS_VERSION -or
+          [string]$metadata.consolidatedBuildId -ne $env:CORE_TOOLS_BUILD_ID) {
+        throw 'Core Tools metadata does not match the pinned version and build ID.'
+      }
+      Write-Host "Core Tools $($metadata.defaultArtifactVersion), build $($metadata.consolidatedBuildId), commit $($metadata.commitId)"
+    displayName: Verify Core Tools artifact provenance
+    env:
+      CORE_TOOLS_VERSION: $(CORE_TOOLS_VERSION)
+      CORE_TOOLS_BUILD_ID: $(CORE_TOOLS_BUILD_ID)
+
+  - task: DownloadPipelineArtifact@2
+    displayName: Download Core Tools ${{ parameters.platform }}
+    inputs:
+      buildType: specific
+      project: internal
+      definition: '1288'
+      buildVersionToDownload: specific
+      pipelineId: $(CORE_TOOLS_BUILD_ID)
+      allowPartiallySucceededBuilds: true
+      artifactName: func-cli-${{ parameters.platform }}
+      targetPath: $(Agent.TempDirectory)/core-tools-artifact
+
+  - task: ExtractFiles@1
+    displayName: Extract Core Tools ${{ parameters.platform }}
+    inputs:
+      archiveFilePatterns: $(Agent.TempDirectory)/core-tools-artifact/**/Azure.Functions.Cli.${{ parameters.platform }}.$(CORE_TOOLS_VERSION).zip
+      destinationFolder: $(Agent.TempDirectory)/core-tools-probe
+      cleanDestinationFolder: true
+
+  - pwsh: |
+      $ErrorActionPreference = 'Stop'
+      $executable = if ($IsWindows) { 'func.exe' } else { 'func' }
+      $funcPath = Join-Path $env:AGENT_TEMPDIRECTORY "core-tools-probe/$executable"
+      if (-not (Test-Path -LiteralPath $funcPath -PathType Leaf)) {
+        throw "The downloaded archive did not contain $executable at its root."
+      }
+      if (-not $IsWindows) {
+        chmod +x $funcPath
+        if ($LASTEXITCODE -ne 0) {
+          throw 'Could not make the downloaded Core Tools executable.'
+        }
+      }
+
+      $actualVersion = (& $funcPath --version | Out-String).Trim()
+      if ($LASTEXITCODE -ne 0 -or $actualVersion -ne $env:CORE_TOOLS_VERSION) {
+        throw "Expected Core Tools $env:CORE_TOOLS_VERSION; received '$actualVersion' (exit $LASTEXITCODE)."
+      }
+      Write-Host "Core Tools $actualVersion executed successfully. No Functions host or test suite has been started."
+    displayName: Execute the downloaded binary and verify its version
+    env:
+      CORE_TOOLS_VERSION: $(CORE_TOOLS_VERSION)
