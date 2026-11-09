@@ -5,7 +5,7 @@
     <AssemblyName>Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale</AssemblyName>
     <RootNamespace>Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale</RootNamespace>
     <MajorVersion>1</MajorVersion>
-    <MinorVersion>0</MinorVersion>
+    <MinorVersion>1</MinorVersion>
     <PatchVersion>0</PatchVersion>
 	<VersionSuffix></VersionSuffix>
     <VersionPrefix>$(MajorVersion).$(MinorVersion).$(PatchVersion)</VersionPrefix>
@@ -82,4 +82,3 @@
   </ItemGroup>
 
 </Project>
-

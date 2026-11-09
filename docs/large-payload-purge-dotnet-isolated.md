@@ -12,7 +12,7 @@ Use:
 - A compatible storage provider package that supports external payload auto-purge.
 - The same external payload storage account and container that the provider uses for the target task hub.
 
-The `1.0.1` optional package requires worker extension `1.21.1` or later; that worker version references host extension `3.18.0`. These updates align the package set without changing auto-purge behavior or the `1.0.0` package's minimum versions above.
+The `1.1.0` optional package requires worker extension `1.22.0` or later; that worker version references host extension `3.19.0`. This release uses `Microsoft.DurableTask.Extensions.AzureBlobPayloads` `1.28.0`. These updates align the package set without changing auto-purge enablement or the `1.0.0` package's minimum versions above.
 
 Every worker that can receive purge work for the task hub must use compatible packages and a valid payload-store configuration.
 
