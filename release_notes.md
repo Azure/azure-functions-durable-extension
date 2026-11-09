@@ -4,7 +4,7 @@
 
 | Package | Version |
 |---|---|
-| `Microsoft.Azure.WebJobs.Extensions.DurableTask` | `3.18.0` |
+| `Microsoft.Azure.WebJobs.Extensions.DurableTask` | `3.18.1` |
 | `Microsoft.Azure.Functions.Worker.Extensions.DurableTask` | `1.21.1` |
 | `Microsoft.Azure.Functions.Worker.Extensions.DurableTask.AzureBlobPayloads` | `1.0.1` |
 
