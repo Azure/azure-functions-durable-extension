@@ -1,0 +1,111 @@
+# Manual infrastructure probe, not the public validation suite or a release build.
+# Create an internal ADO pipeline using this file on the hotfix PR's source branch.
+# No GitHub resources, automatic triggers, publishing, or isolation-policy overrides.
+trigger: none
+pr: none
+
+resources:
+  repositories:
+    - repository: 1es
+      type: git
+      name: 1ESPipelineTemplates/1ESPipelineTemplates
+      ref: refs/tags/release
+    - repository: eng
+      type: git
+      name: engineering
+      ref: refs/tags/release
+
+variables:
+  - template: ci/variables/cfs.yml@eng
+  - name: CORE_TOOLS_VERSION
+    value: '4.16.0'
+  - name: CORE_TOOLS_BUILD_ID
+    value: '308342'
+
+extends:
+  template: v1/1ES.Official.PipelineTemplate.yml@1es
+  parameters:
+    pool:
+      name: 1es-pool-azfunc
+      image: 1es-windows-2022
+      os: windows
+
+    stages:
+      - stage: DependencyProbe
+        displayName: Private CI dependency access
+        jobs:
+          - job: WindowsCoreTools
+            displayName: Download and execute Windows Core Tools
+            timeoutInMinutes: 45
+            steps:
+              - template: templates/private/core-tools-probe.yml
+                parameters:
+                  platform: win-x64
+
+          - job: LinuxCoreTools
+            displayName: Download and execute Linux Core Tools
+            timeoutInMinutes: 45
+            pool:
+              name: 1es-pool-azfunc
+              image: 1es-ubuntu-24.04-min
+              os: linux
+            steps:
+              - template: templates/private/core-tools-probe.yml
+                parameters:
+                  platform: linux-x64
+
+          - job: LinuxContainerPulls
+            displayName: Pull smoke and backend test images
+            timeoutInMinutes: 120
+            pool:
+              name: 1es-pool-azfunc
+              image: 1es-ubuntu-24.04-min
+              os: linux
+            steps:
+              - checkout: none
+              - pwsh: |
+                  $ErrorActionPreference = 'Stop'
+                  Write-Host "Definition commit: $env:BUILD_SOURCEVERSION"
+                  docker info
+                  if ($LASTEXITCODE -ne 0) {
+                    throw 'The Linux agent does not have a reachable Docker daemon.'
+                  }
+
+                  # These tags match the smoke Dockerfiles and backend test scripts.
+                  $images = @(
+                    'mcr.microsoft.com/dotnet/sdk:10.0'
+                    'mcr.microsoft.com/azure-functions/node:4-node20'
+                    'mcr.microsoft.com/azure-functions/python:4-python3.11'
+                    'mcr.microsoft.com/azure-functions/java:4-java8'
+                    'mcr.microsoft.com/azure-functions/dotnet-isolated:4-dotnet-isolated8.0'
+                    'mcr.microsoft.com/azure-functions/dotnet:4-dotnet8'
+                    'mcr.microsoft.com/azure-functions/dotnet:4-dotnet8.0'
+                    'mcr.microsoft.com/azure-storage/azurite:3.36.0'
+                    'mcr.microsoft.com/dts/dts-emulator:latest'
+                    'mcr.microsoft.com/mssql/server:2019-latest'
+                    'mcr.microsoft.com/mssql/server:2022-latest'
+                    'mcr.microsoft.com/azure-messaging/eventhubs-emulator:latest'
+                  )
+
+                  $failed = @()
+                  foreach ($image in $images) {
+                    Write-Host "##[group]Pull $image"
+                    docker pull --platform linux/amd64 $image
+                    if ($LASTEXITCODE -ne 0) {
+                      Write-Host "##vso[task.logissue type=error]Could not pull $image"
+                      $failed += $image
+                    } else {
+                      docker image inspect --format '{{.Os}}/{{.Architecture}} {{json .RepoDigests}}' $image
+                      if ($LASTEXITCODE -ne 0) {
+                        Write-Host "##vso[task.logissue type=error]Could not inspect $image"
+                        $failed += $image
+                      }
+                    }
+                    Write-Host '##[endgroup]'
+                  }
+
+                  if ($failed.Count -gt 0) {
+                    throw "Container dependency probe failed: $($failed -join ', ')"
+                  }
+                  Write-Host "All $($images.Count) image pulls succeeded. Container builds, package restores, and tests have not been run."
+                displayName: Verify registry and layer access and record image digests
