@@ -2,6 +2,9 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Linq;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
@@ -29,8 +32,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             string friendlyMessage;
-            int jsonIndex = outOfProcMessage.IndexOf(OutOfProcDataLabel);
-            if (jsonIndex == -1)
+            if (!TryGetFailureStateJson(outOfProcMessage, out _, out int jsonIndex))
             {
                 friendlyMessage = outOfProcMessage;
             }
@@ -52,30 +54,55 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
          */
         public static bool TryExtractOutOfProcStateJson(Exception ex, out string stateJson)
         {
-            if (ex == null)
-            {
-                stateJson = null;
-                return false;
-            }
-
             if (!TryGetFullOutOfProcMessage(ex, out string outOfProcMessage))
             {
                 stateJson = null;
                 return false;
             }
 
-            int jsonIndex = outOfProcMessage.IndexOf(OutOfProcDataLabel);
-            if (jsonIndex == -1)
+            return TryGetFailureStateJson(outOfProcMessage, out stateJson, out _);
+        }
+
+        private static bool TryGetFailureStateJson(string message, out string stateJson, out int jsonIndex)
+        {
+            stateJson = null;
+
+            // Workers append their own envelope after the original error. Copied/nested errors
+            // can contain earlier markers; JSON strings in the envelope escape literal newlines.
+            jsonIndex = message.LastIndexOf(OutOfProcDataLabel, StringComparison.Ordinal);
+            if (jsonIndex < 0)
             {
-                stateJson = null;
                 return false;
             }
-            else
+
+            string candidate = message.Substring(jsonIndex + OutOfProcDataLabel.Length);
+            try
             {
-                int jsonStart = jsonIndex + OutOfProcDataLabel.Length;
-                int jsonLength = outOfProcMessage.Length - jsonStart;
-                stateJson = outOfProcMessage.Substring(jsonStart, jsonLength);
+                JObject state = JObject.Parse(candidate);
+                JToken isDone = state.GetValue("isDone", StringComparison.OrdinalIgnoreCase);
+                JToken error = state.GetValue("error", StringComparison.OrdinalIgnoreCase);
+                JToken actions = state.GetValue("actions", StringComparison.OrdinalIgnoreCase);
+
+                // Only recover failure envelopes. Arbitrary JSON (including a completion result)
+                // in an exception must not replace the original failure or schedule its actions.
+                if (state.Properties().GroupBy(property => property.Name, StringComparer.OrdinalIgnoreCase).Any(group => group.Count() > 1)
+                    || isDone?.Type != JTokenType.Boolean
+                    || isDone.Value<bool>()
+                    || error?.Type != JTokenType.String
+                    || string.IsNullOrEmpty(error.Value<string>())
+                    || !(actions is JArray actionSets)
+                    || actionSets.Any(actionSet => !(actionSet is JArray batch) || batch.Any(action => !(action is JObject))))
+                {
+                    return false;
+                }
+
+                stateJson = candidate;
                 return true;
+            }
+            catch (JsonException)
+            {
+                // The caller reports the original worker exception when no valid state is present.
+                return false;
             }
         }
 
@@ -87,9 +114,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return false;
             }
 
+            // Avoid parsing labels that may also occur in error text or in a JavaScript stack
+            // that repeats that text. The Script host is deliberately not a package dependency.
+            for (Type type = ex.GetType(); type != null; type = type.BaseType)
+            {
+                if (type.FullName == "Microsoft.Azure.WebJobs.Script.Workers.Rpc.RpcException"
+                    && type.GetProperty("RemoteMessage")?.GetValue(ex) is string remoteMessage)
+                {
+                    message = remoteMessage;
+                    return true;
+                }
+            }
+
             string rpcExceptionMessage = ex.Message;
-            int messageStart = rpcExceptionMessage.IndexOf(MessageLabel) + MessageLabel.Length;
-            int messageEnd = rpcExceptionMessage.IndexOf(StackTraceLabel);
+            int messageStart = rpcExceptionMessage.IndexOf(MessageLabel, StringComparison.Ordinal) + MessageLabel.Length;
+
+            // The original error can contain a complete RPC exception, including its Stack label.
+            int messageEnd = rpcExceptionMessage.LastIndexOf(StackTraceLabel, StringComparison.Ordinal);
+            if (messageEnd < messageStart)
+            {
+                message = null;
+                return false;
+            }
+
             message = rpcExceptionMessage.Substring(messageStart, messageEnd - messageStart);
             return true;
         }
@@ -98,8 +145,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             // This is a best effort approach to detect when using RpcException from Azure Functions.
             // See https://github.com/Azure/azure-functions-host/blob/dev/src/WebJobs.Script/Workers/Rpc/MessageExtensions/RpcException.cs
-            return ex.Message != null
-                && ex.Message.StartsWith(ResultLabel)
+            return ex?.Message != null
+                && ex.Message.StartsWith(ResultLabel, StringComparison.Ordinal)
                 && ex.Message.Contains(MessageLabel)
                 && ex.Message.Contains(StackTraceLabel);
         }
