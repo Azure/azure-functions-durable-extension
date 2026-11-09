@@ -38,7 +38,7 @@ extends:
             displayName: Download and execute Windows Core Tools
             timeoutInMinutes: 45
             steps:
-              - template: templates/private/core-tools-probe.yml
+              - template: /eng/ci/templates/private/core-tools-probe.yml@self
                 parameters:
                   platform: win-x64
 
@@ -50,7 +50,7 @@ extends:
               image: 1es-ubuntu-24.04-min
               os: linux
             steps:
-              - template: templates/private/core-tools-probe.yml
+              - template: /eng/ci/templates/private/core-tools-probe.yml@self
                 parameters:
                   platform: linux-x64
 
