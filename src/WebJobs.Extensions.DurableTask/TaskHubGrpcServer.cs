@@ -528,28 +528,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             this.LogClientOperationReceived(context, "Restart", request.InstanceId);
 
-            if (request.NewInstanceId == null && request.Version != null)
-            {
-                throw new RpcException(new Status(StatusCode.InvalidArgument, "A target instance ID is required when specifying a restart version."));
-            }
-
             try
             {
-                IDurableOrchestrationClient client = this.GetClient(context);
-                string newInstanceId;
-                if (request.NewInstanceId != null)
-                {
-                    newInstanceId = await client.RestartAsync(request.InstanceId, new RestartOrchestrationOptions
-                    {
-                        NewInstanceId = request.NewInstanceId,
-                        Version = request.Version,
-                    });
-                }
-                else
-                {
-                    newInstanceId = await client.RestartAsync(request.InstanceId, request.RestartWithNewInstanceId);
-                }
-
+                string newInstanceId = await this.GetClient(context).RestartAsync(request.InstanceId, request.RestartWithNewInstanceId);
                 return new P.RestartInstanceResponse { InstanceId = newInstanceId };
             }
             catch (OrchestratorFunctionUnavailableException ex)
@@ -558,12 +539,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
             catch (ArgumentException ex)
             {
-                if (ex.ParamName == "newInstanceId")
-                {
-                    throw new RpcException(new Status(StatusCode.InvalidArgument, ex.Message));
-                }
-
-                // Thrown when the source instance ID is not found.
+                // Thrown when th instanceId is not found.
                 throw new RpcException(new Status(StatusCode.NotFound, $"ArgumentException: {ex.Message}"));
             }
             catch (OrchestrationAlreadyExistsException ex)
@@ -573,6 +549,52 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             catch (Exception ex) when (ex is not OperationCanceledException || !context.CancellationToken.IsCancellationRequested)
             {
                 // Any other unexpected exceptions.
+                throw new TaskHubRpcException(new Status(StatusCode.Unknown, ex.Message), ex);
+            }
+        }
+
+        public override async Task<P.CloneInstanceResponse> CloneInstance(P.CloneInstanceRequest request, ServerCallContext context)
+        {
+            this.LogClientOperationReceived(context, "Clone", request.SourceInstanceId);
+
+            if (string.IsNullOrWhiteSpace(request.SourceInstanceId) || string.IsNullOrWhiteSpace(request.NewInstanceId))
+            {
+                throw new RpcException(new Status(StatusCode.InvalidArgument, "Nonblank source and target instance IDs are required."));
+            }
+
+            try
+            {
+                string newInstanceId = await this.GetClient(context).RestartAsync(
+                    request.SourceInstanceId,
+                    new RestartOrchestrationOptions
+                    {
+                        NewInstanceId = request.NewInstanceId,
+                        Version = request.Version,
+                    });
+                return new P.CloneInstanceResponse { InstanceId = newInstanceId };
+            }
+            catch (OrchestratorFunctionUnavailableException ex)
+            {
+                throw new RpcException(new Status(StatusCode.InvalidArgument, ex.Message));
+            }
+            catch (ArgumentException ex) when (ex.ParamName == "newInstanceId" || ex.ParamName == "sourceInstanceId")
+            {
+                throw new RpcException(new Status(StatusCode.InvalidArgument, ex.Message));
+            }
+            catch (ArgumentException ex)
+            {
+                throw new RpcException(new Status(StatusCode.NotFound, $"ArgumentException: {ex.Message}"));
+            }
+            catch (OrchestrationAlreadyExistsException ex)
+            {
+                throw new RpcException(new Status(StatusCode.AlreadyExists, ex.Message));
+            }
+            catch (NotSupportedException ex)
+            {
+                throw new RpcException(new Status(StatusCode.Unimplemented, ex.Message));
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException || !context.CancellationToken.IsCancellationRequested)
+            {
                 throw new TaskHubRpcException(new Status(StatusCode.Unknown, ex.Message), ex);
             }
         }

@@ -1,5 +1,5 @@
 # Upstream source commit for each currently imported proto.
-# RestartInstanceRequest patch imported from local durabletask-protobuf commit 962a493037e72b5e08f07a55eff0f121c1aaae80 (not yet published upstream).
+# CloneInstance additions (CloneInstanceRequest/Response and the CloneInstance RPC) were patched from durabletask-protobuf commit 0a4f8075e383f6ac783acfd5aee9ecb791334e87 (microsoft/durabletask-protobuf#82).
 # Base source below is retained: unrelated newer upstream fields/deprecations were not imported.
 https://raw.githubusercontent.com/microsoft/durabletask-protobuf/bcf5af6a22caa70601bfc909918ba5937484279f/protos/orchestrator_service.proto
 https://raw.githubusercontent.com/microsoft/durabletask-protobuf/882583c1177706e148c3b146d4b2ba1c1d242e4c/protos/durable-task-scheduler/large_payload_purge.proto

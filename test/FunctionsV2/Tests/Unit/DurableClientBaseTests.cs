@@ -519,6 +519,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             serviceClient.VerifyNoOtherCalls();
         }
 
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData(" ")]
+        [InlineData("\u00A0")]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task RestartAsync_InvalidSourceInstanceId_ThrowsBeforeAccessingProvider(string sourceInstanceId)
+        {
+            (DurableClient client, Mock<IOrchestrationServiceClient> serviceClient, _) = CreateClient();
+
+            ArgumentException exception = await Assert.ThrowsAsync<ArgumentException>(
+                () => ((IDurableOrchestrationClient)client).RestartAsync(
+                    sourceInstanceId, new RestartOrchestrationOptions { NewInstanceId = "clone" }));
+
+            Assert.Equal("sourceInstanceId", exception.ParamName);
+            serviceClient.VerifyNoOtherCalls();
+        }
+
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task RestartAsync_OptionsWithoutTarget_ThrowsBeforeAccessingProvider()

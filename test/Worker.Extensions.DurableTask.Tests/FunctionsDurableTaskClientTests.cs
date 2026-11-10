@@ -17,17 +17,16 @@ namespace Microsoft.Azure.Functions.Worker.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("2.0")]
-        public async Task RestartWithOptions_ForwardsOptionsAndCancellation(string? version)
+        public async Task RestartWithExplicitTarget_ForwardsTargetVersionAndCancellation(string? version)
         {
             var inner = new Mock<DurableTaskClient>("test-client");
-            var options = new RestartOrchestrationOptions { NewInstanceId = "clone", Version = version };
             using var cts = new CancellationTokenSource();
-            inner.Setup(client => client.RestartAsync("source", options, cts.Token)).ReturnsAsync("clone");
+            inner.Setup(client => client.RestartAsync("source", "clone", version, cts.Token)).ReturnsAsync("clone");
             var client = new FunctionsDurableTaskClient(inner.Object, queryString: null, httpBaseUrl: null);
 
-            Assert.Equal("clone", await client.RestartAsync("source", options, cts.Token));
+            Assert.Equal("clone", await client.RestartAsync("source", "clone", version, cts.Token));
 
-            inner.Verify(client => client.RestartAsync("source", options, cts.Token), Times.Once);
+            inner.Verify(client => client.RestartAsync("source", "clone", version, cts.Token), Times.Once);
             inner.Verify(client => client.RestartAsync(
                 It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Never);
         }

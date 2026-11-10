@@ -94,11 +94,7 @@ public static class RestartOrchestration
         }
         string newInstanceId = data.NewInstanceId == null
             ? await client.RestartAsync(data.InstanceId, data.RestartWithNewInstanceId)
-            : await client.RestartAsync(data.InstanceId, new RestartOrchestrationOptions
-            {
-                NewInstanceId = data.NewInstanceId,
-                Version = data.Version,
-            });
+            : await client.RestartAsync(data.InstanceId, data.NewInstanceId, data.Version, CancellationToken.None);
         
         return await client.CreateCheckStatusResponseAsync(req, newInstanceId);
     }

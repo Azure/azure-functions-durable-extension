@@ -1288,6 +1288,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal Task<string> RestartWithOptionsAsync(string sourceInstanceId, string newInstanceId, string version)
         {
+            if (string.IsNullOrWhiteSpace(sourceInstanceId))
+            {
+                throw new ArgumentException("A nonblank source instance ID must be provided.", nameof(sourceInstanceId));
+            }
+
             ValidateRestartTargetInstanceId(newInstanceId);
             return this.RestartCoreAsync(sourceInstanceId, newInstanceId, version);
         }

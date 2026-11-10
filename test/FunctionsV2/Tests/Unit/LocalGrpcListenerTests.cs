@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core;
+using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using Grpc.Core;
 using Grpc.Net.Client;
@@ -442,13 +443,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             RpcException rpcException = await this.InvokeFailingRpcAsync(
                 "DisabledOrchestratorRestart",
                 durabilityProvider.Object,
-                async client => await client.RestartInstanceAsync(
-                    new P.RestartInstanceRequest
+                async client =>
+                {
+                    if (targetId == null)
                     {
-                        InstanceId = InstanceId,
-                        NewInstanceId = targetId,
-                        RestartWithNewInstanceId = false,
-                    }).ResponseAsync,
+                        await client.RestartInstanceAsync(new P.RestartInstanceRequest { InstanceId = InstanceId });
+                    }
+                    else
+                    {
+                        await client.CloneInstanceAsync(new P.CloneInstanceRequest
+                        {
+                            SourceInstanceId = InstanceId,
+                            NewInstanceId = targetId,
+                        });
+                    }
+                },
                 extension => extension.RegisterOrchestrator(
                     new FunctionName(FunctionName),
                     orchestratorInfo: null));
@@ -470,7 +479,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [InlineData(null, null, false, "host-default")]
         [InlineData(null, null, true, "host-default")]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task TestGrpcListener_RestartRoutesExplicitAndLegacyOptions(
+        public async Task TestGrpcListener_RestartAndCloneUseSeparateRpcs(
             string targetId, string version, bool randomId, string expectedVersion)
         {
             const string SourceId = "source";
@@ -510,29 +519,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 await listener.StartAsync(default);
                 using GrpcChannel channel = GrpcChannel.ForAddress(listener.ListenAddress);
                 var client = new P.TaskHubSidecarService.TaskHubSidecarServiceClient(channel);
-                P.RestartInstanceResponse response = await client.RestartInstanceAsync(new P.RestartInstanceRequest
-                {
-                    InstanceId = SourceId,
-                    NewInstanceId = targetId,
-                    Version = version,
-                    RestartWithNewInstanceId = randomId,
-                });
+                string instanceId = targetId == null
+                    ? (await client.RestartInstanceAsync(new P.RestartInstanceRequest
+                    {
+                        InstanceId = SourceId,
+                        RestartWithNewInstanceId = randomId,
+                    })).InstanceId
+                    : (await client.CloneInstanceAsync(new P.CloneInstanceRequest
+                    {
+                        SourceInstanceId = SourceId,
+                        NewInstanceId = targetId,
+                        Version = version,
+                    })).InstanceId;
 
-                Assert.Equal(targetId ?? (randomId ? response.InstanceId : SourceId), response.InstanceId);
+                Assert.Equal(targetId ?? (randomId ? instanceId : SourceId), instanceId);
                 if (targetId == null && randomId)
                 {
-                    Assert.NotEqual(SourceId, response.InstanceId);
-                    Assert.False(string.IsNullOrEmpty(response.InstanceId));
+                    Assert.NotEqual(SourceId, instanceId);
+                    Assert.False(string.IsNullOrEmpty(instanceId));
                 }
 
                 Assert.NotNull(started);
-                Assert.Equal(response.InstanceId, started.OrchestrationInstance.InstanceId);
+                Assert.Equal(instanceId, started.OrchestrationInstance.InstanceId);
                 Assert.Equal(FunctionName, started.Name);
                 Assert.Equal(expectedVersion, started.Version);
                 Assert.True(JToken.DeepEquals(JToken.Parse(Input), JToken.Parse(started.Input)));
                 Assert.Equal("value", started.Tags["custom"]);
                 Assert.Equal(
-                    response.InstanceId == SourceId ? "earlier-source" : SourceId,
+                    instanceId == SourceId ? "earlier-source" : SourceId,
                     started.Tags[DurableClient.SourceInstanceIdTag]);
                 Assert.Equal("earlier-source", tags[DurableClient.SourceInstanceIdTag]);
             }
@@ -543,21 +557,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
-        [InlineData("", null)]
-        [InlineData(" ", null)]
-        [InlineData("invalid/id", null)]
-        [InlineData(null, "2.0")]
-        [InlineData(null, "")]
+        [InlineData("source", "", null)]
+        [InlineData("source", " ", null)]
+        [InlineData("source", "invalid/id", null)]
+        [InlineData("source", "", "2.0")]
+        [InlineData("source", "", "")]
+        [InlineData("", "clone", null)]
+        [InlineData(" ", "clone", "2.0")]
+        [InlineData("\u00A0", "clone", "")]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task TestGrpcListener_RestartInvalidOptionsReturnInvalidArgument(string targetId, string version)
+        public async Task TestGrpcListener_CloneInvalidOptionsReturnInvalidArgument(string sourceId, string targetId, string version)
         {
             var service = new Mock<IOrchestrationServiceClient>(MockBehavior.Strict);
             RpcException exception = await this.InvokeFailingRpcAsync(
                 "InvalidRestartOptions",
                 CreateDurabilityProvider(new Mock<IOrchestrationService>().Object, service.Object),
-                async client => await client.RestartInstanceAsync(new P.RestartInstanceRequest
+                async client => await client.CloneInstanceAsync(new P.CloneInstanceRequest
                 {
-                    InstanceId = "source",
+                    SourceInstanceId = sourceId,
                     NewInstanceId = targetId,
                     Version = version,
                 }));
@@ -566,20 +583,111 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             service.VerifyNoOtherCalls();
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task TestGrpcListener_RestartMissingSourceReturnsNotFound()
+        public async Task TestGrpcListener_RestartAndCloneMissingSourceReturnNotFound(bool clone)
         {
+            var service = new Mock<IOrchestrationServiceClient>();
+            service.Setup(client => client.GetOrchestrationStateAsync("missing-source", false))
+                .ReturnsAsync(new List<OrchestrationState>());
             RpcException exception = await this.InvokeFailingRpcAsync(
                 "MissingRestartSource",
-                CreateEmptyGetStateProvider("missing-source"),
-                async client => await client.RestartInstanceAsync(new P.RestartInstanceRequest
+                CreateDurabilityProvider(new Mock<IOrchestrationService>().Object, service.Object),
+                async client =>
                 {
-                    InstanceId = "missing-source",
-                    NewInstanceId = "clone",
-                }));
+                    if (clone)
+                    {
+                        await client.CloneInstanceAsync(new P.CloneInstanceRequest
+                        {
+                            SourceInstanceId = "missing-source",
+                            NewInstanceId = "clone",
+                        });
+                    }
+                    else
+                    {
+                        await client.RestartInstanceAsync(new P.RestartInstanceRequest { InstanceId = "missing-source" });
+                    }
+                });
 
             Assert.Equal(StatusCode.NotFound, exception.StatusCode);
+            service.Verify(
+                client => client.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()),
+                Times.Never);
+        }
+
+        [Theory]
+        [InlineData(false, StatusCode.FailedPrecondition)]
+        [InlineData(true, StatusCode.AlreadyExists)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task TestGrpcListener_RestartAndClonePreserveTargetConflictBehavior(bool clone, StatusCode expectedStatus)
+        {
+            const string SourceId = "source";
+            const string FunctionName = "RestartedOrchestrator";
+            var service = new Mock<IOrchestrationServiceClient>();
+            service.Setup(client => client.GetOrchestrationStateAsync(SourceId, false))
+                .ReturnsAsync(new List<OrchestrationState>
+                {
+                    new OrchestrationState
+                    {
+                        Name = FunctionName,
+                        Input = "null",
+                        OrchestrationInstance = new OrchestrationInstance { InstanceId = SourceId },
+                        OrchestrationStatus = OrchestrationStatus.Completed,
+                    },
+                });
+            service.Setup(client => client.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()))
+                .ThrowsAsync(new OrchestrationAlreadyExistsException("The target instance already exists."));
+
+            RpcException exception = await this.InvokeFailingRpcAsync(
+                "CloneConflict",
+                CreateDurabilityProvider(new Mock<IOrchestrationService>().Object, service.Object),
+                async client =>
+                {
+                    if (clone)
+                    {
+                        await client.CloneInstanceAsync(new P.CloneInstanceRequest
+                        {
+                            SourceInstanceId = SourceId,
+                            NewInstanceId = "clone",
+                        });
+                    }
+                    else
+                    {
+                        await client.RestartInstanceAsync(new P.RestartInstanceRequest { InstanceId = SourceId });
+                    }
+                },
+                extension => extension.RegisterOrchestrator(
+                    new FunctionName(FunctionName), new RegisteredFunctionInfo(null, isOutOfProc: true)));
+
+            Assert.Equal(expectedStatus, exception.StatusCode);
+            service.Verify(
+                client => client.CreateTaskOrchestrationAsync(It.IsAny<TaskMessage>(), It.IsAny<OrchestrationStatus[]>()),
+                Times.Once);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task TestGrpcListener_CloneRejectsUnsupportedBackendBeforeScheduling()
+        {
+            var service = new Mock<IOrchestrationServiceClient>(MockBehavior.Strict);
+            service.Setup(client => client.GetOrchestrationStateAsync("source", false))
+                .ThrowsAsync(new NotSupportedException("The backend does not support cloning."));
+
+            RpcException exception = await this.InvokeFailingRpcAsync(
+                "UnsupportedClone",
+                CreateDurabilityProvider(new Mock<IOrchestrationService>().Object, service.Object),
+                async client => await client.CloneInstanceAsync(new P.CloneInstanceRequest
+                {
+                    SourceInstanceId = "source",
+                    NewInstanceId = "clone",
+                    Version = "2.0",
+                }));
+
+            Assert.Equal(StatusCode.Unimplemented, exception.StatusCode);
+            service.Verify(client => client.GetOrchestrationStateAsync("source", false), Times.Once);
+            service.VerifyNoOtherCalls();
         }
 
         [Theory]

@@ -362,10 +362,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Restarting a top-level clone with the same ID preserves its existing source reference.
         /// Existing-instance conflict behavior is the same as for starting an orchestration.
         /// </remarks>
-        /// <param name="instanceId">The ID of the source orchestration.</param>
+        /// <param name="instanceId">The required, nonblank ID of the source orchestration.</param>
         /// <param name="options">The restart options, containing a required target instance ID and optional version.</param>
         /// <returns>A task containing the target orchestration instance ID when it has been scheduled.</returns>
-        /// <exception cref="ArgumentException">The source does not exist or the target ID is invalid.</exception>
+        /// <exception cref="ArgumentException">The source does not exist or an instance ID is invalid.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="options"/> is <c>null</c>.</exception>
         /// <exception cref="NotSupportedException">This client implementation does not support explicit restart options.</exception>
         Task<string> RestartAsync(string instanceId, RestartOrchestrationOptions options)
