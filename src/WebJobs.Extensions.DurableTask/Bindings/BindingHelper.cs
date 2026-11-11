@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 #nullable enable
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
@@ -51,6 +52,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     ConnectionName = attr.ConnectionName,
                     RpcBaseUrl = localRpcAddress,
                     RequiredQueryStringParameters = this.config.HttpApiHandler.GetUniversalQueryStrings(),
+                    RequiredHeaders = this.config.HttpApiHandler.GetRequiredHttpHeaders(),
                     HttpBaseUrl = this.config.HttpApiHandler.GetBaseUrl(),
                     UseForwardedHost = this.config.Options.HttpSettings?.UseForwardedHost ?? false,
                     MaxGrpcMessageSizeInBytes = this.config.Options.MaxGrpcMessageSizeInBytes,
@@ -65,6 +67,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 ManagementUrls = this.config.HttpApiHandler.CreateHttpManagementPayload(InstanceIdPlaceholder, attr?.TaskHub, attr?.ConnectionName),
                 BaseUrl = this.config.HttpApiHandler.GetBaseUrl(),
                 RequiredQueryStringParameters = this.config.HttpApiHandler.GetUniversalQueryStrings(),
+                RequiredHeaders = this.config.HttpApiHandler.GetRequiredHttpHeaders(),
             };
 
             if (this.config.HttpApiHandler.TryGetRpcBaseUrl(out Uri rpcBaseUrl))
@@ -134,6 +137,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             [JsonProperty("requiredQueryStringParameters")]
             public string? RequiredQueryStringParameters { get; set; }
+
+            [JsonProperty("requiredHeaders")]
+            public IReadOnlyDictionary<string, string>? RequiredHeaders { get; set; }
 
             /// <summary>
             /// The URL used by the client binding object to use when calling back into

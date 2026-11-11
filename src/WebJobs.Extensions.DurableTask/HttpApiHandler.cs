@@ -17,6 +17,7 @@ using DurableTask.Core.Exceptions;
 using DurableTask.Core.History;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Template;
+using Microsoft.Azure.Functions.DurableTask;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask.Correlation;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -128,14 +129,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             HttpManagementPayload httpManagementPayload = this.GetClientResponseLinks(request, instanceId, attribute?.TaskHub, attribute?.ConnectionName, returnInternalServerErrorOnFailure);
             return this.CreateCheckStatusResponseMessage(
                 request,
-                httpManagementPayload.Id,
-                httpManagementPayload.StatusQueryGetUri,
-                httpManagementPayload.SendEventPostUri,
-                httpManagementPayload.TerminatePostUri,
-                httpManagementPayload.PurgeHistoryDeleteUri,
-                httpManagementPayload.RestartPostUri,
-                httpManagementPayload.SuspendPostUri,
-                httpManagementPayload.ResumePostUri);
+                httpManagementPayload);
         }
 
         public void RegisterWebhookProvider(Func<Uri> webhookProvider)
@@ -278,14 +272,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 default:
                     return this.CreateCheckStatusResponseMessage(
                                   request,
-                                  instanceId,
-                                  httpManagementPayload.StatusQueryGetUri,
-                                  httpManagementPayload.SendEventPostUri,
-                                  httpManagementPayload.TerminatePostUri,
-                                  httpManagementPayload.PurgeHistoryDeleteUri,
-                                  httpManagementPayload.RestartPostUri,
-                                  httpManagementPayload.SuspendPostUri,
-                                  httpManagementPayload.ResumePostUri);
+                                  httpManagementPayload);
             }
         }
 
@@ -697,7 +684,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 case OrchestrationRuntimeStatus.ContinuedAsNew:
                 case OrchestrationRuntimeStatus.Suspended:
                     statusCode = HttpStatusCode.Accepted;
-                    location = request.RequestUri;
+                    location = new UriBuilder(request.RequestUri)
+                    {
+                        Query = HttpManagementAuthentication.GetQueryParameters(request.RequestUri.Query, out _),
+                    }.Uri;
                     break;
 
                 // The orchestration has failed - return 500 w/out Location header
@@ -1383,11 +1373,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal string GetUniversalQueryStrings()
         {
-            Uri notificationUri = this.GetWebhookUri();
+            return HttpManagementAuthentication.GetQueryParameters(this.GetWebhookUri().Query, out _);
+        }
 
-            return !string.IsNullOrEmpty(notificationUri.Query)
-                ? notificationUri.Query.TrimStart('?')
-                : string.Empty;
+        internal IReadOnlyDictionary<string, string> GetRequiredHttpHeaders()
+        {
+            HttpManagementAuthentication.GetQueryParameters(this.GetWebhookUri().Query, out var headers);
+            return headers;
         }
 
         internal HttpCreationPayload GetInstanceCreationLinks()
@@ -1395,12 +1387,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string baseUrl = this.GetBaseUrl();
             string instancePrefix = baseUrl + "/" + OrchestratorsControllerSegment + "{functionName}[/{instanceId}]";
 
-            string querySuffix = this.GetUniversalQueryStrings();
+            string querySuffix = HttpManagementAuthentication.GetQueryParameters(this.GetWebhookUri().Query, out var requiredHeaders);
 
             HttpCreationPayload httpCreationPayload = new HttpCreationPayload
             {
-                CreateNewInstancePostUri = instancePrefix + "?" + querySuffix,
-                CreateAndWaitOnNewInstancePostUri = instancePrefix + "?timeout={timeoutInSeconds}&pollingInterval={intervalInSeconds}&" + querySuffix,
+                CreateNewInstancePostUri = instancePrefix + (querySuffix.Length == 0 ? string.Empty : "?" + querySuffix),
+                CreateAndWaitOnNewInstancePostUri = instancePrefix + "?timeout={timeoutInSeconds}&pollingInterval={intervalInSeconds}" + (querySuffix.Length == 0 ? string.Empty : "&" + querySuffix),
+                RequiredHeaders = requiredHeaders,
             };
 
             return httpCreationPayload;
@@ -1431,7 +1424,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 }
             }
 
-            // e.g. http://{host}/runtime/webhooks/durabletask?code={systemKey}
             string hostUrl = baseUri.GetLeftPart(UriPartial.Authority);
             string baseUrl = hostUrl + notificationUri.AbsolutePath.TrimEnd('/');
             string allInstancesPrefix = baseUrl + "/" + InstancesControllerSegment;
@@ -1441,15 +1433,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string connection = WebUtility.UrlEncode(connectionName ?? this.config.GetDefaultConnectionName());
 
             string querySuffix = $"{TaskHubParameter}={taskHub}&{ConnectionParameter}={connection}";
-            if (!string.IsNullOrEmpty(notificationUri.Query))
+            string universalQuery = HttpManagementAuthentication.GetQueryParameters(notificationUri.Query, out var requiredHeaders);
+            if (!string.IsNullOrEmpty(universalQuery))
             {
-                // This is expected to include the auto-generated system key for this extension.
-                querySuffix += "&" + notificationUri.Query.TrimStart('?');
+                querySuffix += "&" + universalQuery;
             }
 
             var httpManagementPayload = new HttpManagementPayload
             {
                 Id = instanceId,
+                RequiredHeaders = requiredHeaders,
                 StatusQueryGetUri = instancePrefix + "?" + querySuffix,
                 SendEventPostUri = instancePrefix + "/" + RaiseEventOperation + "/{eventName}?" + querySuffix,
                 TerminatePostUri = instancePrefix + "/" + TerminateOperation + "?reason={text}&" + querySuffix,
@@ -1470,31 +1463,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         private HttpResponseMessage CreateCheckStatusResponseMessage(
             HttpRequestMessage request,
-            string instanceId,
-            string statusQueryGetUri,
-            string sendEventPostUri,
-            string terminatePostUri,
-            string purgeHistoryDeleteUri,
-            string restartPostUri,
-            string suspendPostUri,
-            string resumePostUri)
+            HttpManagementPayload payload)
         {
             HttpResponseMessage response = request.CreateResponse(
                 HttpStatusCode.Accepted,
                 new
                 {
-                    id = instanceId,
-                    statusQueryGetUri,
-                    sendEventPostUri,
-                    terminatePostUri,
-                    purgeHistoryDeleteUri,
-                    restartPostUri,
-                    suspendPostUri,
-                    resumePostUri,
+                    id = payload.Id,
+                    statusQueryGetUri = payload.StatusQueryGetUri,
+                    sendEventPostUri = payload.SendEventPostUri,
+                    terminatePostUri = payload.TerminatePostUri,
+                    purgeHistoryDeleteUri = payload.PurgeHistoryDeleteUri,
+                    restartPostUri = payload.RestartPostUri,
+                    suspendPostUri = payload.SuspendPostUri,
+                    resumePostUri = payload.ResumePostUri,
+                    requiredHeaders = payload.RequiredHeaders,
                 });
 
             // Implement the async HTTP 202 pattern.
-            response.Headers.Location = new Uri(statusQueryGetUri);
+            response.Headers.Location = new Uri(payload.StatusQueryGetUri);
+            response.Headers.CacheControl = new CacheControlHeaderValue { NoStore = true };
             response.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromSeconds(10));
             return response;
         }

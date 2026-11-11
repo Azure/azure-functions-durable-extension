@@ -253,11 +253,15 @@ public static class DurableTaskClientExtensions
         {
             response.Headers.Add("Location", BuildUrl(instanceUrl, commonQueryParameters));
             response.Headers.Add("Content-Type", "application/json");
+            response.Headers.Add("Cache-Control", "no-store");
         }
 
         return new HttpManagementPayload
         {
             Id = instanceId,
+            RequiredHeaders = client is FunctionsDurableTaskClient functions
+                ? functions.RequiredHeaders
+                : new System.Collections.Generic.Dictionary<string, string>(),
             PurgeHistoryDeleteUri = BuildUrl(instanceUrl, commonQueryParameters),
             RestartPostUri = BuildUrl($"{instanceUrl}/restart", commonQueryParameters),
             SendEventPostUri = BuildUrl($"{instanceUrl}/raiseEvent/{{eventName}}", commonQueryParameters),

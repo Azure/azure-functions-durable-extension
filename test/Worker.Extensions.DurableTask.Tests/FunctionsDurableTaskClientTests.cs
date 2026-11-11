@@ -67,6 +67,51 @@ namespace Microsoft.Azure.Functions.Worker.Tests
         /// <summary>
         /// Test that the `CreateHttpManagementPayload` method returns the expected payload structure without HttpRequestData.
         /// </summary>
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task CheckStatusResponse_MovesLegacyQueryKeyToHeaders(bool async)
+        {
+            var inner = new Mock<DurableTaskClient>(string.Empty);
+            var client = new FunctionsDurableTaskClient(
+                inner.Object,
+                "taskHub=hub&CoDe=synthetic%2Bkey%2F%3D&connection=storage&%63ode=duplicate",
+                "https://localhost/runtime/webhooks/durabletask");
+            HttpRequestData request = this.MockHttpRequestAndResponseData();
+            HttpResponseData response = async
+                ? await client.CreateCheckStatusResponseAsync(request, "instance")
+                : client.CreateCheckStatusResponse(request, "instance");
+
+            Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+            Assert.EndsWith("/instances/instance?taskHub=hub&connection=storage", response.Headers.GetValues("Location").Single());
+            Assert.Equal("no-store", response.Headers.GetValues("Cache-Control").Single());
+            response.Body.Position = 0;
+            using var json = await System.Text.Json.JsonDocument.ParseAsync(response.Body);
+            Assert.Equal("synthetic+key/=", json.RootElement.GetProperty("requiredHeaders").GetProperty("x-functions-key").GetString());
+            foreach (var property in json.RootElement.EnumerateObject().Where(p => p.Name.EndsWith("Uri")))
+            {
+                Assert.DoesNotContain("code=", property.Value.GetString(), StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain("synthetic", property.Value.GetString());
+                Assert.DoesNotContain("duplicate", property.Value.GetString());
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void ManagementPayload_UsesHeaderContractWithEitherSerializer(bool useSystemTextJson)
+        {
+            var inner = new Mock<DurableTaskClient>(string.Empty);
+            var client = new FunctionsDurableTaskClient(
+                inner.Object, "taskHub=hub", "https://localhost/runtime/webhooks/durabletask",
+                requiredHeaders: new Dictionary<string, string> { ["x-functions-key"] = "synthetic-key" });
+            HttpManagementPayload payload = client.CreateHttpManagementPayload("instance");
+            string json = useSystemTextJson ? System.Text.Json.JsonSerializer.Serialize(payload) : JsonConvert.SerializeObject(payload);
+            var parsed = Newtonsoft.Json.Linq.JObject.Parse(json);
+            Assert.Equal("synthetic-key", (string?)parsed["requiredHeaders"]?["x-functions-key"]);
+            Assert.DoesNotContain("code=", payload.StatusQueryGetUri);
+        }
+
         [Fact]
         public void CreateHttpManagementPayload_WithBaseUrl()
         {
@@ -250,6 +295,7 @@ namespace Microsoft.Azure.Functions.Worker.Tests
 
         private static void AssertHttpManagementPayload(HttpManagementPayload payload, string BaseUrl, string instanceId)
         {
+            Assert.Empty(payload.RequiredHeaders);
             Assert.Equal(instanceId, payload.Id);
             Assert.Equal($"{BaseUrl}/instances/{instanceId}", payload.PurgeHistoryDeleteUri);
             Assert.Equal($"{BaseUrl}/instances/{instanceId}/restart", payload.RestartPostUri);
@@ -279,6 +325,10 @@ namespace Microsoft.Azure.Functions.Worker.Tests
         private HttpRequestData MockHttpRequestAndResponseData(HttpHeadersCollection? headers = null)
         {
             var mockObjectSerializer = new Mock<ObjectSerializer>();
+
+            mockObjectSerializer.Setup(s => s.Serialize(It.IsAny<Stream>(), It.IsAny<object?>(), It.IsAny<Type>(), It.IsAny<CancellationToken>()))
+                .Callback<Stream, object?, Type, CancellationToken>((stream, value, type, token) =>
+                    System.Text.Json.JsonSerializer.Serialize(stream, value, type));
             
             // Setup the SerializeAsync method
             mockObjectSerializer.Setup(s => s.SerializeAsync(It.IsAny<Stream>(), It.IsAny<object?>(), It.IsAny<Type>(), It.IsAny<CancellationToken>()))

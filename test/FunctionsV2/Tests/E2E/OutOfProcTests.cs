@@ -245,7 +245,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 //     "purgeHistoryDeleteUri": "https://durable.edu/runtime/webhooks/durabletask/instances/INSTANCEID?taskHub=BindToDurableClientAsStringV2&connection=Storage"
                 //   },
                 //   "baseUrl": "https://durable.edu/runtime/webhooks/durabletask/",
-                //   "requiredQueryStringParameters": "code=abcdefg",
+                //   "requiredQueryStringParameters": "",
+                //   "requiredHeaders": { "x-functions-key": "abcdefg" },
                 //   "rpcBaseUrl": "http://127.0.0.1:17071/durabletask/" (or null)
                 // }
 
@@ -261,10 +262,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                     Assert.True(Uri.TryCreate((string)fieldValue, UriKind.Absolute, out Uri uri));
                     Assert.StartsWith(testNotificationUrl.GetLeftPart(UriPartial.Path), uri.GetLeftPart(UriPartial.Path));
 
-                    if (fieldName != "baseUrl")
-                    {
-                        Assert.Contains(testNotificationUrl.Query.TrimStart('?'), uri.Query);
-                    }
+                    Assert.DoesNotContain("code=", uri.Query);
+                    Assert.DoesNotContain("abcdefg", uri.OriginalString);
 
                     foreach (string segment in requiredSegments)
                     {
@@ -295,7 +294,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 CommonUriValidation(outerJson, "baseUrl", new string[0]);
 
                 Assert.True(outerJson.TryGetValue("requiredQueryStringParameters", out JToken requiredQueryStringParameters));
-                Assert.Equal(testNotificationUrl.Query.Trim('?'), (string)requiredQueryStringParameters);
+                Assert.Equal(string.Empty, (string)requiredQueryStringParameters);
+                Assert.Equal("abcdefg", (string)outerJson["requiredHeaders"]["x-functions-key"]);
+                Assert.Equal("abcdefg", (string)creationUrls["requiredHeaders"]["x-functions-key"]);
+                Assert.Equal("abcdefg", (string)managementUrls["requiredHeaders"]["x-functions-key"]);
 
                 Assert.True(outerJson.TryGetValue("rpcBaseUrl", out JToken rpcBaseUrl));
 

@@ -1134,6 +1134,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.False(JObject.Parse(payload).ContainsKey("useForwardedHost"));
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void TestBindingHelper_SeparatesHttpAuthenticationFromUrls(bool useGrpc)
+        {
+            var options = new DurableTaskOptions
+            {
+                HubName = "HeaderAuthentication",
+                WebhookUriProviderOverride = () => new Uri(
+                    "https://durable.test/runtime/webhooks/durabletask?code=synthetic%2Bkey&site=example"),
+            };
+            using DurableTaskExtension extension = this.CreateExtension(
+                options, useGrpc ? WorkerRuntimeType.DotNetIsolated : WorkerRuntimeType.DotNet);
+            if (useGrpc)
+            {
+                extension.EnsureTaskHubWorker();
+            }
+
+            var client = new Mock<IDurableOrchestrationClient>();
+            client.Setup(c => c.TaskHubName).Returns(options.HubName);
+            var binding = JObject.Parse(new BindingHelper(extension).DurableOrchestrationClientToString(
+                client.Object, new DurableClientAttribute()));
+
+            Assert.Equal("site=example", (string)binding["requiredQueryStringParameters"]);
+            Assert.Equal("synthetic+key", (string)binding["requiredHeaders"]["x-functions-key"]);
+            foreach (JValue value in binding.Descendants().OfType<JValue>().Where(v => v.Type == JTokenType.String))
+            {
+                string text = (string)value;
+                if (text.StartsWith("https://", StringComparison.Ordinal))
+                {
+                    Assert.DoesNotContain("code=", text);
+                    Assert.DoesNotContain("synthetic", text);
+                }
+            }
+        }
+
         /// <summary>
         /// Verifies that the native worker runtimes (the Go worker reports either "native" or,
         /// defensively, "golang") select the gRPC protocol (MiddlewarePassthrough) at extension

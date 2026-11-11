@@ -28,13 +28,15 @@ public class DurableTaskClientConverterTests
         Assert.IsAssignableFrom<ILargePayloadPurgeClient>(first);
         Assert.Same(Field(first, "inner"), Field(second, "inner"));
         Assert.Same(Field(first, "purgeClient"), Field(second, "purgeClient"));
-        Assert.Equal("code=first", first.QueryString);
-        Assert.Equal("code=second", second.QueryString);
+        Assert.Equal(string.Empty, first.QueryString);
+        Assert.Equal(string.Empty, second.QueryString);
         Assert.Equal("https://first.example/runtime/webhooks/durabletask", first.HttpBaseUrl);
         Assert.Equal("https://second.example/runtime/webhooks/durabletask", second.HttpBaseUrl);
         Assert.Contains("https://first.example/runtime/webhooks/durabletask", first.CreateHttpManagementPayload("instance").StatusQueryGetUri);
-        Assert.Contains("code=first", first.CreateHttpManagementPayload("instance").StatusQueryGetUri);
-        Assert.Contains("code=second", second.CreateHttpManagementPayload("instance").StatusQueryGetUri);
+        Assert.DoesNotContain("code=", first.CreateHttpManagementPayload("instance").StatusQueryGetUri);
+        Assert.Equal("first", first.CreateHttpManagementPayload("instance").RequiredHeaders["x-functions-key"]);
+        Assert.DoesNotContain("code=", second.CreateHttpManagementPayload("instance").StatusQueryGetUri);
+        Assert.Equal("second", second.CreateHttpManagementPayload("instance").RequiredHeaders["x-functions-key"]);
         await first.DisposeAsync();
         Assert.Same(Field(second, "inner"), provider.GetClient(new Uri("http://127.0.0.1:12345"), "hub-a", "connection-a", 4194304, TimeSpan.FromSeconds(90)));
     }
@@ -50,6 +52,28 @@ public class DurableTaskClientConverterTests
         var second = await Convert(converter, Binding(hub, connection, null, null));
         Assert.NotSame(Field(first, "inner"), Field(second, "inner"));
         Assert.NotSame(Field(first, "purgeClient"), Field(second, "purgeClient"));
+    }
+
+    [Fact]
+    public async Task BindingHeadersRemainScopedToEachBinding()
+    {
+        await using var provider = CreateProvider();
+        var converter = new DurableTaskClientConverter(provider);
+        string BindingWithHeaders(string key) => JsonSerializer.Serialize(new
+        {
+            rpcBaseUrl = "http://127.0.0.1:12345",
+            requiredQueryStringParameters = "taskHub=hub&connection=storage",
+            requiredHeaders = new Dictionary<string, string> { ["x-functions-key"] = key },
+            httpBaseUrl = "https://example.com/runtime/webhooks/durabletask",
+        });
+
+        var first = await Convert(converter, BindingWithHeaders("first"));
+        var second = await Convert(converter, BindingWithHeaders("second"));
+
+        Assert.Same(Field(first, "inner"), Field(second, "inner"));
+        Assert.Equal("first", first.CreateHttpManagementPayload("instance").RequiredHeaders["x-functions-key"]);
+        Assert.Equal("second", second.CreateHttpManagementPayload("instance").RequiredHeaders["x-functions-key"]);
+        Assert.EndsWith("?taskHub=hub&connection=storage", first.CreateHttpManagementPayload("instance").StatusQueryGetUri);
     }
 
     [Fact]

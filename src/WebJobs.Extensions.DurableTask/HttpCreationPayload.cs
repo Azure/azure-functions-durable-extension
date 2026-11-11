@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
+using System.Collections.Generic;
 using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -10,6 +11,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     internal class HttpCreationPayload
     {
+        /// <summary>
+        /// Gets the headers callers must send when using the creation URLs.
+        /// </summary>
+        [JsonProperty("requiredHeaders")]
+        internal IReadOnlyDictionary<string, string> RequiredHeaders { get; set; }
+
         /// <summary>
         /// Gets the HTTP POST orchestration instance creation endpoint URL.
         /// </summary>
