@@ -27,7 +27,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private readonly INameResolver nameResolver;
         private readonly ILoggerFactory loggerFactory;
         private readonly bool inConsumption; // If true, optimize defaults for consumption
-        private readonly bool isMigrationActive;
+        private readonly Guid? migrationId;
         private readonly object serviceLifetimeLock = new object();
         private readonly List<AzureStorageOrchestrationService> ownedServices = new List<AzureStorageOrchestrationService>();
         private AzureStorageDurabilityProvider defaultStorageProvider;
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             this.clientProviderFactory = clientProviderFactory ?? throw new ArgumentNullException(nameof(clientProviderFactory));
             this.nameResolver = nameResolver ?? throw new ArgumentNullException(nameof(nameResolver));
             this.loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
-            this.isMigrationActive = ResolveMigrationActive(this.nameResolver.Resolve(MigrationStateSettingName));
+            this.migrationId = ResolveMigrationId(this.nameResolver.Resolve(MigrationStateSettingName));
 
             this.azureStorageOptions = new AzureStorageOptions();
             this.inConsumption = platformInfo.IsInConsumptionPlan();
@@ -253,7 +253,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             // Called under serviceLifetimeLock. HTTP clients can outlive the task hub worker,
             // so the DI-owned factory, rather than worker StopAsync, owns final disposal.
-            var service = new AzureStorageOrchestrationService(settings, this.isMigrationActive);
+            var service = this.migrationId.HasValue
+                ? new AzureStorageOrchestrationService(settings, this.migrationId.Value)
+                : new AzureStorageOrchestrationService(settings);
             this.ownedServices.Add(service);
             return service;
         }
@@ -332,21 +334,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             return settings;
         }
 
-        private static bool ResolveMigrationActive(string migrationState)
+        private static Guid? ResolveMigrationId(string migrationState)
         {
             if (string.IsNullOrWhiteSpace(migrationState))
             {
-                return false;
+                return null;
             }
 
-            if (string.Equals(migrationState, "Started", StringComparison.OrdinalIgnoreCase))
+            const string startedPrefix = "Started:";
+            if (migrationState.StartsWith(startedPrefix, StringComparison.OrdinalIgnoreCase) &&
+                Guid.TryParseExact(migrationState.Substring(startedPrefix.Length), "D", out Guid migrationId))
             {
-                return true;
+                return migrationId;
             }
 
             throw new InvalidOperationException(
                 $"The '{MigrationStateSettingName}' app setting has unsupported value '{migrationState}'. " +
-                "Use 'Started' to enable migration.");
+                "Use 'Started:<migration-id>' with the current migration attempt GUID in hyphenated 'D' format to enable migration.");
         }
 
         public void SetUseSeparateQueueForEntityWorkItems(bool newValue)
