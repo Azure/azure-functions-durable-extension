@@ -1135,17 +1135,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         }
 
         [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
+        [InlineData(true, null)]
+        [InlineData(false, null)]
+        [InlineData(true, true)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(false, false)]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void TestBindingHelper_SeparatesHttpAuthenticationFromUrls(bool useGrpc)
+        public void TestBindingHelper_ManagementKeyOptionKeepsExistingPayloadShape(bool useGrpc, bool? excludeKey)
         {
             var options = new DurableTaskOptions
             {
-                HubName = "HeaderAuthentication",
+                HubName = "ManagementKeyOption",
                 WebhookUriProviderOverride = () => new Uri(
-                    "https://durable.test/runtime/webhooks/durabletask?code=synthetic%2Bkey&site=example"),
+                    "https://durable.test/runtime/webhooks/durabletask?code=synthetic-key&site=example"),
             };
+            Assert.False(options.HttpSettings.ExcludeManagementKeyFromUrls);
+            if (excludeKey.HasValue)
+            {
+                options.HttpSettings.ExcludeManagementKeyFromUrls = excludeKey.Value;
+            }
+
             using DurableTaskExtension extension = this.CreateExtension(
                 options, useGrpc ? WorkerRuntimeType.DotNetIsolated : WorkerRuntimeType.DotNet);
             if (useGrpc)
@@ -1155,18 +1165,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
             var client = new Mock<IDurableOrchestrationClient>();
             client.Setup(c => c.TaskHubName).Returns(options.HubName);
-            var binding = JObject.Parse(new BindingHelper(extension).DurableOrchestrationClientToString(
+            JObject binding = JObject.Parse(new BindingHelper(extension).DurableOrchestrationClientToString(
                 client.Object, new DurableClientAttribute()));
 
-            Assert.Equal("site=example", (string)binding["requiredQueryStringParameters"]);
-            Assert.Equal("synthetic+key", (string)binding["requiredHeaders"]["x-functions-key"]);
-            foreach (JValue value in binding.Descendants().OfType<JValue>().Where(v => v.Type == JTokenType.String))
+            Assert.Equal(
+                excludeKey == true ? "site=example" : "code=synthetic-key&site=example",
+                (string)binding["requiredQueryStringParameters"]);
+            Assert.Null(binding["requiredHeaders"]);
+            if (!useGrpc)
             {
-                string text = (string)value;
-                if (text.StartsWith("https://", StringComparison.Ordinal))
+                foreach (string field in new[] { "creationUrls", "managementUrls" })
                 {
-                    Assert.DoesNotContain("code=", text);
-                    Assert.DoesNotContain("synthetic", text);
+                    JObject urls = Assert.IsType<JObject>(binding[field]);
+                    Assert.All(urls.Properties(), property => Assert.Equal(JTokenType.String, property.Value.Type));
+                    Assert.Null(urls["requiredHeaders"]);
+                    foreach (JProperty property in urls.Properties().Where(p => p.Name.EndsWith("Uri", StringComparison.Ordinal)))
+                    {
+                        Assert.Equal(excludeKey != true, ((string)property.Value).Contains("code=synthetic-key"));
+                    }
                 }
             }
         }

@@ -86,7 +86,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\Shared\HttpManagementAuthentication.cs" Link="HttpManagementAuthentication.cs" />
     <!-- StyleCop artifacts (CONSDER: we should remove stylecop and standardize on .editorconfig) -->
     <AdditionalFiles Include="..\..\.stylecop\stylecop.json" />
     <Compile Include="..\..\.stylecop\GlobalSuppressions.cs" Link="GlobalSuppressions.cs" />

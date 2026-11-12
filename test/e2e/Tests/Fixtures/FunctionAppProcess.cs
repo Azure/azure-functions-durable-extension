@@ -27,6 +27,8 @@ internal class FunctionAppProcess
     /// </summary>
     internal Dictionary<string, string>? AdditionalEnvironmentVariables { get; set; }
 
+    internal bool EnableAuth { get; set; }
+
     public FunctionAppProcess(ILogger logger, TestLoggerProvider TestLogs, LanguageType testLanguage)
     {
         this.logger = logger;
@@ -90,7 +92,7 @@ internal class FunctionAppProcess
                 throw new InvalidOperationException($"Could not resolve app path for app name {this.appName}.");
             }
 
-            this.funcProcess = FixtureHelpers.GetFuncHostProcess(e2eAppPath, this.testLanguage);
+            this.funcProcess = FixtureHelpers.GetFuncHostProcess(e2eAppPath, this.testLanguage, this.EnableAuth);
             string workingDir = this.funcProcess.StartInfo.WorkingDirectory;
             this.logger.LogInformation($"  Working dir: '${workingDir}' Exists: '{Directory.Exists(workingDir)}'");
             string fileName = this.funcProcess.StartInfo.FileName;
@@ -122,7 +124,14 @@ internal class FunctionAppProcess
             {
                 try
                 {
-                    var response = await httpClient.GetAsync($"{Constants.FunctionsHostUrl}/admin/host/status");
+                    string readinessPath = this.EnableAuth ? "/admin/host/ping" : "/admin/host/status";
+                    using var response = await httpClient.GetAsync($"{Constants.FunctionsHostUrl}{readinessPath}");
+                    if (this.EnableAuth)
+                    {
+                        this.logger.LogInformation($"  Host readiness status: {response.StatusCode}");
+                        return response.IsSuccessStatusCode;
+                    }
+
                     var content = await response.Content.ReadAsStringAsync();
                     var doc = JsonDocument.Parse(content);
                     if (doc.RootElement.TryGetProperty("state", out JsonElement value) &&

@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core.History;
-using Microsoft.Azure.Functions.DurableTask;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
 using Microsoft.DurableTask.Client.Entities;
@@ -28,35 +27,16 @@ internal sealed class FunctionsDurableTaskClient : DurableTaskClient, ILargePayl
         DurableTaskClient inner,
         string? queryString,
         string? httpBaseUrl,
-        ILargePayloadPurgeClient? purgeClient = null,
-        IReadOnlyDictionary<string, string>? requiredHeaders = null)
+        ILargePayloadPurgeClient? purgeClient = null)
         : base(inner.Name)
     {
         this.inner = inner;
         this.purgeClient = purgeClient;
-        // Older hosts send the system key in the query string instead of header metadata.
-        string queryParameters = HttpManagementAuthentication.GetQueryParameters(queryString, out var legacyHeaders);
-        this.QueryString = queryString == null ? null : queryParameters;
-        var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var header in legacyHeaders)
-        {
-            headers.Add(header.Key, header.Value);
-        }
-
-        if (requiredHeaders != null)
-        {
-            foreach (var header in requiredHeaders)
-            {
-                headers[header.Key] = header.Value;
-            }
-        }
-
-        this.RequiredHeaders = headers;
+        this.QueryString = queryString;
         this.HttpBaseUrl = httpBaseUrl;
     }
 
     public string? QueryString { get; }
-    public IReadOnlyDictionary<string, string> RequiredHeaders { get; }
     public string? HttpBaseUrl { get; }
     public override DurableEntityClient Entities => this.inner.Entities;
 

@@ -15,14 +15,6 @@ namespace Microsoft.Azure.Functions.Worker;
 public class HttpManagementPayload
 {
     /// <summary>
-    /// Gets the headers callers must send when using the management URLs.
-    /// Treat these values as secrets and do not append them to URLs or log them.
-    /// </summary>
-    [JsonProperty("requiredHeaders")]
-    [System.Text.Json.Serialization.JsonPropertyName("requiredHeaders")]
-    public IReadOnlyDictionary<string, string> RequiredHeaders { get; internal set; } = new Dictionary<string, string>();
-
-    /// <summary>
     /// Gets the ID of the orchestration instance.
     /// </summary>
     /// <value>

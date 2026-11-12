@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
-using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Azure.Functions.Worker.Converters;
@@ -55,7 +54,7 @@ internal sealed partial class DurableTaskClientConverter : IInputConverter
 
             DurableTaskClient client = this.clientProvider.CreateBoundClient(
                 endpoint, inputData?.taskHubName, inputData?.connectionName, inputData?.maxGrpcMessageSizeInBytes,
-                grpcHttpClientTimeout, inputData!.requiredQueryStringParameters, inputData!.httpBaseUrl, inputData.requiredHeaders);
+                grpcHttpClientTimeout, inputData!.requiredQueryStringParameters, inputData!.httpBaseUrl);
             return new ValueTask<ConversionResult>(ConversionResult.Success(client));
         }
         catch (Exception innerException)
@@ -75,6 +74,5 @@ internal sealed partial class DurableTaskClientConverter : IInputConverter
         string requiredQueryStringParameters,
         string httpBaseUrl,
         int maxGrpcMessageSizeInBytes,
-        string grpcHttpClientTimeout,
-        Dictionary<string, string>? requiredHeaders);
+        string grpcHttpClientTimeout);
 }

@@ -1,7 +1,6 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System.Collections.Generic;
 using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -11,13 +10,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     public class HttpManagementPayload
     {
-        /// <summary>
-        /// Gets the headers callers must send when using the management URLs.
-        /// Treat these values as secrets and do not append them to URLs or log them.
-        /// </summary>
-        [JsonProperty("requiredHeaders")]
-        public IReadOnlyDictionary<string, string> RequiredHeaders { get; internal set; } = new Dictionary<string, string>();
-
         /// <summary>
         /// Gets the ID of the orchestration instance.
         /// </summary>

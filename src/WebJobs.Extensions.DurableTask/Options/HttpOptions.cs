@@ -22,5 +22,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Gets or sets a value indicating whether to use forwarded headers for URL construction.
         /// </summary>
         public bool UseForwardedHost { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether to exclude the system key from generated HTTP
+        /// management and creation URLs. Defaults to false for compatibility. When true, callers must
+        /// authenticate separately, for example using the x-functions-key request header.
+        /// </summary>
+        public bool ExcludeManagementKeyFromUrls { get; set; } = false;
     }
 }
