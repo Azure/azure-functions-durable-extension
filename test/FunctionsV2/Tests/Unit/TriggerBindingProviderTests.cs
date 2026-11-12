@@ -7,11 +7,14 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.AzureStorage;
 using DurableTask.Core;
 using DurableTask.Core.History;
+using DurableTask.Core.Middleware;
+using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Azure.WebJobs.Host.Triggers;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -33,6 +36,247 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         public static IEnumerable<object?[]> UnsupportedTriggerValues()
         {
             yield return new object?[] { 42, "Int32" };
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task ActivityShim_ExportsScheduledRetryMetadataAsOptionalJsonString(bool hasRetryMetadata)
+        {
+            using DurableTaskExtension extension = CreateExtension();
+            ITriggerBinding binding = await CreateActivityBindingAsync(extension);
+            var metadata = hasRetryMetadata ? new RetryMetadata(2, 3, "retry-group") : null;
+            var taskContext = CreateActivityTaskContext(metadata);
+            ITriggerData? triggerData = null;
+            var executor = new Mock<ITriggeredFunctionExecutor>();
+            executor.Setup(e => e.TryExecuteAsync(It.IsAny<TriggeredFunctionData>(), It.IsAny<CancellationToken>()))
+                .Returns(async (TriggeredFunctionData data, CancellationToken cancellation) =>
+                {
+                    var activityContext = Assert.IsType<DurableActivityContext>(data.TriggerValue);
+                    Assert.Same(metadata, activityContext.RetryMetadata);
+                    triggerData = await binding.BindAsync(activityContext, context: null!);
+                    activityContext.SetOutput("activity-output");
+                    return new FunctionResult(true);
+                });
+            var shim = new TaskActivityShim(
+                extension, executor.Object, new Mock<IApplicationLifetimeWrapper>().Object, "TestActivity");
+
+            Assert.Equal("\"activity-output\"", await shim.RunAsync(taskContext, "[\"activity-input\"]"));
+
+            Assert.NotNull(triggerData);
+            Assert.Equal("activity-input", await triggerData.ValueProvider.GetValueAsync());
+            Assert.Equal("test-instance", triggerData.BindingData["instanceId"]);
+            Assert.Equal(typeof(string), binding.BindingDataContract["durableActivityRetryMetadata"]);
+            Assert.False(triggerData.BindingData.ContainsKey("retryContext"));
+            if (hasRetryMetadata)
+            {
+                string payload = Assert.IsType<string>(triggerData.BindingData["durableActivityRetryMetadata"]);
+                Assert.True(JToken.DeepEquals(
+                    JObject.Parse("{\"AttemptNumber\":2,\"MaxAttempts\":3,\"RetryGroupId\":\"retry-group\"}"),
+                    JObject.Parse(payload)));
+            }
+            else
+            {
+                Assert.False(triggerData.BindingData.ContainsKey("durableActivityRetryMetadata"));
+            }
+
+            executor.Verify(e => e.TryExecuteAsync(It.IsAny<TriggeredFunctionData>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task ActivityShim_InvalidPresentRetryMetadataFailsBeforeCustomerInvocation()
+        {
+            using DurableTaskExtension extension = CreateExtension();
+            var executor = new Mock<ITriggeredFunctionExecutor>(MockBehavior.Strict);
+            var shim = new TaskActivityShim(
+                extension, executor.Object, new Mock<IApplicationLifetimeWrapper>().Object, "TestActivity");
+
+            // Simulate an invalid producer bypassing the validated CLR constructor.
+            var invalidMetadata = (RetryMetadata)RuntimeHelpers.GetUninitializedObject(typeof(RetryMetadata));
+
+            InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => shim.RunAsync(CreateActivityTaskContext(invalidMetadata), "[null]"));
+
+            Assert.Contains("Invalid durable activity retry metadata", error.Message);
+            executor.VerifyNoOtherCalls();
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task ActivityBinding_AdminInvocationHasNoRetryMetadata()
+        {
+            using DurableTaskExtension extension = CreateExtension();
+            ITriggerBinding binding = await CreateActivityBindingAsync(extension);
+
+            ITriggerData data = await binding.BindAsync("\"activity-input\"", context: null!);
+
+            Assert.Equal("activity-input", await data.ValueProvider.GetValueAsync());
+            Assert.False(data.BindingData.ContainsKey("durableActivityRetryMetadata"));
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task ActivityMiddleware_PreservesOrRejectsScheduledMetadataBeforeInvocation(bool hasRetryMetadata, bool invalid)
+        {
+            using DurableTaskExtension extension = CreateExtension();
+            extension.ConfigureForGrpcProtocol("durable-functions", "4.0.0");
+            ITriggerBinding binding = await CreateActivityBindingAsync(extension);
+            RetryMetadata? metadata = !hasRetryMetadata ? null : invalid
+                ? (RetryMetadata)RuntimeHelpers.GetUninitializedObject(typeof(RetryMetadata))
+                : new RetryMetadata(3, 3, "retry-group");
+            ITriggerData? triggerData = null;
+            var executor = new Mock<ITriggeredFunctionExecutor>();
+            executor.Setup(e => e.TryExecuteAsync(It.IsAny<TriggeredFunctionData>(), It.IsAny<CancellationToken>()))
+                .Returns(async (TriggeredFunctionData data, CancellationToken cancellation) =>
+                {
+                    var activityContext = Assert.IsType<DurableActivityContext>(data.TriggerValue);
+                    Assert.Same(metadata, activityContext.RetryMetadata);
+                    triggerData = await binding.BindAsync(activityContext, context: null!);
+                    activityContext.SetOutput("activity-output");
+                    return new FunctionResult(true);
+                });
+            extension.RegisterActivity(new FunctionName("TestActivity"), executor.Object);
+            var dispatchContext = new DispatchMiddlewareContext();
+            dispatchContext.SetProperty(new OrchestrationInstance { InstanceId = "test-instance" });
+            dispatchContext.SetProperty(new TaskScheduledEvent(7, "TestActivity", "")
+            {
+                Input = "\"activity-input\"",
+                RetryMetadata = metadata,
+            });
+            var middleware = new OutOfProcMiddleware(extension);
+
+            if (invalid)
+            {
+                InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(
+                    () => middleware.CallActivityAsync(dispatchContext, () => throw new InvalidOperationException("Unexpected dispatch.")));
+                Assert.Contains("Invalid durable activity retry metadata", error.Message);
+                executor.VerifyNoOtherCalls();
+                return;
+            }
+
+            await middleware.CallActivityAsync(dispatchContext, () => throw new InvalidOperationException("Unexpected dispatch."));
+
+            Assert.NotNull(triggerData);
+            Assert.Equal(hasRetryMetadata, triggerData.BindingData.ContainsKey("durableActivityRetryMetadata"));
+            if (hasRetryMetadata)
+            {
+                JObject payload = JObject.Parse(Assert.IsType<string>(triggerData.BindingData["durableActivityRetryMetadata"]));
+                Assert.Equal(3, payload.Value<int>("AttemptNumber"));
+                Assert.Equal(3, payload.Value<int>("MaxAttempts"));
+                Assert.Equal("retry-group", payload.Value<string>("RetryGroupId"));
+            }
+
+            var completed = Assert.IsType<TaskCompletedEvent>(dispatchContext.GetProperty<ActivityExecutionResult>().ResponseEvent);
+            Assert.Equal(7, completed.TaskScheduledId);
+            Assert.Equal("\"activity-output\"", completed.Result);
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task OrchestrationBinding_ProtobufHistoryPreservesOptionalRetryMetadata(bool hasRetryMetadata, bool isReplay)
+        {
+            ITriggerBinding binding = await CreateOrchestrationBindingAsync();
+            var events = new List<HistoryEvent>
+            {
+                new ExecutionStartedEvent(-1, null)
+                {
+                    Name = "TestOrchestrator",
+                    OrchestrationInstance = new OrchestrationInstance { InstanceId = "test-instance" },
+                },
+                new TaskScheduledEvent(7, "Activity", "")
+                {
+                    RetryMetadata = hasRetryMetadata ? new RetryMetadata(2, 3, "retry-group") : null,
+                },
+            };
+            var runtimeState = new OrchestrationRuntimeState(isReplay ? events : new List<HistoryEvent>());
+            if (!isReplay)
+            {
+                foreach (HistoryEvent historyEvent in events)
+                {
+                    runtimeState.AddEvent(historyEvent);
+                }
+            }
+
+            var context = new RemoteOrchestratorContext(
+                runtimeState,
+                entityParameters: null,
+                new DurableTaskOptions(),
+                isExtendedSession: false,
+                includePastEvents: true);
+
+            ITriggerData data = await binding.BindAsync(context, context: null!);
+            P.OrchestratorRequest wire = P.OrchestratorRequest.Parser.ParseFrom(
+                Convert.FromBase64String(Assert.IsType<string>(await data.ValueProvider.GetValueAsync())));
+            var wireEvents = isReplay ? wire.PastEvents : wire.NewEvents;
+            P.TaskScheduledEvent scheduled = wireEvents[1].TaskScheduled;
+
+            if (hasRetryMetadata)
+            {
+                Assert.Equal(2, scheduled.RetryMetadata.AttemptNumber);
+                Assert.Equal(3, scheduled.RetryMetadata.MaxAttempts);
+                Assert.Equal("retry-group", scheduled.RetryMetadata.RetryGroupId);
+            }
+            else
+            {
+                Assert.Null(scheduled.RetryMetadata);
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task OrchestrationBinding_LegacyHistoryPreservesOptionalRetryMetadata(bool hasRetryMetadata)
+        {
+            using DurableTaskExtension extension = CreateExtension();
+            var provider = new OrchestrationTriggerAttributeBindingProvider(
+                extension, "AzureWebJobsStorage", TestHelpers.GetMockPlatformInformationService());
+            var providerContext = new TriggerBindingProviderContext(
+                GetTriggerParameter(nameof(TestStringOrchestrator)), CancellationToken.None);
+            ITriggerBinding binding = await provider.TryCreateAsync(providerContext)
+                ?? throw new InvalidOperationException("The orchestration trigger binding was not created.");
+            var durabilityProvider = new DurabilityProvider(
+                "test",
+                new Mock<IOrchestrationService>().Object,
+                new Mock<IOrchestrationServiceClient>().Object,
+                "AzureWebJobsStorage");
+            var context = new DurableOrchestrationContext(extension, durabilityProvider, "TestStringOrchestrator")
+            {
+                InstanceId = "test-instance",
+                History = new List<HistoryEvent>
+                {
+                    new TaskScheduledEvent(7, "Activity", "")
+                    {
+                        RetryMetadata = hasRetryMetadata ? new RetryMetadata(1, int.MaxValue, "retry-group") : null,
+                    },
+                },
+            };
+
+            ITriggerData data = await binding.BindAsync(context, context: null!);
+            JObject payload = JObject.Parse(Assert.IsType<string>(await data.ValueProvider.GetValueAsync()));
+            JArray history = Assert.IsType<JArray>(payload["history"]);
+            JObject scheduled = Assert.IsType<JObject>(history[0]);
+
+            if (hasRetryMetadata)
+            {
+                JObject metadata = Assert.IsType<JObject>(scheduled["RetryMetadata"]);
+                Assert.Equal(1, metadata.Value<int>("AttemptNumber"));
+                Assert.Equal(int.MaxValue, metadata.Value<int>("MaxAttempts"));
+                Assert.Equal("retry-group", metadata.Value<string>("RetryGroupId"));
+            }
+            else
+            {
+                Assert.Null(scheduled["RetryMetadata"]);
+            }
         }
 
         [Theory]
@@ -260,6 +504,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 ?? throw new InvalidOperationException("The orchestration trigger binding was not created.");
         }
 
+        private static async Task<ITriggerBinding> CreateActivityBindingAsync(DurableTaskExtension extension)
+        {
+            var provider = new ActivityTriggerAttributeBindingProvider(extension, "AzureWebJobsStorage");
+            var providerContext = new TriggerBindingProviderContext(
+                GetTriggerParameter(nameof(TestActivity)), CancellationToken.None);
+            return await provider.TryCreateAsync(providerContext)
+                ?? throw new InvalidOperationException("The activity trigger binding was not created.");
+        }
+
+        private static TaskContext CreateActivityTaskContext(RetryMetadata? metadata)
+        {
+            var context = new TaskContext(new OrchestrationInstance { InstanceId = "test-instance" });
+
+            // Only the DTFx dispatcher can set this property in production.
+            PropertyInfo property = typeof(TaskContext).GetProperty(nameof(TaskContext.RetryMetadata))
+                ?? throw new InvalidOperationException("TaskContext.RetryMetadata was not found.");
+            property.SetValue(context, metadata);
+            return context;
+        }
+
         private static async Task<ITriggerBinding> CreateEntityBindingAsync()
         {
             DurableTaskExtension extension = CreateExtension();
@@ -323,6 +587,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 
         private static void TestEntity(
             [EntityTrigger] IDurableEntityContext context)
+        {
+        }
+
+        private static void TestActivity([ActivityTrigger] string input)
         {
         }
 

@@ -588,7 +588,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 isReplay: false,
                 taskEventId: scheduledEvent.EventId);
 
-            var inputContext = new DurableActivityContext(this.extension, instance.InstanceId, rawInput, functionName.Name);
+            var inputContext = new DurableActivityContext(this.extension, instance.InstanceId, rawInput, functionName.Name, scheduledEvent.RetryMetadata);
             var triggerInput = new TriggeredFunctionData { TriggerValue = inputContext };
 
             FunctionResult result;

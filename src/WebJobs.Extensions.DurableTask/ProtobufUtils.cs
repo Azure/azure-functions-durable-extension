@@ -129,6 +129,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                         Input = taskScheduledEvent.Input,
                     };
 
+                    if (taskScheduledEvent.RetryMetadata is { } retryMetadata)
+                    {
+                        payload.TaskScheduled.RetryMetadata = new P.RetryMetadata
+                        {
+                            AttemptNumber = retryMetadata.AttemptNumber,
+                            MaxAttempts = retryMetadata.MaxAttempts,
+                            RetryGroupId = retryMetadata.RetryGroupId,
+                        };
+                    }
+
                     if (taskScheduledEvent.Tags != null)
                     {
                         foreach (KeyValuePair<string, string> tag in taskScheduledEvent.Tags)

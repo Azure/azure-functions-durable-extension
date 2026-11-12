@@ -10,12 +10,15 @@ using Microsoft.Azure.WebJobs.Host.Bindings;
 using Microsoft.Azure.WebJobs.Host.Listeners;
 using Microsoft.Azure.WebJobs.Host.Protocols;
 using Microsoft.Azure.WebJobs.Host.Triggers;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal class ActivityTriggerAttributeBindingProvider : ITriggerBindingProvider
     {
+        internal const string RetryMetadataBindingPropertyName = "durableActivityRetryMetadata";
+
         private readonly DurableTaskExtension durableTaskConfig;
         private readonly string connectionName;
 
@@ -102,6 +105,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     // This binding supports return values of any type
                     { "$return", typeof(object).MakeByRefType() },
                     { InstanceIdBindingPropertyName, typeof(string) },
+                    { RetryMetadataBindingPropertyName, typeof(string) },
                 };
 
                 // allow binding to the parameter name
@@ -160,6 +164,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 bindingData[InstanceIdBindingPropertyName] = ((IDurableActivityContext)activityContext).InstanceId;
                 bindingData[this.parameterInfo.Name!] = convertedValue;
                 bindingData[DataBindingPropertyName] = activityContext.GetInputAsJson();
+                if (activityContext.RetryMetadata is { } retryMetadata)
+                {
+                    // This is a protocol DTO, independent of customer input serializer settings.
+                    bindingData[RetryMetadataBindingPropertyName] = new JObject
+                    {
+                        ["AttemptNumber"] = retryMetadata.AttemptNumber,
+                        ["MaxAttempts"] = retryMetadata.MaxAttempts,
+                        ["RetryGroupId"] = retryMetadata.RetryGroupId,
+                    }.ToString(Formatting.None);
+                }
 
                 var triggerData = new TriggerData(inputValueProvider, bindingData);
                 triggerData.ReturnValueProvider = new ActivityTriggerReturnValueBinder(

@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using DurableTask.Core;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -25,12 +26,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private JToken parsedJsonInput;
         private string serializedOutput;
 
-        internal DurableActivityContext(DurableTaskExtension config, string instanceId, string serializedInput, string functionName)
+        internal DurableActivityContext(DurableTaskExtension config, string instanceId, string serializedInput, string functionName, RetryMetadata retryMetadata = null)
         {
+            if (retryMetadata != null &&
+                (retryMetadata.AttemptNumber <= 0 ||
+                 retryMetadata.MaxAttempts <= 0 ||
+                 retryMetadata.AttemptNumber > retryMetadata.MaxAttempts ||
+                 string.IsNullOrWhiteSpace(retryMetadata.RetryGroupId)))
+            {
+                throw new InvalidOperationException("Invalid durable activity retry metadata: expected positive attempt and maximum counts, attempt <= maximum, and a nonempty retry group ID.");
+            }
+
             this.messageDataConverter = config.MessageDataConverter;
             this.instanceId = instanceId;
             this.serializedInput = serializedInput;
             this.functionName = functionName;
+            this.RetryMetadata = retryMetadata;
 
             // Activity inputs are received differently depending on whether the DTFx orchestration context is the one scheduling the activity.
             this.inputsAreArrays =
@@ -46,6 +57,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         /// <inheritdoc />
         string IDurableActivityContext.Name => this.functionName;
+
+        internal RetryMetadata RetryMetadata { get; }
 
         /// <summary>
         /// Returns the input of the task activity in its raw JSON string value.
