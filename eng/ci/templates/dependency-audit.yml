@@ -1,0 +1,56 @@
+jobs:
+  - job: DependencyAudit
+    displayName: Audit NuGet dependencies through CFS
+    timeoutInMinutes: 30
+    variables:
+      NUGET_PACKAGES: $(Agent.TempDirectory)/dependency-audit-packages
+      auditRestoreArguments: >-
+        --force
+        -p:NuGetAudit=true
+        -p:NuGetAuditMode=all
+        -p:NuGetAuditLevel=low
+        -p:WarningsAsErrors=NU1900%3BNU1901%3BNU1902%3BNU1903%3BNU1904%3BNU1905
+    steps:
+      - checkout: self
+        clean: true
+
+      - task: UseDotNet@2
+        displayName: Install .NET SDK from global.json
+        inputs:
+          packageType: sdk
+          useGlobalJson: true
+
+      - task: NuGetAuthenticate@1
+        displayName: Authenticate NuGet with CFS
+
+      - task: DotNetCoreCLI@2
+        displayName: Audit source and test dependencies
+        inputs:
+          command: restore
+          # These two applications are excluded from the solution's default build.
+          projects: |
+            WebJobs.Extensions.DurableTask.sln
+            test/SmokeTests/OOProcSmokeTests/DotNetIsolated/DotNetIsolated.csproj
+            test/e2e/Apps/BasicDotNetIsolated/app.csproj
+          feedsToUse: config
+          includeNuGetOrg: false
+          nugetConfigPath: eng/ci/NuGet.Audit.config
+          restoreArguments: $(auditRestoreArguments)
+
+      - pwsh: |
+          dotnet build ./src/WebJobs.Extensions.DurableTask/WebJobs.Extensions.DurableTask.csproj --configuration Release --no-restore
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          dotnet build ./test/e2e/Apps/BasicDotNetIsolated/app.csproj --configuration Release --framework net8.0 --no-restore `
+            "-p:RestoreConfigFile=$(Build.SourcesDirectory)/test/e2e/Apps/BasicDotNetIsolated/nuget.config"
+          exit $LASTEXITCODE
+        displayName: Build source package and generated host-extension consumer
+
+      - task: DotNetCoreCLI@2
+        displayName: Audit generated host-extension dependencies
+        inputs:
+          command: restore
+          projects: test/e2e/Apps/BasicDotNetIsolated/obj/Release/net8.0/WorkerExtensions/WorkerExtensions.csproj
+          feedsToUse: config
+          includeNuGetOrg: false
+          nugetConfigPath: eng/ci/NuGet.Audit.config
+          restoreArguments: $(auditRestoreArguments)

@@ -66,6 +66,7 @@
     <PackageReference Include="Microsoft.Extensions.Azure" />
     <PackageReference Include="Microsoft.Extensions.Http" Condition="'$(TargetFramework)' != 'net10.0'" VersionOverride="8.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.WebApiCompatShim" />
+    <PackageReference Include="Microsoft.AspNetCore.WebUtilities" />
     <PackageReference Include="Microsoft.Azure.DurableTask.ApplicationInsights" />
     <!-- Build-time dependencies -->
     <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
@@ -79,6 +80,13 @@
     <PackageReference Include="Microsoft.Extensions.Options" VersionOverride="8.0.2" />
     <PackageReference Include="System.Text.Json" VersionOverride="8.0.6" />
   </ItemGroup>
+
+  <!-- Keep the security floor in the package for consumers without a direct ASP.NET Core framework reference. -->
+  <Target Name="PreserveWebUtilitiesDependency" AfterTargets="AddPrunePackageReferences">
+    <ItemGroup>
+      <PrunePackageReference Remove="Microsoft.AspNetCore.WebUtilities" />
+    </ItemGroup>
+  </Target>
 
   <ItemGroup>
     <None Include="..\..\functions.png" Pack="true" PackagePath="\" />
