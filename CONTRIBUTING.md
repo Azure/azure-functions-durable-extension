@@ -68,30 +68,6 @@ Durable Functions are distributed as a NuGet package. So in order to test your c
 8. Run the function and debug.
 
 
-## Dependency vulnerability checks
-
-Public PR/weekly builds and official CI/nightly builds run the `DependencyAudit` job.
-It audits direct and transitive NuGet dependencies, including a generated .NET isolated
-`WorkerExtensions.csproj` that consumes the source-built WebJobs package.
-
-The job uses `eng/ci/NuGet.Audit.config` for both packages and advisory data. Both
-sources point to CFS; there is no public advisory fallback. The authenticated feed
-must expose NuGet vulnerability information. Missing advisory support (NU1905),
-advisory retrieval failures (NU1900), and reported vulnerabilities (NU1901-NU1904)
-fail the job. Verify the complete advisory retrieval path on network-restricted
-agents before relying on the check; configuring an internal service index alone
-does not establish where its advertised resources are hosted.
-
-To run the same restore check with access to the configured feed:
-
-```powershell
-dotnet restore .\WebJobs.Extensions.DurableTask.sln --configfile .\eng\ci\NuGet.Audit.config --force -p:NuGetAudit=true -p:NuGetAuditMode=all -p:NuGetAuditLevel=low '-p:WarningsAsErrors=NU1900%3BNU1901%3BNU1902%3BNU1903%3BNU1904%3BNU1905'
-```
-
-Ordinary development restores continue to use the root `nuget.config`. Newer
-package versions are reviewed separately; being outdated does not itself fail
-the vulnerability check.
-
 ## Getting help
 
  - Leave comments on your PR and @ people for attention
