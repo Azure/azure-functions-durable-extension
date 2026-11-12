@@ -81,6 +81,13 @@
     <PackageReference Include="System.Text.Json" VersionOverride="8.0.6" />
   </ItemGroup>
 
+  <!-- Preserve the patched minimum for package consumers; the Functions host still supplies its own assembly. -->
+  <Target Name="PreserveWebUtilitiesDependency" AfterTargets="AddPrunePackageReferences">
+    <ItemGroup>
+      <PrunePackageReference Remove="Microsoft.AspNetCore.WebUtilities" />
+    </ItemGroup>
+  </Target>
+
   <ItemGroup>
     <None Include="..\..\functions.png" Pack="true" PackagePath="\" />
     <None Include="..\..\README.md" Pack="true" PackagePath="\" />
