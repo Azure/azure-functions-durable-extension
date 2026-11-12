@@ -58,7 +58,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public override async Task<string> RunAsync(TaskContext context, string rawInput)
         {
             string instanceId = context.OrchestrationInstance.InstanceId;
-            var inputContext = new DurableActivityContext(this.config, instanceId, rawInput, this.activityName);
+            var inputContext = new DurableActivityContext(this.config, instanceId, rawInput, this.activityName, context.RetryMetadata);
 
             // TODO: Wire up the parent ID to improve dashboard logging.
             Guid? parentId = null;

@@ -64,6 +64,53 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Theory]
         [MemberData(nameof(HistoryProjectionOptions))]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public async Task GetStatusAsync_PreservesRetryMetadataForCompletedFailedAndPendingAttempts(bool showInput, bool showHistoryOutput)
+        {
+            JArray source = JArray.Parse(CreateActivityHistory());
+            var completedMetadata = JObject.FromObject(new RetryMetadata(1, 3, "completed-group"));
+            var failedMetadata = JObject.FromObject(new RetryMetadata(1, 3, "retry-group"));
+            var pendingMetadata = JObject.FromObject(new RetryMetadata(2, 3, "retry-group"));
+            foreach (JObject item in source)
+            {
+                switch ((int)item["EventId"])
+                {
+                    case 10:
+                        item["RetryMetadata"] = completedMetadata;
+                        break;
+                    case 20:
+                        item["RetryMetadata"] = failedMetadata;
+                        break;
+                    case 30:
+                        item["RetryMetadata"] = pendingMetadata;
+                        break;
+                }
+            }
+
+            JArray actual = await GetProjectedHistoryAsync(source.ToString(Formatting.None), showInput, showHistoryOutput);
+
+            JArray expected = CreateExpectedActivityHistory(showInput, showHistoryOutput);
+            foreach (JObject item in expected)
+            {
+                switch ((string)item["EventType"])
+                {
+                    case "TaskCompleted":
+                        item["RetryMetadata"] = completedMetadata;
+                        break;
+                    case "TaskFailed":
+                        item["RetryMetadata"] = failedMetadata;
+                        break;
+                    case "TaskScheduled":
+                        item["RetryMetadata"] = pendingMetadata;
+                        break;
+                }
+            }
+
+            AssertJsonEqual(expected, actual);
+        }
+
+        [Theory]
+        [MemberData(nameof(HistoryProjectionOptions))]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public async Task GetStatusAsync_ProjectsSubOrchestrationHistoryWithInstanceIds(bool showInput, bool showHistoryOutput)
         {
             JArray actual = await GetProjectedHistoryAsync(CreateSubOrchestrationHistory(), showInput, showHistoryOutput);

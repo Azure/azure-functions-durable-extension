@@ -11,6 +11,8 @@ using DurableTask.Core.Query;
 using Google.Protobuf;
 using Google.Protobuf.Reflection;
 using Google.Protobuf.WellKnownTypes;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Xunit;
 using CoreOrchestrationStatus = global::DurableTask.Core.OrchestrationStatus;
 using CorePurgeResult = global::DurableTask.Core.PurgeResult;
@@ -23,6 +25,114 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
     /// </summary>
     public class ProtobufUtilsTests
     {
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void ToHistoryEventProto_PreservesOptionalScheduledRetryMetadata(bool hasRetryMetadata)
+        {
+            var historyEvent = new TaskScheduledEvent(7, "Activity", "")
+            {
+                Input = "\"input\"",
+                RetryMetadata = hasRetryMetadata ? new RetryMetadata(2, int.MaxValue, "retry-group") : null,
+            };
+
+            P.HistoryEvent converted = ProtobufUtils.ToHistoryEventProto(historyEvent);
+            P.HistoryEvent wire = P.HistoryEvent.Parser.ParseFrom(converted.ToByteArray());
+
+            Assert.Equal(7, wire.EventId);
+            Assert.Equal("Activity", wire.TaskScheduled.Name);
+            Assert.Equal("\"input\"", wire.TaskScheduled.Input);
+            if (hasRetryMetadata)
+            {
+                Assert.Equal(2, wire.TaskScheduled.RetryMetadata.AttemptNumber);
+                Assert.Equal(int.MaxValue, wire.TaskScheduled.RetryMetadata.MaxAttempts);
+                Assert.Equal("retry-group", wire.TaskScheduled.RetryMetadata.RetryGroupId);
+            }
+            else
+            {
+                Assert.Null(wire.TaskScheduled.RetryMetadata);
+            }
+        }
+
+        [Fact]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void RetryMetadata_UsesCanonicalOptionalMessageFields()
+        {
+            FieldDescriptor scheduled = P.TaskScheduledEvent.Descriptor.FindFieldByNumber(6);
+            FieldDescriptor activity = P.ActivityRequest.Descriptor.FindFieldByNumber(8);
+
+            Assert.Equal("retryMetadata", scheduled.Name);
+            Assert.Equal("retryMetadata", activity.Name);
+            Assert.Same(P.RetryMetadata.Descriptor, scheduled.MessageType);
+            Assert.Same(P.RetryMetadata.Descriptor, activity.MessageType);
+            Assert.Equal(FieldType.Int32, P.RetryMetadata.Descriptor.FindFieldByNumber(1).FieldType);
+            Assert.Equal(FieldType.Int32, P.RetryMetadata.Descriptor.FindFieldByNumber(2).FieldType);
+            Assert.Equal(FieldType.String, P.RetryMetadata.Descriptor.FindFieldByNumber(3).FieldType);
+            Assert.Null(P.TaskScheduledEvent.Parser.ParseFrom(new P.TaskScheduledEvent().ToByteArray()).RetryMetadata);
+            Assert.NotNull(P.TaskScheduledEvent.Parser.ParseFrom(
+                new P.TaskScheduledEvent { RetryMetadata = new P.RetryMetadata() }.ToByteArray()).RetryMetadata);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void HistoryJsonConverter_PreservesRetryMetadataForGrpcHistoryStreaming(bool hasRetryMetadata)
+        {
+            string metadata = hasRetryMetadata
+                ? ",\"RetryMetadata\":{\"AttemptNumber\":2,\"MaxAttempts\":3,\"RetryGroupId\":\"retry-group\"}"
+                : "";
+            string json = $"{{\"EventType\":{(int)EventType.TaskScheduled},\"EventId\":7,\"Name\":\"Activity\"{metadata}}}";
+
+            var history = Assert.IsType<TaskScheduledEvent>(JsonConvert.DeserializeObject<HistoryEvent>(
+                json, new HistoryEventJsonConverter()));
+            P.HistoryEvent wire = P.HistoryEvent.Parser.ParseFrom(ProtobufUtils.ToHistoryEventProto(history).ToByteArray());
+
+            if (hasRetryMetadata)
+            {
+                Assert.Equal(2, wire.TaskScheduled.RetryMetadata.AttemptNumber);
+                Assert.Equal(3, wire.TaskScheduled.RetryMetadata.MaxAttempts);
+                Assert.Equal("retry-group", wire.TaskScheduled.RetryMetadata.RetryGroupId);
+            }
+            else
+            {
+                Assert.Null(wire.TaskScheduled.RetryMetadata);
+            }
+        }
+
+        [Theory]
+        [InlineData(0L, 3L, "retry-group", typeof(ArgumentOutOfRangeException))]
+        [InlineData(-1L, 3L, "retry-group", typeof(ArgumentOutOfRangeException))]
+        [InlineData(1L, 0L, "retry-group", typeof(ArgumentOutOfRangeException))]
+        [InlineData(1L, -1L, "retry-group", typeof(ArgumentOutOfRangeException))]
+        [InlineData(4L, 3L, "retry-group", typeof(ArgumentOutOfRangeException))]
+        [InlineData(2147483648L, 2147483648L, "retry-group", typeof(JsonException))]
+        [InlineData(1L, 2147483648L, "retry-group", typeof(JsonException))]
+        [InlineData(1L, 3L, null, typeof(ArgumentException))]
+        [InlineData(1L, 3L, "", typeof(ArgumentException))]
+        [InlineData(1L, 3L, " \t", typeof(ArgumentException))]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void HistoryJsonConverter_RejectsInvalidPresentRetryMetadata(long attempt, long maxAttempts, string retryGroupId, System.Type expectedExceptionType)
+        {
+            var history = new JObject
+            {
+                ["EventType"] = (int)EventType.TaskScheduled,
+                ["EventId"] = 7,
+                ["Name"] = "Activity",
+                ["RetryMetadata"] = new JObject
+                {
+                    ["AttemptNumber"] = attempt,
+                    ["MaxAttempts"] = maxAttempts,
+                    ["RetryGroupId"] = retryGroupId,
+                },
+            };
+
+            Exception error = Record.Exception(() => JsonConvert.DeserializeObject<HistoryEvent>(
+                history.ToString(Formatting.None), new HistoryEventJsonConverter()));
+            Assert.IsAssignableFrom(expectedExceptionType, error);
+        }
+
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void StartNewOrchestrationAction_Tags_UsesCanonicalMapField()

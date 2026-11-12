@@ -18,6 +18,18 @@ message OrchestrationInstance {
     google.protobuf.StringValue executionId = 2;
 }
 
+// Retry information calculated by the orchestration framework for one logical
+// activity call with a retry policy. Services persist and forward it unchanged.
+// Consumers must reject invalid values rather than substitute defaults.
+message RetryMetadata {
+    // One-based attempt number. Must be positive and no greater than maxAttempts.
+    int32 attemptNumber = 1;
+    // Maximum number of attempts, including the initial attempt. Must be positive.
+    int32 maxAttempts = 2;
+    // Nonempty identifier for the logical call, stable across attempts and replay.
+    string retryGroupId = 3;
+}
+
 message ActivityRequest {
     string name = 1;
     google.protobuf.StringValue version = 2;
@@ -26,6 +38,8 @@ message ActivityRequest {
     int32 taskId = 5;
     TraceContext parentTraceContext = 6;
     map<string, string> tags = 7;
+    // Optional. Forwarded unchanged from TaskScheduledEvent; omitted when unavailable.
+    RetryMetadata retryMetadata = 8;
 }
 
 message ActivityResponse {
@@ -98,6 +112,8 @@ message TaskScheduledEvent {
     google.protobuf.StringValue input = 3;
     TraceContext parentTraceContext = 4;
     map<string, string> tags = 5;
+    // Optional. Omitted for calls without a retry policy and in older history.
+    RetryMetadata retryMetadata = 6;
 }
 
 message TaskCompletedEvent {

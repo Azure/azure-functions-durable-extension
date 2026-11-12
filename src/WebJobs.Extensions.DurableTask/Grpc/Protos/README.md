@@ -22,3 +22,10 @@ By default, the latest versions of the protobufs are downloaded from the `main` 
 ```
 
 The `versions.txt` file in this directory contains the list of protobuf files and their commit hashes that were last downloaded. It is updated automatically by the `refresh-protos.ps1` script.
+
+The local activity-retry implementation additionally carries the uncommitted canonical
+`RetryMetadata` message, `TaskScheduledEvent.retryMetadata` (field 6), and
+`ActivityRequest.retryMetadata` (field 8) from the `vabachu/activity-retry-protocol`
+branch of durabletask-protobuf. `versions.txt` still identifies the imported base;
+refresh from the canonical change once it has an upstream commit. Do not refresh
+from an older published snapshot when validating these local changes.
