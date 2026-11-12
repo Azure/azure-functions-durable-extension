@@ -81,13 +81,6 @@
     <PackageReference Include="System.Text.Json" VersionOverride="8.0.6" />
   </ItemGroup>
 
-  <!-- Keep the security floor in the package for consumers without a direct ASP.NET Core framework reference. -->
-  <Target Name="PreserveWebUtilitiesDependency" AfterTargets="AddPrunePackageReferences">
-    <ItemGroup>
-      <PrunePackageReference Remove="Microsoft.AspNetCore.WebUtilities" />
-    </ItemGroup>
-  </Target>
-
   <ItemGroup>
     <None Include="..\..\functions.png" Pack="true" PackagePath="\" />
     <None Include="..\..\README.md" Pack="true" PackagePath="\" />

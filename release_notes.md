@@ -75,7 +75,7 @@ These minor releases incorporate the dependency updates from #3597. FunctionsSca
 ### Dependency Updates
 
 - Remove LegacyLocalGrpcListener and the dependency on Grpc.Core (https://github.com/Azure/azure-functions-durable-extension/pull/3236)
-- Require `Microsoft.AspNetCore.WebUtilities` 2.3.14 or later in WebJobs extension consumer graphs to address CVE-2026-118750, retaining the dependency floor when framework package pruning is enabled.
+- Reference `Microsoft.AspNetCore.WebUtilities` 2.3.14 for CVE-2026-118750 while retaining normal SDK package pruning. The Functions host already supplies a newer, patched version.
 - Removed the production dependency on `Microsoft.Azure.WebJobs.Logging.ApplicationInsights` to reduce the extension's transitive dependencies while preserving Microsoft Entra authentication for distributed tracing.
 - Updated the Azure Managed SDK and Functions extensions to 1.12.0, including the Functions scale extension and E2E apps.
 - Updated `Grpc.Net.Client` to 2.84.0 to meet the Durable Task SDK 1.28.0 dependency requirement. `Microsoft.Bcl.AsyncInterfaces` remains at 10.0.9 for Azure Managed SDK compatibility.
