@@ -1,6 +1,6 @@
 jobs:
   - job: DependencyAudit
-    displayName: Audit NuGet dependencies through CFS
+    displayName: Audit NuGet dependencies
     timeoutInMinutes: 30
     variables:
       NUGET_PACKAGES: $(Agent.TempDirectory)/dependency-audit-packages
