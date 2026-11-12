@@ -70,6 +70,7 @@ extends:
           image: 1es-windows-2022
           os: windows
         jobs:
+          - template: /eng/ci/templates/dependency-audit.yml@self
           - template: /eng/ci/templates/public/windows-validation.yml@self
 
       - stage: LinuxValidation
