@@ -79,7 +79,7 @@ public class FunctionAppFixture : IAsyncLifetime
         return this.functionAppProcess.InitializeAsync();
     }
 
-    public Task DisposeAsync()
+    public virtual Task DisposeAsync()
     {
         return this.functionAppProcess.DisposeAsync();
     }

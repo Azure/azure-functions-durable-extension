@@ -1134,6 +1134,59 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             Assert.False(JObject.Parse(payload).ContainsKey("useForwardedHost"));
         }
 
+        [Theory]
+        [InlineData(true, null)]
+        [InlineData(false, null)]
+        [InlineData(true, true)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(false, false)]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        public void TestBindingHelper_ManagementKeyOptionKeepsExistingPayloadShape(bool useGrpc, bool? excludeKey)
+        {
+            var options = new DurableTaskOptions
+            {
+                HubName = "ManagementKeyOption",
+                WebhookUriProviderOverride = () => new Uri(
+                    "https://durable.test/runtime/webhooks/durabletask?code=synthetic-key&site=example"),
+            };
+            Assert.False(options.HttpSettings.ExcludeManagementKeyFromUrls);
+            if (excludeKey.HasValue)
+            {
+                options.HttpSettings.ExcludeManagementKeyFromUrls = excludeKey.Value;
+            }
+
+            using DurableTaskExtension extension = this.CreateExtension(
+                options, useGrpc ? WorkerRuntimeType.DotNetIsolated : WorkerRuntimeType.DotNet);
+            if (useGrpc)
+            {
+                extension.EnsureTaskHubWorker();
+            }
+
+            var client = new Mock<IDurableOrchestrationClient>();
+            client.Setup(c => c.TaskHubName).Returns(options.HubName);
+            JObject binding = JObject.Parse(new BindingHelper(extension).DurableOrchestrationClientToString(
+                client.Object, new DurableClientAttribute()));
+
+            Assert.Equal(
+                excludeKey == true ? "site=example" : "code=synthetic-key&site=example",
+                (string)binding["requiredQueryStringParameters"]);
+            Assert.Null(binding["requiredHeaders"]);
+            if (!useGrpc)
+            {
+                foreach (string field in new[] { "creationUrls", "managementUrls" })
+                {
+                    JObject urls = Assert.IsType<JObject>(binding[field]);
+                    Assert.All(urls.Properties(), property => Assert.Equal(JTokenType.String, property.Value.Type));
+                    Assert.Null(urls["requiredHeaders"]);
+                    foreach (JProperty property in urls.Properties().Where(p => p.Name.EndsWith("Uri", StringComparison.Ordinal)))
+                    {
+                        Assert.Equal(excludeKey != true, ((string)property.Value).Contains("code=synthetic-key"));
+                    }
+                }
+            }
+        }
+
         /// <summary>
         /// Verifies that the native worker runtimes (the Go worker reports either "native" or,
         /// defensively, "golang") select the gRPC protocol (MiddlewarePassthrough) at extension

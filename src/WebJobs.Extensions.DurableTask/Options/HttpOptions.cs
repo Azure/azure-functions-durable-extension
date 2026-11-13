@@ -22,5 +22,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// Gets or sets a value indicating whether to use forwarded headers for URL construction.
         /// </summary>
         public bool UseForwardedHost { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether to exclude the system key from generated HTTP
+        /// management and creation URLs. Defaults to false for compatibility. When true, callers must
+        /// authenticate separately, for example using the x-functions-key request header.
+        /// </summary>
+        /// <remarks>
+        /// Built-in <c>CallHttpAsync</c> automatic 202 polling does not forward <c>x-functions-key</c>.
+        /// When this option is enabled, use explicit authenticated polling for key-free management URLs instead.
+        /// This option does not change request authentication or redact incoming requests or existing logs.
+        /// Keys supplied in query strings are still accepted and may be recorded in HTTP logs.
+        /// </remarks>
+        public bool ExcludeManagementKeyFromUrls { get; set; } = false;
     }
 }
