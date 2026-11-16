@@ -148,6 +148,9 @@ followed users' chirps, sorted oldest first, and a user with no follows has an e
 
 ## Existing in-process data
 
+This sample was migrated from .NET in-process to .NET isolated. If you used the previous sample,
+follow the guidance in this section before running the updated sample.
+
 The isolated sample deliberately uses the new `ChirperIsolated` task hub instead of `SampleHubVS`.
 It starts with empty state; changing the hub name does not migrate old entities or orchestration history.
 Entity state remains an object containing `Chirps` or `FollowedUsers`, rather than a bare list.
