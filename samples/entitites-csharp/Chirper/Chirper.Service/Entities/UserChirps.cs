@@ -3,25 +3,19 @@
 
 using System;
 using System.Collections.Generic;
-using System.Net.Http;
-using System.Runtime.Serialization;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
-using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.DurableTask.Entities;
 
 namespace Chirper.Service
 {
     // The UserChirps entity stores all the chirps by ONE user.
     // The entity key is the userId.
 
-    [JsonObject(MemberSerialization = MemberSerialization.OptIn)]
-    public class UserChirps : IUserChirps
+    public class UserChirps
     {
-        [JsonProperty]
+        [JsonPropertyName(nameof(Chirps))]
         public List<Chirp> Chirps { get; set; } = new List<Chirp>();
 
         public void Add(Chirp chirp)
@@ -34,16 +28,16 @@ namespace Chirper.Service
             Chirps.RemoveAll(chirp => chirp.Timestamp == timestamp);
         }
 
-        public Task<List<Chirp>> Get()
+        public List<Chirp> Get()
         {
-            return Task.FromResult(Chirps);
+            return Chirps;
         }
 
         // Boilerplate (entry point for the functions runtime)
-        [FunctionName(nameof(UserChirps))]
-        public static Task HandleEntityOperation([EntityTrigger] IDurableEntityContext context)
+        [Function(nameof(UserChirps))]
+        public static Task HandleEntityOperation([EntityTrigger] TaskEntityDispatcher dispatcher)
         {
-            return context.DispatchAsync<UserChirps>();
+            return dispatcher.DispatchAsync<UserChirps>();
         }
     }
 }
