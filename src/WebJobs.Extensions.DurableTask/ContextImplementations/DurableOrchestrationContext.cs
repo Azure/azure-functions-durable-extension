@@ -347,36 +347,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 ? new Uri(durableHttpRequest.Uri, locationUri)
                 : new Uri(locationUri);
 
-            // When following a 202 Location redirect to a different origin, do not forward
-            // credentials (Authorization/Cookie headers or token source). This matches the same-origin
-            // policy applied by the Fetch Standard (HTTP-redirect fetch, step 13) and is more
-            // permissive than .NET's HttpClient, which clears Authorization on every redirect
-            // (see SocketsHttpHandler's RedirectHandler in dotnet/runtime). Same-origin
-            // forwarding is intentional here because the async HTTP polling pattern legitimately
-            // needs the caller's token to follow the Location header back to the same service.
-            // The check prevents an attacker-controlled first-hop server from harvesting AAD
-            // bearer tokens (e.g., those minted by ManagedIdentityTokenSource) by redirecting
-            // the poll to a host they control.
             bool sameOrigin = IsSameOrigin(durableHttpRequest.Uri, parsedLocationUri);
+            IDictionary<string, string[]> pollingHeaders = durableHttpRequest.EnableCrossOriginHeaderFiltering
+                ? durableHttpRequest.CrossOriginPollingHeaders : null;
 
             ITokenSource forwardedTokenSource = sameOrigin ? durableHttpRequest.TokenSource : null;
 
             DurableHttpRequest newDurableHttpRequest = new DurableHttpRequest(
                 method: HttpMethod.Get,
                 uri: parsedLocationUri,
-                headers: durableHttpRequest.Headers,
+                headers: sameOrigin || !durableHttpRequest.EnableCrossOriginHeaderFiltering
+                    ? durableHttpRequest.Headers : Microsoft.Azure.DurableTask.PollingHeaderPolicy.Select(
+                    durableHttpRequest.Headers, pollingHeaders, parsedLocationUri),
                 tokenSource: forwardedTokenSource,
-                timeout: durableHttpRequest.Timeout);
+                timeout: durableHttpRequest.Timeout)
+            {
+                DisablePollingRedirects = durableHttpRequest.EnableCrossOriginHeaderFiltering,
+            };
 
             // Do not copy over the x-functions-key header, as in many cases, the
             // functions key used for the initial request will be a Function-level key
             // and the status endpoint requires a master key.
             newDurableHttpRequest.Headers.Remove("x-functions-key");
-
             if (!sameOrigin)
             {
-                // Strip Authorization and Cookie headers when redirecting cross-origin so credentials
-                // a caller set directly on the request (rather than via TokenSource) are not leaked.
                 newDurableHttpRequest.Headers.Remove("Authorization");
                 newDurableHttpRequest.Headers.Remove("Cookie");
             }
@@ -393,7 +387,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             if (!original.IsAbsoluteUri || !redirect.IsAbsoluteUri)
             {
-                // Treat any non-absolute URI as cross-origin to err on the side of stripping credentials.
                 return false;
             }
 

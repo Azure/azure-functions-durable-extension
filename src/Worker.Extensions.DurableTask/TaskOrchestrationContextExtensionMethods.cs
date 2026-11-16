@@ -209,24 +209,16 @@ public static class TaskOrchestrationContextExtensionMethods
             ? new Uri(durableHttpRequest.Uri, locationUri)
             : new Uri(locationUri);
 
-        // When following a 202 Location redirect to a different origin, do not forward
-        // credentials (Authorization/Cookie headers). This matches the same-origin policy
-        // applied by the Fetch Standard (HTTP-redirect fetch, step 13) and is more
-        // permissive than .NET's HttpClient, which clears Authorization on every redirect
-        // (see SocketsHttpHandler's RedirectHandler in dotnet/runtime). Same-origin
-        // forwarding is intentional here because the async HTTP polling pattern
-        // legitimately needs the caller's headers to follow the Location header back
-        // to the same service. The check prevents an attacker-controlled first-hop
-        // server from harvesting credentials by redirecting the poll to a host they
-        // control.
         bool sameOrigin = IsSameOrigin(durableHttpRequest.Uri!, parsedLocationUri);
+        IDictionary<string, string[]>? pollingHeaders = durableHttpRequest.EnableCrossOriginHeaderFiltering
+            ? durableHttpRequest.CrossOriginPollingHeaders : null;
 
-        // Make a defensive copy of the headers dictionary so the mutations below do not
-        // leak back to the original request (the poll loop reuses `request` across
-        // iterations as the basis for each new poll).
-        IDictionary<string, StringValues>? headersCopy = durableHttpRequest.Headers is null
-            ? null
-            : new Dictionary<string, StringValues>(durableHttpRequest.Headers, StringComparer.OrdinalIgnoreCase);
+        IDictionary<string, StringValues>? headersCopy = !sameOrigin && durableHttpRequest.EnableCrossOriginHeaderFiltering
+            ? Microsoft.Azure.DurableTask.PollingHeaderPolicy.Select(
+                durableHttpRequest.Headers, pollingHeaders, parsedLocationUri)
+            : durableHttpRequest.Headers is null
+                ? null
+                : new Dictionary<string, StringValues>(durableHttpRequest.Headers, StringComparer.OrdinalIgnoreCase);
 
         if (headersCopy is not null)
         {
@@ -234,11 +226,8 @@ public static class TaskOrchestrationContextExtensionMethods
             // functions key used for the initial request will be a Function-level key
             // and the status endpoint requires a master key.
             headersCopy.Remove("x-functions-key");
-
             if (!sameOrigin)
             {
-                // Strip Authorization and Cookie headers when redirecting cross-origin so
-                // credentials a caller set directly on the request are not leaked.
                 headersCopy.Remove("Authorization");
                 headersCopy.Remove("Cookie");
             }
@@ -248,7 +237,10 @@ public static class TaskOrchestrationContextExtensionMethods
             method: HttpMethod.Get,
             uri: parsedLocationUri,
             headers: headersCopy,
-            asynchronousPatternEnabled: durableHttpRequest.AsynchronousPatternEnabled);
+            asynchronousPatternEnabled: durableHttpRequest.AsynchronousPatternEnabled)
+        {
+            DisablePollingRedirects = durableHttpRequest.EnableCrossOriginHeaderFiltering,
+        };
 
         return newDurableHttpRequest;
     }
@@ -262,7 +254,6 @@ public static class TaskOrchestrationContextExtensionMethods
 
         if (!original.IsAbsoluteUri || !redirect.IsAbsoluteUri)
         {
-            // Treat any non-absolute URI as cross-origin to err on the side of stripping credentials.
             return false;
         }
 

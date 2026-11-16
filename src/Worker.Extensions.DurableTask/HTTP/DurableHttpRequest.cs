@@ -14,6 +14,8 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.DurableTask.Http;
 /// </summary>
 public class DurableHttpRequest
 {
+    private IDictionary<string, string[]>? crossOriginPollingHeaders;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="DurableHttpRequest"/> class.
     /// </summary>
@@ -88,4 +90,45 @@ public class DurableHttpRequest
     /// </summary>
     [JsonPropertyName("timeout")]
     public TimeSpan? Timeout { get; set; }
+
+    /// <summary>
+    /// Gets or sets selected polling header names by exact HTTPS origin.
+    /// </summary>
+    /// <remarks>
+    /// Used only when EnableCrossOriginHeaderFiltering is enabled.
+    /// Assign the complete configuration. Both accessors copy the dictionary and its lists.
+    /// </remarks>
+    /// <exception cref="ArgumentException">The configuration contains an invalid origin or header list.</exception>
+    [JsonPropertyName("crossOriginPollingHeaders")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IDictionary<string, string[]>? CrossOriginPollingHeaders
+    {
+        get => Microsoft.Azure.DurableTask.PollingHeaderPolicy.Copy(this.crossOriginPollingHeaders);
+        set => this.crossOriginPollingHeaders = Microsoft.Azure.DurableTask.PollingHeaderPolicy.Copy(value);
+    }
+
+    /// <summary>
+    /// Gets or sets whether to restrict cross-origin polling headers. Defaults to false.
+    /// </summary>
+    /// <remarks>
+    /// When enabled, uses CrossOriginPollingHeaders for cross-origin polls and disables
+    /// automatic polling redirects. When disabled, preserves existing polling behavior.
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// request.EnableCrossOriginHeaderFiltering = true;
+    /// request.CrossOriginPollingHeaders = new Dictionary&lt;string, string[]&gt;
+    /// {
+    ///     ["https://status.example:443"] = new[] { "X-Request-Id" },
+    /// };
+    /// </code>
+    /// </example>
+    [JsonPropertyName("enableCrossOriginHeaderFiltering")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool EnableCrossOriginHeaderFiltering { get; set; }
+
+    [JsonInclude]
+    [JsonPropertyName("disablePollingRedirects")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    internal bool DisablePollingRedirects { get; set; }
 }

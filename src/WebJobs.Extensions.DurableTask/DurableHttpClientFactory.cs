@@ -14,6 +14,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     {
         private HttpClient durableHttpClient;
 
+        internal HttpClient CreatePollingClient(IDurableHttpMessageHandlerFactory handler)
+        {
+            if (handler is not DurableHttpMessageHandlerFactory defaultFactory)
+            {
+                throw new NotSupportedException("Configured polling is not supported with a custom HTTP message handler factory.");
+            }
+
+            return new DurableHttpClientFactory().GetClient(
+                new DurableHttpMessageHandlerFactory(defaultFactory.CreatePollingMessageHandler()));
+        }
+
         public HttpClient GetClient(IDurableHttpMessageHandlerFactory handler)
         {
             if (this.durableHttpClient == null)

@@ -20,14 +20,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     internal class TaskHttpActivityShim : TaskActivity
     {
         private readonly HttpClient httpClient;
+        private readonly Func<HttpClient> pollingClientFactory;
         private readonly DurableTaskExtension config;
 
         public TaskHttpActivityShim(
             DurableTaskExtension config,
-            HttpClient httpClientFactory)
+            HttpClient httpClientFactory,
+            Func<HttpClient> pollingClientFactory = null)
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
             this.httpClient = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
+            this.pollingClientFactory = pollingClientFactory;
         }
 
         public override string Run(TaskContext context, string input)
@@ -39,6 +42,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         public async override Task<string> RunAsync(TaskContext context, string rawInput)
         {
             DurableHttpRequest durableHttpRequest = this.ReconstructDurableHttpRequest(rawInput);
+            HttpClient client = durableHttpRequest.DisablePollingRedirects
+                ? this.pollingClientFactory?.Invoke()
+                    ?? throw new NotSupportedException("Configured polling requires a polling HTTP client.")
+                : this.httpClient;
             HttpRequestMessage requestMessage = await this.ConvertToHttpRequestMessage(durableHttpRequest);
 
             HttpResponseMessage response;
@@ -49,7 +56,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     cts.CancelAfter(durableHttpRequest.Timeout ?? TimeSpan.FromSeconds(240));
                     try
                     {
-                        response = await this.httpClient.SendAsync(requestMessage, cts.Token);
+                        response = await client.SendAsync(requestMessage, cts.Token);
                     }
                     catch (OperationCanceledException ex) when (durableHttpRequest.Timeout.HasValue && cts.IsCancellationRequested)
                     {

@@ -89,6 +89,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         private TaskHubWorker taskHubWorker;
         private bool isTaskHubWorkerStarted;
         private HttpClient durableHttpClient;
+        private Lazy<HttpClient> pollingHttpClient;
         private EventSourceListener eventSourceListener;
 
         /// <summary>
@@ -152,6 +153,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
             DurableHttpClientFactory durableHttpClientFactory = new DurableHttpClientFactory();
             this.durableHttpClient = durableHttpClientFactory.GetClient(durableHttpMessageHandlerFactory);
+            this.pollingHttpClient = new Lazy<HttpClient>(
+                () => durableHttpClientFactory.CreatePollingClient(durableHttpMessageHandlerFactory));
 
             this.MessageDataConverter = CreateMessageDataConverter(messageSerializerSettingsFactory);
             this.ErrorDataConverter = this.CreateErrorDataConverter(errorSerializerSettingsFactory);
@@ -628,6 +631,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// <inheritdoc />
         public void Dispose()
         {
+            if (this.pollingHttpClient?.IsValueCreated == true)
+            {
+                this.pollingHttpClient.Value.Dispose();
+            }
+
             this.HttpApiHandler?.Dispose();
             this.eventSourceListener?.Dispose();
         }
@@ -731,7 +739,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             if (IsDurableHttpTask(name))
             {
-                return new TaskHttpActivityShim(this, this.durableHttpClient);
+                return new TaskHttpActivityShim(this, this.durableHttpClient, () => this.pollingHttpClient.Value);
             }
 
             FunctionName activityFunction = new FunctionName(name);

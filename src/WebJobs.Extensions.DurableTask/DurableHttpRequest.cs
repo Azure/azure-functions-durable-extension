@@ -16,6 +16,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
     /// </summary>
     public class DurableHttpRequest
     {
+        private IDictionary<string, string[]> crossOriginPollingHeaders;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="DurableHttpRequest"/> class.
         /// </summary>
@@ -100,6 +102,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         /// </summary>
         [JsonProperty("timeout")]
         public TimeSpan? Timeout { get; }
+
+        /// <summary>
+        /// Gets or sets selected polling header names by exact HTTPS origin.
+        /// </summary>
+        /// <remarks>
+        /// Used only when EnableCrossOriginHeaderFiltering is enabled.
+        /// Assign the complete configuration. Both accessors copy the dictionary and its lists.
+        /// </remarks>
+        /// <exception cref="ArgumentException">The configuration contains an invalid origin or header list.</exception>
+        [JsonProperty("crossOriginPollingHeaders", NullValueHandling = NullValueHandling.Ignore, ObjectCreationHandling = ObjectCreationHandling.Replace)]
+        public IDictionary<string, string[]> CrossOriginPollingHeaders
+        {
+            get => Microsoft.Azure.DurableTask.PollingHeaderPolicy.Copy(this.crossOriginPollingHeaders);
+            set => this.crossOriginPollingHeaders = Microsoft.Azure.DurableTask.PollingHeaderPolicy.Copy(value);
+        }
+
+        /// <summary>
+        /// Gets or sets whether to restrict cross-origin polling headers. Defaults to false.
+        /// </summary>
+        /// <remarks>
+        /// When enabled, uses CrossOriginPollingHeaders for cross-origin polls and disables
+        /// automatic polling redirects. When disabled, preserves existing polling behavior.
+        /// </remarks>
+        /// <example>
+        /// <code>
+        /// request.EnableCrossOriginHeaderFiltering = true;
+        /// request.CrossOriginPollingHeaders = new Dictionary&lt;string, string[]&gt;
+        /// {
+        ///     ["https://status.example:443"] = new[] { "X-Request-Id" },
+        /// };
+        /// </code>
+        /// </example>
+        [JsonProperty("enableCrossOriginHeaderFiltering", DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public bool EnableCrossOriginHeaderFiltering { get; set; }
+
+        [JsonProperty("disablePollingRedirects", DefaultValueHandling = DefaultValueHandling.Ignore)]
+        internal bool DisablePollingRedirects { get; set; }
 
         private class HttpMethodConverter : JsonConverter
         {
