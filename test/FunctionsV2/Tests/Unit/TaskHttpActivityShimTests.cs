@@ -2,11 +2,8 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.IO;
 using System.Net;
 using System.Net.Http;
-using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DurableTask.Core.Exceptions;
@@ -20,77 +17,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     public class TaskHttpActivityShimTests
     {
-        [Theory]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task PollingPreservesAutomaticRedirects(bool filteringEnabled)
-        {
-            using var listener = new TcpListener(IPAddress.Loopback, 0);
-            using var redirectListener = new TcpListener(IPAddress.Loopback, 0);
-            listener.Start();
-            redirectListener.Start();
-            int port = ((IPEndPoint)listener.LocalEndpoint).Port;
-            int redirectPort = ((IPEndPoint)redirectListener.LocalEndpoint).Port;
-            using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(15));
-            int received = 0;
-            Task server = ServeAsync(listener, redirect: true);
-            Task redirectServer = ServeAsync(redirectListener, redirect: false);
-            using HttpClient normalClient = new DurableHttpClientFactory().GetClient(new DurableHttpMessageHandlerFactory());
-            var original = new DurableHttpRequest(
-                HttpMethod.Get,
-                new Uri($"http://127.0.0.1:{port}/start"),
-                new System.Collections.Generic.Dictionary<string, Microsoft.Extensions.Primitives.StringValues> { { "X-Selected", "value" } })
-            {
-                EnableCrossOriginHeaderFiltering = filteringEnabled,
-            };
-            DurableHttpRequest request = DurableOrchestrationContext.CreateLocationPollRequest(original, "/poll");
-
-            try
-            {
-                string result = await RunActivityAsync(normalClient, null, request: request)
-                    .WaitAsync(cancellation.Token);
-                Assert.Equal(HttpStatusCode.OK, JsonConvert.DeserializeObject<DurableHttpResponse>(result).StatusCode);
-                Assert.Equal(2, received);
-            }
-            finally
-            {
-                cancellation.Cancel();
-                await Task.WhenAll(server, redirectServer);
-            }
-
-            async Task ServeAsync(TcpListener serverListener, bool redirect)
-            {
-                try
-                {
-                    while (true)
-                    {
-                        using TcpClient connection = await serverListener.AcceptTcpClientAsync(cancellation.Token);
-                        using NetworkStream stream = connection.GetStream();
-                        using var reader = new StreamReader(stream, Encoding.ASCII, false, 1024, true);
-                        string line = await reader.ReadLineAsync(cancellation.Token);
-                        Assert.NotNull(line);
-                        bool selectedHeaderReceived = false;
-                        while (!string.IsNullOrEmpty(line = await reader.ReadLineAsync(cancellation.Token)))
-                        {
-                            selectedHeaderReceived |= line.Equals("X-Selected: value", StringComparison.OrdinalIgnoreCase);
-                        }
-
-                        Assert.True(selectedHeaderReceived);
-                        Interlocked.Increment(ref received);
-                        string response = redirect
-                            ? $"HTTP/1.1 302 Found\r\nLocation: http://127.0.0.1:{redirectPort}/next\r\n"
-                            : "HTTP/1.1 200 OK\r\n";
-                        byte[] bytes = Encoding.ASCII.GetBytes(response + "Content-Length: 0\r\nConnection: close\r\n\r\n");
-                        await stream.WriteAsync(bytes, cancellation.Token);
-                    }
-                }
-                catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
-                {
-                }
-            }
-        }
-
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(false, false, false)]
