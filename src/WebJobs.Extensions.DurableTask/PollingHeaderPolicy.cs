@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
@@ -99,15 +100,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             }
 
             var allowed = new HashSet<string>(names, StringComparer.OrdinalIgnoreCase);
-            foreach (KeyValuePair<string, StringValues> header in headers)
+            var matchingHeaders = headers.Where(header =>
+                allowed.Contains(header.Key)
+                && !header.Key.Equals("Authorization", StringComparison.OrdinalIgnoreCase)
+                && !header.Key.Equals("Cookie", StringComparison.OrdinalIgnoreCase)
+                && !header.Key.Equals("x-functions-key", StringComparison.OrdinalIgnoreCase));
+
+            foreach (KeyValuePair<string, StringValues> header in matchingHeaders)
             {
-                if (allowed.Contains(header.Key)
-                    && !header.Key.Equals("Authorization", StringComparison.OrdinalIgnoreCase)
-                    && !header.Key.Equals("Cookie", StringComparison.OrdinalIgnoreCase)
-                    && !header.Key.Equals("x-functions-key", StringComparison.OrdinalIgnoreCase))
-                {
-                    selected.Add(header.Key, new StringValues((string[])header.Value.ToArray().Clone()));
-                }
+                selected.Add(header.Key, new StringValues((string[])header.Value.ToArray().Clone()));
             }
 
             return selected;
