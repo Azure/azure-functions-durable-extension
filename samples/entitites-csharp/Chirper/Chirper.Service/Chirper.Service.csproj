@@ -1,18 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
     <AzureFunctionsVersion>v4</AzureFunctionsVersion>
+    <OutputType>Exe</OutputType>
   </PropertyGroup>
 
-  <!-- We use central package management. For version details, refer to `samples/Directory.packages.props`. -->
-  <!-- To specify a version in the package reference below, simply add `Version = ""`. -->
   <ItemGroup>
     <None Include="..\README.md" Link="README.md" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask"/>
-    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Http" />
-    <PackageReference Include="Microsoft.NET.Sdk.Functions" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.DurableTask" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" />
   </ItemGroup>
   <ItemGroup>
     <None Update="host.json">
