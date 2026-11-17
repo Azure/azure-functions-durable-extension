@@ -103,8 +103,8 @@ public class DurableHttpRequest
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public IDictionary<string, string[]>? CrossOriginPollingHeaders
     {
-        get => Microsoft.Azure.DurableTask.PollingHeaderPolicy.Copy(this.crossOriginPollingHeaders);
-        set => this.crossOriginPollingHeaders = Microsoft.Azure.DurableTask.PollingHeaderPolicy.Copy(value);
+        get => PollingHeaderPolicy.Copy(this.crossOriginPollingHeaders);
+        set => this.crossOriginPollingHeaders = PollingHeaderPolicy.Copy(value);
     }
 
     /// <summary>

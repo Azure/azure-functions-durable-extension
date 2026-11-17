@@ -357,7 +357,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 method: HttpMethod.Get,
                 uri: parsedLocationUri,
                 headers: sameOrigin || !durableHttpRequest.EnableCrossOriginHeaderFiltering
-                    ? durableHttpRequest.Headers : Microsoft.Azure.DurableTask.PollingHeaderPolicy.Select(
+                    ? durableHttpRequest.Headers : PollingHeaderPolicy.Select(
                     durableHttpRequest.Headers, pollingHeaders, parsedLocationUri),
                 tokenSource: forwardedTokenSource,
                 timeout: durableHttpRequest.Timeout)

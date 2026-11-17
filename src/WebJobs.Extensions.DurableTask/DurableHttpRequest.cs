@@ -114,8 +114,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         [JsonProperty("crossOriginPollingHeaders", NullValueHandling = NullValueHandling.Ignore, ObjectCreationHandling = ObjectCreationHandling.Replace)]
         public IDictionary<string, string[]> CrossOriginPollingHeaders
         {
-            get => Microsoft.Azure.DurableTask.PollingHeaderPolicy.Copy(this.crossOriginPollingHeaders);
-            set => this.crossOriginPollingHeaders = Microsoft.Azure.DurableTask.PollingHeaderPolicy.Copy(value);
+            get => PollingHeaderPolicy.Copy(this.crossOriginPollingHeaders);
+            set => this.crossOriginPollingHeaders = PollingHeaderPolicy.Copy(value);
         }
 
         /// <summary>

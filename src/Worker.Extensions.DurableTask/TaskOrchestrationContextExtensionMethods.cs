@@ -214,7 +214,7 @@ public static class TaskOrchestrationContextExtensionMethods
             ? durableHttpRequest.CrossOriginPollingHeaders : null;
 
         IDictionary<string, StringValues>? headersCopy = !sameOrigin && durableHttpRequest.EnableCrossOriginHeaderFiltering
-            ? Microsoft.Azure.DurableTask.PollingHeaderPolicy.Select(
+            ? PollingHeaderPolicy.Select(
                 durableHttpRequest.Headers, pollingHeaders, parsedLocationUri)
             : durableHttpRequest.Headers is null
                 ? null

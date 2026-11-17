@@ -81,7 +81,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\Shared\PollingHeaderPolicy.cs" Link="PollingHeaderPolicy.cs" />
     <None Include="..\..\functions.png" Pack="true" PackagePath="\" />
     <None Include="..\..\README.md" Pack="true" PackagePath="\" />
   </ItemGroup>

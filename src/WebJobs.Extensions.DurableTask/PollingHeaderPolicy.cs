@@ -7,7 +7,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.Extensions.Primitives;
 
-namespace Microsoft.Azure.DurableTask
+namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 {
     internal static class PollingHeaderPolicy
     {
