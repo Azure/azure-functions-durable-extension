@@ -360,10 +360,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                     ? durableHttpRequest.Headers : PollingHeaderPolicy.Select(
                     durableHttpRequest.Headers, pollingHeaders, parsedLocationUri),
                 tokenSource: forwardedTokenSource,
-                timeout: durableHttpRequest.Timeout)
-            {
-                DisablePollingRedirects = durableHttpRequest.EnableCrossOriginHeaderFiltering,
-            };
+                timeout: durableHttpRequest.Timeout);
 
             // Do not copy over the x-functions-key header, as in many cases, the
             // functions key used for the initial request will be a Function-level key

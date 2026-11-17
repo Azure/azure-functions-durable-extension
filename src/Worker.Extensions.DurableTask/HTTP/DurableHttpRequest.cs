@@ -92,7 +92,7 @@ public class DurableHttpRequest
     public TimeSpan? Timeout { get; set; }
 
     /// <summary>
-    /// Gets or sets selected polling header names by exact HTTPS origin.
+    /// Gets or sets selected HTTP 202 polling header names by exact HTTPS origin.
     /// </summary>
     /// <remarks>
     /// Used only when EnableCrossOriginHeaderFiltering is enabled.
@@ -108,11 +108,11 @@ public class DurableHttpRequest
     }
 
     /// <summary>
-    /// Gets or sets whether to restrict cross-origin polling headers. Defaults to false.
+    /// Gets or sets whether to restrict cross-origin HTTP 202 polling headers. Defaults to false.
     /// </summary>
     /// <remarks>
-    /// When enabled, uses CrossOriginPollingHeaders for cross-origin polls and disables
-    /// automatic polling redirects. When disabled, preserves existing polling behavior.
+    /// When enabled, uses CrossOriginPollingHeaders when constructing cross-origin HTTP 202
+    /// polling requests. When disabled, preserves existing polling behavior.
     /// </remarks>
     /// <example>
     /// <code>
@@ -126,9 +126,4 @@ public class DurableHttpRequest
     [JsonPropertyName("enableCrossOriginHeaderFiltering")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public bool EnableCrossOriginHeaderFiltering { get; set; }
-
-    [JsonInclude]
-    [JsonPropertyName("disablePollingRedirects")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-    internal bool DisablePollingRedirects { get; set; }
 }

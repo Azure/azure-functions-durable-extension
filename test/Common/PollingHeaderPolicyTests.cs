@@ -45,10 +45,8 @@ namespace DurableTask.Tests
             }
 
             Assert.Null(poll.TokenSource);
-            Assert.True(poll.DisablePollingRedirects);
             Assert.NotNull(request.Headers);
             Assert.Equal(6, request.Headers.Count);
-            Assert.False(request.DisablePollingRedirects);
         }
 
 #if !WORKER_POLLING_TESTS
@@ -104,7 +102,6 @@ namespace DurableTask.Tests
             Assert.NotNull(next.Headers);
             Assert.Single(first.Headers);
             Assert.Equal(expectedCount, next.Headers.Count);
-            Assert.True(next.DisablePollingRedirects);
         }
 
 #if !WORKER_POLLING_TESTS
@@ -177,12 +174,10 @@ namespace DurableTask.Tests
             DurableHttpRequest unconfigured = PollingContext.CreateLocationPollRequest(request, "https://poll.example/status");
             Assert.NotNull(unconfigured.Headers);
             Assert.Empty(unconfigured.Headers);
-            Assert.True(unconfigured.DisablePollingRedirects);
             request.CrossOriginPollingHeaders = new Dictionary<string, string[]>();
             DurableHttpRequest empty = PollingContext.CreateLocationPollRequest(request, "https://poll.example/status");
             Assert.NotNull(empty.Headers);
             Assert.Empty(empty.Headers);
-            Assert.True(empty.DisablePollingRedirects);
         }
 
 #if !WORKER_POLLING_TESTS
@@ -211,7 +206,6 @@ namespace DurableTask.Tests
             Assert.Equal("other", poll.Headers["X-Other"]);
             Assert.Equal("application/json", poll.Headers["Accept"]);
             Assert.Null(poll.TokenSource);
-            Assert.False(poll.DisablePollingRedirects);
             Assert.DoesNotContain("enableCrossOriginHeaderFiltering", Serialize(request));
             Assert.DoesNotContain("disablePollingRedirects", Serialize(poll));
             poll.Headers.Clear();
@@ -244,13 +238,12 @@ namespace DurableTask.Tests
             DurableHttpRequest poll = PollingContext.CreateLocationPollRequest(restored, "https://poll.example/status");
             Assert.NotNull(poll.Headers);
             Assert.Single(poll.Headers);
+            Assert.DoesNotContain("disablePollingRedirects", Serialize(poll));
 #if WORKER_POLLING_TESTS
             using JsonDocument pollDocument = JsonDocument.Parse(Serialize(poll));
-            Assert.True(pollDocument.RootElement.GetProperty("disablePollingRedirects").GetBoolean());
             Assert.Equal(JsonValueKind.Null, pollDocument.RootElement.GetProperty("tokenSource").ValueKind);
 #else
             DurableHttpRequest restoredPoll = Deserialize(Serialize(poll));
-            Assert.True(restoredPoll.DisablePollingRedirects);
             Assert.NotNull(restoredPoll.Headers);
             Assert.Single(restoredPoll.Headers);
             Assert.Null(restoredPoll.TokenSource);
@@ -272,7 +265,6 @@ namespace DurableTask.Tests
 
             Assert.Single(poll.Headers);
             Assert.Equal("value", poll.Headers["X-Other"]);
-            Assert.False(poll.DisablePollingRedirects);
             Assert.DoesNotContain("enableCrossOriginHeaderFiltering", Serialize(request));
             Assert.DoesNotContain("disablePollingRedirects", Serialize(poll));
         }

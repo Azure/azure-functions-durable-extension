@@ -24,47 +24,48 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         [InlineData(false)]
         [InlineData(true)]
-        public async Task PollingRedirectBehaviorFollowsRestrictionFlag(bool restricted)
+        public async Task PollingPreservesAutomaticRedirects(bool filteringEnabled)
         {
             using var listener = new TcpListener(IPAddress.Loopback, 0);
+            using var redirectListener = new TcpListener(IPAddress.Loopback, 0);
             listener.Start();
+            redirectListener.Start();
             int port = ((IPEndPoint)listener.LocalEndpoint).Port;
+            int redirectPort = ((IPEndPoint)redirectListener.LocalEndpoint).Port;
             using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(15));
             int received = 0;
-            Task server = ServeAsync();
-            using HttpClient pollingClient = new DurableHttpClientFactory().CreatePollingClient(new DurableHttpMessageHandlerFactory());
+            Task server = ServeAsync(listener, redirect: true);
+            Task redirectServer = ServeAsync(redirectListener, redirect: false);
             using HttpClient normalClient = new DurableHttpClientFactory().GetClient(new DurableHttpMessageHandlerFactory());
             var original = new DurableHttpRequest(
                 HttpMethod.Get,
                 new Uri($"http://127.0.0.1:{port}/start"),
                 new System.Collections.Generic.Dictionary<string, Microsoft.Extensions.Primitives.StringValues> { { "X-Selected", "value" } })
             {
-                EnableCrossOriginHeaderFiltering = restricted,
+                EnableCrossOriginHeaderFiltering = filteringEnabled,
             };
             DurableHttpRequest request = DurableOrchestrationContext.CreateLocationPollRequest(original, "/poll");
 
             try
             {
-                string result = await RunActivityAsync(normalClient, null, request: request, pollingClientFactory: () => pollingClient)
+                string result = await RunActivityAsync(normalClient, null, request: request)
                     .WaitAsync(cancellation.Token);
-                Assert.Equal(
-                    restricted ? HttpStatusCode.Redirect : HttpStatusCode.OK,
-                    JsonConvert.DeserializeObject<DurableHttpResponse>(result).StatusCode);
-                Assert.Equal(restricted ? 1 : 2, received);
+                Assert.Equal(HttpStatusCode.OK, JsonConvert.DeserializeObject<DurableHttpResponse>(result).StatusCode);
+                Assert.Equal(2, received);
             }
             finally
             {
                 cancellation.Cancel();
-                await server;
+                await Task.WhenAll(server, redirectServer);
             }
 
-            async Task ServeAsync()
+            async Task ServeAsync(TcpListener serverListener, bool redirect)
             {
                 try
                 {
                     while (true)
                     {
-                        using TcpClient connection = await listener.AcceptTcpClientAsync(cancellation.Token);
+                        using TcpClient connection = await serverListener.AcceptTcpClientAsync(cancellation.Token);
                         using NetworkStream stream = connection.GetStream();
                         using var reader = new StreamReader(stream, Encoding.ASCII, false, 1024, true);
                         string line = await reader.ReadLineAsync(cancellation.Token);
@@ -76,9 +77,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                         }
 
                         Assert.True(selectedHeaderReceived);
-                        int count = Interlocked.Increment(ref received);
-                        string response = count == 1
-                            ? $"HTTP/1.1 302 Found\r\nLocation: http://127.0.0.1:{port}/next\r\n"
+                        Interlocked.Increment(ref received);
+                        string response = redirect
+                            ? $"HTTP/1.1 302 Found\r\nLocation: http://127.0.0.1:{redirectPort}/next\r\n"
                             : "HTTP/1.1 200 OK\r\n";
                         byte[] bytes = Encoding.ASCII.GetBytes(response + "Content-Length: 0\r\nConnection: close\r\n\r\n");
                         await stream.WriteAsync(bytes, cancellation.Token);
@@ -90,50 +91,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             }
         }
 
-        [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public void ConfiguredPollingRejectsCustomHandlers()
-        {
-            using var handler = new CallbackHandler((_, _) => Task.FromResult(CreateResponse()));
-            Assert.Throws<NotSupportedException>(() => new DurableHttpClientFactory().CreatePollingClient(
-                new DurableHttpMessageHandlerFactory(handler)));
-            Assert.Throws<NotSupportedException>(() => new DurableHttpClientFactory().CreatePollingClient(
-                new CustomHandlerFactory()));
-        }
-
-        [Fact]
-        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        public async Task ConfiguredPollingDoesNotFallBackToNormalClient()
-        {
-            using var handler = new CallbackHandler((_, _) => throw new InvalidOperationException("Unexpected transport."));
-            using HttpClient client = CreateClient(handler);
-            var original = new DurableHttpRequest(HttpMethod.Get, new Uri("https://start.example/start"))
-            {
-                EnableCrossOriginHeaderFiltering = true,
-            };
-            DurableHttpRequest request = DurableOrchestrationContext.CreateLocationPollRequest(original, "https://poll.example/status");
-            await Assert.ThrowsAsync<NotSupportedException>(() => RunActivityAsync(client, null, request: request));
-        }
-
         [Theory]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task DisabledRestrictionUsesCustomTransport(bool configured)
+        [InlineData(false, false, false)]
+        [InlineData(false, true, true)]
+        [InlineData(true, false, true)]
+        [InlineData(true, true, false)]
+        [InlineData(true, true, true)]
+        public async Task PollingUsesConfiguredTransport(bool filteringEnabled, bool configured, bool customFactory)
         {
             bool sent = false;
             using var handler = new CallbackHandler((request, _) =>
             {
                 sent = true;
-                Assert.True(request.Headers.Contains("X-Selected"));
+                Assert.Equal(!filteringEnabled || configured, request.Headers.Contains("X-Selected"));
+                Assert.Equal(!filteringEnabled, request.Headers.Contains("X-Other"));
                 return Task.FromResult(CreateResponse());
             });
-            using HttpClient client = CreateClient(handler);
+            IDurableHttpMessageHandlerFactory handlerFactory = customFactory
+                ? new CustomHandlerFactory(handler)
+                : new DurableHttpMessageHandlerFactory(handler);
+            using HttpClient client = new DurableHttpClientFactory().GetClient(handlerFactory);
             var original = new DurableHttpRequest(
                 HttpMethod.Get,
                 new Uri("https://start.example/start"),
-                new System.Collections.Generic.Dictionary<string, Microsoft.Extensions.Primitives.StringValues> { { "X-Selected", "value" } });
-            Assert.False(original.EnableCrossOriginHeaderFiltering);
+                new System.Collections.Generic.Dictionary<string, Microsoft.Extensions.Primitives.StringValues>
+                {
+                    { "X-Selected", "value" },
+                    { "X-Other", "other" },
+                })
+            {
+                EnableCrossOriginHeaderFiltering = filteringEnabled,
+            };
             if (configured)
             {
                 original.CrossOriginPollingHeaders = new System.Collections.Generic.Dictionary<string, string[]>
@@ -146,8 +135,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             string result = await RunActivityAsync(
                 client,
                 null,
-                request: poll,
-                pollingClientFactory: () => throw new InvalidOperationException("Unexpected polling transport."));
+                request: poll);
 
             Assert.True(sent);
             Assert.Equal(HttpStatusCode.OK, JsonConvert.DeserializeObject<DurableHttpResponse>(result).StatusCode);
@@ -311,8 +299,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             HttpClient client,
             TimeSpan? timeout,
             string path = "request",
-            DurableHttpRequest request = null,
-            Func<HttpClient> pollingClientFactory = null)
+            DurableHttpRequest request = null)
         {
             var options = new DurableTaskOptions();
             options.StorageProvider["type"] = "Emulator";
@@ -327,15 +314,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 HttpMethod.Get,
                 new Uri("http://localhost/" + path),
                 timeout: timeout);
-            var activity = new TaskHttpActivityShim(extension, client, pollingClientFactory);
+            var activity = new TaskHttpActivityShim(extension, client);
             return await activity.RunAsync(null, extension.MessageDataConverter.Serialize(new[] { request }));
         }
 
         private sealed class CustomHandlerFactory : IDurableHttpMessageHandlerFactory
         {
+            private readonly HttpMessageHandler handler;
+
+            public CustomHandlerFactory(HttpMessageHandler handler)
+            {
+                this.handler = handler;
+            }
+
             public HttpMessageHandler CreateHttpMessageHandler()
             {
-                throw new InvalidOperationException("Unexpected factory invocation.");
+                return this.handler;
             }
         }
 

@@ -237,10 +237,7 @@ public static class TaskOrchestrationContextExtensionMethods
             method: HttpMethod.Get,
             uri: parsedLocationUri,
             headers: headersCopy,
-            asynchronousPatternEnabled: durableHttpRequest.AsynchronousPatternEnabled)
-        {
-            DisablePollingRedirects = durableHttpRequest.EnableCrossOriginHeaderFiltering,
-        };
+            asynchronousPatternEnabled: durableHttpRequest.AsynchronousPatternEnabled);
 
         return newDurableHttpRequest;
     }

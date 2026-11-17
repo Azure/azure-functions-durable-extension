@@ -67,6 +67,7 @@ namespace Microsoft.Azure.Functions.Worker.Tests
                 .Callback<TaskName, object?, TaskOptions?>((_, input, _) =>
                 {
                     string json = System.Text.Json.JsonSerializer.Serialize(Assert.IsType<WorkerRequest>(input));
+                    Assert.DoesNotContain("disablePollingRedirects", json);
                     hostRequests.Add(JsonConvert.DeserializeObject<HostRequest>(json) ?? throw new InvalidOperationException("Request was null."));
                 })
                 .ReturnsAsync(() => responses.Dequeue());
@@ -82,10 +83,10 @@ namespace Microsoft.Azure.Functions.Worker.Tests
             Assert.Single(hostRequests[1].Headers);
             Assert.Equal("value", hostRequests[1].Headers["X-Selected"]);
             Assert.Null(hostRequests[1].TokenSource);
-            Assert.Equal(restricted, (bool?)JObject.Parse(JsonConvert.SerializeObject(hostRequests[1]))["disablePollingRedirects"] ?? false);
+            Assert.Null(JObject.Parse(JsonConvert.SerializeObject(hostRequests[1]))["disablePollingRedirects"]);
             Assert.Equal(restricted ? 0 : 1, hostRequests[2].Headers.Count);
             Assert.Null(hostRequests[2].TokenSource);
-            Assert.Equal(restricted, (bool?)JObject.Parse(JsonConvert.SerializeObject(hostRequests[2]))["disablePollingRedirects"] ?? false);
+            Assert.Null(JObject.Parse(JsonConvert.SerializeObject(hostRequests[2]))["disablePollingRedirects"]);
             Assert.NotNull(request.Headers);
             Assert.Equal(4, request.Headers.Count);
         }

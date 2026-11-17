@@ -291,9 +291,7 @@ public class TaskOrchestrationContextExtensionMethodsTests
         Assert.Equal(new Uri(nextLocation), nextPoll.Uri);
         Assert.NotNull(firstPoll.Headers);
         Assert.Equal(configured ? 1 : 0, firstPoll.Headers.Count);
-        Assert.True(firstPoll.DisablePollingRedirects);
         Assert.NotNull(nextPoll.Headers);
-        Assert.True(nextPoll.DisablePollingRedirects);
         if (expectHeadersForwarded)
         {
             if (nextPoll.Uri.Host == original.Uri.Host)
