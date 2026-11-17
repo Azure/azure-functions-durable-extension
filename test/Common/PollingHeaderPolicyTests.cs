@@ -149,6 +149,40 @@ namespace DurableTask.Tests
 #if !WORKER_POLLING_TESTS
         [Trait("Category", Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.PlatformSpecificHelpers.TestCategory)]
 #endif
+        [Fact]
+        public void UnicodeAndPunycodeOriginsAreRejectedAsDuplicates()
+        {
+            DurableHttpRequest request = CreateRequest();
+            Assert.Throws<ArgumentException>(() => request.CrossOriginPollingHeaders =
+                new Dictionary<string, string[]>
+                {
+                    { "https://b\u00FCcher.example", new[] { "X-Selected" } },
+                    { "https://xn--bcher-kva.example:443/", new[] { "X-Other" } },
+                });
+        }
+
+#if !WORKER_POLLING_TESTS
+        [Trait("Category", Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.PlatformSpecificHelpers.TestCategory)]
+#endif
+        [Theory]
+        [InlineData("https://b\u00FCcher.example", "https://xn--bcher-kva.example:443/status", true)]
+        [InlineData("https://xn--bcher-kva.example:8443", "https://b\u00FCcher.example:8443/status", true)]
+        [InlineData("https://b\u00FCcher.example", "https://xn--bcher-kva.example:8443/status", false)]
+        [InlineData("https://b\u00FCcher.example", "https://user@b\u00FCcher.example/status", false)]
+        public void SelectedHeadersMatchInternationalizedOrigins(string origin, string location, bool allowed)
+        {
+            DurableHttpRequest request = CreateRequest();
+            request.CrossOriginPollingHeaders = new Dictionary<string, string[]> { { origin, new[] { "X-Selected" } } };
+
+            DurableHttpRequest poll = PollingContext.CreateLocationPollRequest(request, location);
+
+            Assert.NotNull(poll.Headers);
+            Assert.Equal(allowed, poll.Headers.ContainsKey("X-Selected"));
+        }
+
+#if !WORKER_POLLING_TESTS
+        [Trait("Category", Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.PlatformSpecificHelpers.TestCategory)]
+#endif
         [Theory]
         [InlineData("https://poll.example:8443", "https://poll.example:8443/status", true)]
         [InlineData("https://poll.example:8443", "https://poll.example/status", false)]

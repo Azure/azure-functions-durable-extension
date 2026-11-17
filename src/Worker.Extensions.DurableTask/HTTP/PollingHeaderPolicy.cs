@@ -62,7 +62,16 @@ internal static class PollingHeaderPolicy
                 names[i] = name;
             }
 
-            string key = origin.GetLeftPart(UriPartial.Authority);
+            string key;
+            try
+            {
+                key = GetOriginKey(origin);
+            }
+            catch (UriFormatException ex)
+            {
+                throw new ArgumentException("Polling header configuration requires a valid hostname.", nameof(policy), ex);
+            }
+
             if (copy.ContainsKey(key))
             {
                 throw new ArgumentException("Polling header configuration contains duplicate origins.", nameof(policy));
@@ -81,7 +90,8 @@ internal static class PollingHeaderPolicy
     {
         var selected = new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase);
         if (headers == null || policy == null || !destination.IsAbsoluteUri
-            || !policy.TryGetValue(destination.GetLeftPart(UriPartial.Authority), out var names))
+            || destination.Scheme != Uri.UriSchemeHttps
+            || !policy.TryGetValue(GetOriginKey(destination), out var names))
         {
             return selected;
         }
@@ -99,5 +109,19 @@ internal static class PollingHeaderPolicy
         }
 
         return selected;
+    }
+
+    private static string GetOriginKey(Uri uri)
+    {
+        string authority = uri.GetLeftPart(UriPartial.Authority);
+        if (uri.HostNameType != UriHostNameType.Dns || authority.IndexOf('@') >= 0)
+        {
+            return authority;
+        }
+
+        string idnHost = uri.IdnHost;
+        return string.Equals(uri.Host, idnHost, StringComparison.Ordinal)
+            ? authority
+            : new UriBuilder(uri.Scheme, idnHost, uri.Port).Uri.GetLeftPart(UriPartial.Authority);
     }
 }

@@ -96,6 +96,7 @@ public class DurableHttpRequest
     /// </summary>
     /// <remarks>
     /// Used only when EnableCrossOriginHeaderFiltering is enabled.
+    /// Unicode and Punycode forms of the same hostname are equivalent.
     /// Assign the complete configuration. Both accessors copy the dictionary and its lists.
     /// </remarks>
     /// <exception cref="ArgumentException">The configuration contains an invalid origin or header list.</exception>
