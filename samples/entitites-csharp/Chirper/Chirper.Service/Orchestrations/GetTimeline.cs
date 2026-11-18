@@ -3,13 +3,10 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
 using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
-using Microsoft.Extensions.Logging; 
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.DurableTask;
+using Microsoft.DurableTask.Entities;
 
 namespace Chirper.Service
 {
@@ -17,21 +14,20 @@ namespace Chirper.Service
     // and returns it as a list sorted by timestamp.
     public static class GetTimeline
     {
-        [FunctionName(nameof(GetTimeline))]
+        [Function(nameof(GetTimeline))]
         public static async Task<Chirp[]> RunOrchestrator(
-            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            [OrchestrationTrigger] TaskOrchestrationContext context)
         {
             var userId = context.GetInput<string>();
 
             // call the UserFollows entity to figure out whose chirps should be included
-            var userFollowsProxy = context.CreateEntityProxy<IUserFollows>(userId);
-            var followedUsers = await userFollowsProxy.Get();
+            var followedUsers = await context.Entities.CallEntityAsync<List<string>>(
+                new EntityInstanceId(nameof(UserFollows), userId), nameof(UserFollows.Get));
 
             // in parallel, collect all the chirps
             var tasks = followedUsers
-                    .Select(id => context
-                        .CreateEntityProxy<IUserChirps>(id)
-                        .Get())
+                    .Select(id => context.Entities.CallEntityAsync<List<Chirp>>(
+                        new EntityInstanceId(nameof(UserChirps), id), nameof(UserChirps.Get)))
                     .ToList();
 
             await Task.WhenAll(tasks);

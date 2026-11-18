@@ -1,27 +1,21 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
-using System;
 using System.Collections.Generic;
-using System.Net.Http;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
-using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.DurableTask.Entities;
 
 namespace Chirper.Service
 {
     // The UserFollows entity stores all the follows of ONE user.
     // The entity key is the userId.
 
-    [JsonObject(MemberSerialization = MemberSerialization.OptIn)]
-    public class UserFollows : IUserFollows
+    public class UserFollows
     {
-        [JsonProperty]
-        public List<string> FollowedUsers { get; set; }  = new List<string>();
+        [JsonPropertyName(nameof(FollowedUsers))]
+        public List<string> FollowedUsers { get; set; } = new List<string>();
 
         public void Add(string user)
         {
@@ -33,16 +27,16 @@ namespace Chirper.Service
             FollowedUsers.Remove(user);
         }
 
-        public Task<List<string>> Get()
+        public List<string> Get()
         {
-            return Task.FromResult(FollowedUsers);
+            return FollowedUsers;
         }
 
         // Boilerplate (entry point for the functions runtime)
-        [FunctionName(nameof(UserFollows))]
-        public static Task HandleEntityOperation([EntityTrigger] IDurableEntityContext context)
+        [Function(nameof(UserFollows))]
+        public static Task HandleEntityOperation([EntityTrigger] TaskEntityDispatcher dispatcher)
         {
-            return context.DispatchAsync<UserFollows>();    
+            return dispatcher.DispatchAsync<UserFollows>();
         }
     }
 }

@@ -58,6 +58,7 @@ These minor releases incorporate the dependency updates from #3597. FunctionsSca
 
 ### Bug Fixes
 
+- Fixed legacy out-of-process orchestration failure handling selecting replay state from a copied exception instead of the worker's appended failure envelope. Invalid or completion-shaped exception payloads now preserve the original failure instead of being replayed.
 - Fixed startup failures in non-production deployment slots when the Durable extension is referenced but no Durable bindings are used. Non-default task hub names are still required when indexing Durable bindings or using Durable clients and workers. (#2352)
 - Preserved orchestration tags when .NET isolated entities schedule new orchestrations, using the released Durable Task SDK 1.28.0 and Core 3.11.2. Empty tags remain absent, and scheduling takes a snapshot of caller tags. (https://github.com/microsoft/durabletask-dotnet/issues/807)
 - Fixed missing `FailureDetails` in .NET isolated `GetAllInstancesAsync` results when `OrchestrationQuery.FetchInputsAndOutputs` is enabled. Query results now preserve available exception types, messages, stack traces, inner failures, and custom properties. (#2047)
@@ -75,6 +76,7 @@ These minor releases incorporate the dependency updates from #3597. FunctionsSca
 ### Dependency Updates
 
 - Remove LegacyLocalGrpcListener and the dependency on Grpc.Core (https://github.com/Azure/azure-functions-durable-extension/pull/3236)
+- Require `Microsoft.AspNetCore.WebUtilities` 2.3.14 or later in NuGet consumer graphs for CVE-2026-118750, retaining this dependency during SDK package pruning. The Functions host already supplies a newer, patched version; consumers explicitly selecting an older package may encounter NuGet downgrade diagnostics.
 - Removed the production dependency on `Microsoft.Azure.WebJobs.Logging.ApplicationInsights` to reduce the extension's transitive dependencies while preserving Microsoft Entra authentication for distributed tracing.
 - Updated the Azure Managed SDK and Functions extensions to 1.12.0, including the Functions scale extension and E2E apps.
 - Updated `Grpc.Net.Client` to 2.84.0 to meet the Durable Task SDK 1.28.0 dependency requirement. `Microsoft.Bcl.AsyncInterfaces` remains at 10.0.9 for Azure Managed SDK compatibility.

@@ -54,4 +54,5 @@ extends:
             - stage: BuildAndSign
               dependsOn: []
               jobs:
+                  - template: /eng/ci/templates/dependency-audit.yml@self
                   - template: /eng/templates/build.yml@self

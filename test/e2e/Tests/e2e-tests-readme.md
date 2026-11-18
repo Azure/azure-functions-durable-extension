@@ -140,6 +140,28 @@ See step #2 in `Running the E2E Tests` for instructions on running the tests aga
 
 It is important that the language and app name are compatible.
 
+#### .NET management-key exclusion
+
+`ManagementKeyTests` runs only for .NET isolated; the normal language skip
+filters exclude it from Python, Node.js, Java, and PowerShell runs. Its
+non-parallel fixture enables
+`AzureFunctionsJobHost__extensions__durableTask__httpSettings__excludeManagementKeyFromUrls=true`
+only for that host, leaving the default `false` for other tests and languages.
+It starts Core Tools with authentication enabled and temporary synthetic keys,
+then verifies key-free management URLs and `Location`, rejection of missing or
+invalid keys, and successful header-authenticated polling, completion, and purge.
+
+Run the selected test after building `BasicDotNetIsolated` and preparing its
+backend:
+
+```powershell
+dotnet test .\test\e2e\Tests\E2ETests.csproj --framework net8.0 --filter "FullyQualifiedName~ManagementKeyTests"
+```
+
+For an external test host (`FunctionAppUrl`), enable authentication and the same
+HTTP setting on that host and supply its authorized Durable system key to the
+test runner through `E2E_TEST_DURABLE_SYSTEM_KEY`. Do not print or commit the key.
+
 #### Non-`Azure Storage` backends
 
 See step #3 in `Running the E2E Tests` for instructions on running the tests against non-`Azure Storage` backends. When editing test.runsettings, the following values are accepted for `E2E_TEST_DURABLE_BACKEND`: `AzureStorage`, `AzureManaged`, `MSSQL`.

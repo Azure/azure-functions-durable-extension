@@ -2,128 +2,169 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
-using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
-using System.Linq;
-using System.Net.Http;
 using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.DurableTask.Client;
+using Microsoft.DurableTask.Entities;
 
 namespace Chirper.Service
 {
     public static class HttpSurface
     {
-        [FunctionName("UserTimelineGet")]
-        public static async Task<HttpResponseMessage> UserTimelineGet(
-            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "user/{userId}/timeline")] HttpRequestMessage req,
-            [DurableClient] IDurableClient client,
-            ILogger log,
-            string userId)
+        [Function("UserTimelineGet")]
+        public static async Task<HttpResponseData> UserTimelineGet(
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "user/{userId}/timeline")] HttpRequestData req,
+            [DurableClient] DurableTaskClient client,
+            string userId,
+            CancellationToken cancellationToken)
         {
             Authenticate(req, userId);
-            var instanceId = await client.StartNewAsync<string>(nameof(GetTimeline), userId);
-            return await client.WaitForCompletionOrCreateCheckStatusResponseAsync(req, instanceId);
+            var instanceId = await client.ScheduleNewOrchestrationInstanceAsync(
+                nameof(GetTimeline), userId, cancellation: cancellationToken);
+
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            using var wait = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
+            OrchestrationMetadata timeline;
+            try
+            {
+                timeline = await client.WaitForInstanceCompletionAsync(
+                    instanceId, getInputsAndOutputs: true, cancellation: wait.Token);
+            }
+            catch (OperationCanceledException) when (timeout.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+            {
+                return await client.CreateCheckStatusResponseAsync(req, instanceId, cancellationToken);
+            }
+
+            if (timeline.RuntimeStatus != OrchestrationRuntimeStatus.Completed)
+            {
+                throw new InvalidOperationException(
+                    $"Timeline orchestration '{instanceId}' ended with status '{timeline.RuntimeStatus}'.");
+            }
+
+            var response = req.CreateResponse(HttpStatusCode.OK);
+            await response.WriteAsJsonAsync(timeline.ReadOutputAs<Chirp[]>(), cancellationToken);
+            return response;
         }
 
-        [FunctionName("UserChirpsGet")]
-        public static async Task<HttpResponseMessage> UserChirpsGet(
-            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "user/{userId}/chirps")] HttpRequestMessage req,
-            [DurableClient] IDurableClient client,
-            ILogger log,
-            string userId)
+        [Function("UserChirpsGet")]
+        public static async Task<HttpResponseData> UserChirpsGet(
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "user/{userId}/chirps")] HttpRequestData req,
+            [DurableClient] DurableTaskClient client,
+            string userId,
+            CancellationToken cancellationToken)
         {
             Authenticate(req, userId);
-            var target = new EntityId(nameof(UserChirps), userId);
-            var chirps = await client.ReadEntityStateAsync<UserChirps>(target);
-            return chirps.EntityExists
-                    ? req.CreateResponse(HttpStatusCode.OK, chirps.EntityState.Chirps)
-                    : req.CreateResponse(HttpStatusCode.NotFound);
+            var target = new EntityInstanceId(nameof(UserChirps), userId);
+            var chirps = await client.Entities.GetEntityAsync<UserChirps>(target, cancellation: cancellationToken);
+            if (chirps == null)
+            {
+                return req.CreateResponse(HttpStatusCode.NotFound);
+            }
+
+            var response = req.CreateResponse(HttpStatusCode.OK);
+            await response.WriteAsJsonAsync(chirps.State.Chirps, cancellationToken);
+            return response;
         }
 
-        [FunctionName("UserChirpsPost")]
-        public static async Task<HttpResponseMessage> UserChirpsPost(
-            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "user/{userId}/chirps")] HttpRequestMessage req,
-            [DurableClient] IDurableClient client,
-            ILogger log, 
-            string userId)
+        [Function("UserChirpsPost")]
+        public static async Task<HttpResponseData> UserChirpsPost(
+            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "user/{userId}/chirps")] HttpRequestData req,
+            [DurableClient] DurableTaskClient client,
+            string userId,
+            CancellationToken cancellationToken)
         {
             Authenticate(req, userId);
+            using var reader = new StreamReader(req.Body);
             var chirp = new Chirp()
             {
                 UserId = userId,
                 Timestamp = DateTime.UtcNow,
-                Content = await req.Content.ReadAsStringAsync(),
+                Content = await reader.ReadToEndAsync(cancellationToken),
             };
-            await client.SignalEntityAsync<IUserChirps>(userId, x => x.Add(chirp));
-            return req.CreateResponse(HttpStatusCode.Accepted, chirp);
+            var target = new EntityInstanceId(nameof(UserChirps), userId);
+            await client.Entities.SignalEntityAsync(target, nameof(UserChirps.Add), chirp, cancellation: cancellationToken);
+            var response = req.CreateResponse(HttpStatusCode.Accepted);
+            await response.WriteAsJsonAsync(chirp, cancellationToken);
+            return response;
         }
 
-        [FunctionName("UserChirpsDelete")]
-        public static async Task<HttpResponseMessage> UserChirpsDelete(
-            [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "user/{userId}/chirps/{timestamp}")] HttpRequestMessage req,
-            [DurableClient] IDurableClient client,
-            ILogger log,
+        [Function("UserChirpsDelete")]
+        public static async Task<HttpResponseData> UserChirpsDelete(
+            [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "user/{userId}/chirps/{timestamp}")] HttpRequestData req,
+            [DurableClient] DurableTaskClient client,
             string userId,
-            DateTime timestamp)
+            string timestamp,
+            CancellationToken cancellationToken)
         {
             Authenticate(req, userId);
-            await client.SignalEntityAsync<IUserChirps>(userId, x => x.Remove(timestamp));
+            if (!DateTimeOffset.TryParse(timestamp, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var parsedTimestamp))
+            {
+                var response = req.CreateResponse(HttpStatusCode.BadRequest);
+                await response.WriteAsJsonAsync(new { error = "The timestamp must be a valid date and time." }, cancellationToken);
+                return response;
+            }
+
+            var target = new EntityInstanceId(nameof(UserChirps), userId);
+            await client.Entities.SignalEntityAsync(target, nameof(UserChirps.Remove), parsedTimestamp.UtcDateTime, cancellation: cancellationToken);
             return req.CreateResponse(HttpStatusCode.Accepted);
         }
 
-        [FunctionName("UserFollowsGet")]
-        public static async Task<HttpResponseMessage> UserFollowsGet(
-            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "user/{userId}/follows")] HttpRequestMessage req,
-            [DurableClient] IDurableClient client,
-            ILogger log,
-            string userId)
+        [Function("UserFollowsGet")]
+        public static async Task<HttpResponseData> UserFollowsGet(
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "user/{userId}/follows")] HttpRequestData req,
+            [DurableClient] DurableTaskClient client,
+            string userId,
+            CancellationToken cancellationToken)
         {
             Authenticate(req, userId);
-            var target = new EntityId(nameof(UserFollows), userId);
-            var follows = await client.ReadEntityStateAsync<UserFollows>(target);
-            return follows.EntityExists
-                    ? req.CreateResponse(HttpStatusCode.OK, follows.EntityState.FollowedUsers)
-                    : req.CreateResponse(HttpStatusCode.NotFound);
+            var target = new EntityInstanceId(nameof(UserFollows), userId);
+            var follows = await client.Entities.GetEntityAsync<UserFollows>(target, cancellation: cancellationToken);
+            if (follows == null)
+            {
+                return req.CreateResponse(HttpStatusCode.NotFound);
+            }
+
+            var response = req.CreateResponse(HttpStatusCode.OK);
+            await response.WriteAsJsonAsync(follows.State.FollowedUsers, cancellationToken);
+            return response;
         }
 
-        [FunctionName("UserFollowsPost")]
-        public static async Task<HttpResponseMessage> UserFollowsPost(
-            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "user/{userId}/follows/{userId2}")] HttpRequestMessage req,
-            [DurableClient] IDurableClient client,
-            ILogger log,
+        [Function("UserFollowsPost")]
+        public static async Task<HttpResponseData> UserFollowsPost(
+            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "user/{userId}/follows/{userId2}")] HttpRequestData req,
+            [DurableClient] DurableTaskClient client,
             string userId,
-            string userId2)
+            string userId2,
+            CancellationToken cancellationToken)
         {
             Authenticate(req, userId);
-            await client.SignalEntityAsync<IUserFollows>(userId, x => x.Add(userId2));
+            var target = new EntityInstanceId(nameof(UserFollows), userId);
+            await client.Entities.SignalEntityAsync(target, nameof(UserFollows.Add), userId2, cancellation: cancellationToken);
             return req.CreateResponse(HttpStatusCode.Accepted);
         }
 
-        [FunctionName("UserFollowsDelete")]
-        public static async Task<HttpResponseMessage> UserFollowsDelete(
-            [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "user/{userId}/follows/{userId2}")] HttpRequestMessage req,
-            [DurableClient] IDurableClient client,
-            ILogger log,
+        [Function("UserFollowsDelete")]
+        public static async Task<HttpResponseData> UserFollowsDelete(
+            [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "user/{userId}/follows/{userId2}")] HttpRequestData req,
+            [DurableClient] DurableTaskClient client,
             string userId,
-            string userId2)
+            string userId2,
+            CancellationToken cancellationToken)
         {
             Authenticate(req, userId);
-            var content = await req.Content.ReadAsAsync<string>();
-            await client.SignalEntityAsync<IUserFollows>(userId, x => x.Remove(userId2));
+            var target = new EntityInstanceId(nameof(UserFollows), userId);
+            await client.Entities.SignalEntityAsync(target, nameof(UserFollows.Remove), userId2, cancellation: cancellationToken);
             return req.CreateResponse(HttpStatusCode.Accepted);
         }
 
-        private static void Authenticate(HttpRequestMessage request, string userId)
+        private static void Authenticate(HttpRequestData request, string userId)
         {
             // Stub: validate that the request is coming from this userId
         }
-
     }
 }

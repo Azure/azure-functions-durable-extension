@@ -1,0 +1,6 @@
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Packages.props, $(MSBuildThisFileDirectory)..))" />
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.Azure.Functions.Worker.Extensions.DurableTask" Version="1.22.0" />
+  </ItemGroup>
+</Project>

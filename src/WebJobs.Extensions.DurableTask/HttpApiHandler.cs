@@ -698,6 +698,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 case OrchestrationRuntimeStatus.Suspended:
                     statusCode = HttpStatusCode.Accepted;
                     location = request.RequestUri;
+                    if (this.durableTaskOptions.HttpSettings?.ExcludeManagementKeyFromUrls == true)
+                    {
+                        location = new UriBuilder(location)
+                        {
+                            Query = this.GetQueryString(location),
+                        }.Uri;
+                    }
+
                     break;
 
                 // The orchestration has failed - return 500 w/out Location header
@@ -1383,11 +1391,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         internal string GetUniversalQueryStrings()
         {
-            Uri notificationUri = this.GetWebhookUri();
+            return this.GetQueryString(this.GetWebhookUri());
+        }
 
-            return !string.IsNullOrEmpty(notificationUri.Query)
-                ? notificationUri.Query.TrimStart('?')
-                : string.Empty;
+        private string GetQueryString(Uri uri)
+        {
+            string query = uri.Query.TrimStart('?');
+            if (this.durableTaskOptions.HttpSettings?.ExcludeManagementKeyFromUrls != true)
+            {
+                return query;
+            }
+
+            return string.Join("&", query.Split('&').Where(parameter => !string.Equals(
+                WebUtility.UrlDecode(parameter.Split('=')[0]), "code", StringComparison.OrdinalIgnoreCase)));
         }
 
         internal HttpCreationPayload GetInstanceCreationLinks()
@@ -1441,10 +1457,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
             string connection = WebUtility.UrlEncode(connectionName ?? this.config.GetDefaultConnectionName());
 
             string querySuffix = $"{TaskHubParameter}={taskHub}&{ConnectionParameter}={connection}";
-            if (!string.IsNullOrEmpty(notificationUri.Query))
+            string universalQuery = this.GetQueryString(notificationUri);
+            if (!string.IsNullOrEmpty(universalQuery))
             {
-                // This is expected to include the auto-generated system key for this extension.
-                querySuffix += "&" + notificationUri.Query.TrimStart('?');
+                querySuffix += "&" + universalQuery;
             }
 
             var httpManagementPayload = new HttpManagementPayload
