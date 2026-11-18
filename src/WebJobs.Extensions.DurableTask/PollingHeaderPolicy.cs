@@ -93,8 +93,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
         {
             var selected = new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase);
             if (headers == null || policy == null || !destination.IsAbsoluteUri
-                || destination.Scheme != Uri.UriSchemeHttps
-                || !policy.TryGetValue(GetOriginKey(destination), out var names))
+                || destination.Scheme != Uri.UriSchemeHttps)
+            {
+                return selected;
+            }
+
+            string originKey;
+            try
+            {
+                originKey = GetOriginKey(destination);
+            }
+            catch (UriFormatException)
+            {
+                return selected;
+            }
+
+            if (!policy.TryGetValue(originKey, out var names))
             {
                 return selected;
             }

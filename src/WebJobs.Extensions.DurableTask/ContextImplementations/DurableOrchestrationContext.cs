@@ -387,9 +387,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
                 return false;
             }
 
-            return string.Equals(original.Scheme, redirect.Scheme, StringComparison.OrdinalIgnoreCase)
-                && string.Equals(original.Host, redirect.Host, StringComparison.OrdinalIgnoreCase)
-                && original.Port == redirect.Port;
+            try
+            {
+                return string.Equals(original.Scheme, redirect.Scheme, StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(original.IdnHost, redirect.IdnHost, StringComparison.OrdinalIgnoreCase)
+                    && original.Port == redirect.Port;
+            }
+            catch (UriFormatException)
+            {
+                return string.Equals(original.Scheme, redirect.Scheme, StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(original.Host, redirect.Host, StringComparison.OrdinalIgnoreCase)
+                    && original.Port == redirect.Port;
+            }
         }
 
         /// <inheritdoc />

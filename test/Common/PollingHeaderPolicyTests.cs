@@ -117,6 +117,7 @@ namespace DurableTask.Tests
         [InlineData("https://poll.example?query=1", "X-Selected")]
         [InlineData("https://poll.example#fragment", "X-Selected")]
         [InlineData("https://user@poll.example", "X-Selected")]
+        [InlineData("https://b\u00FCcher-.example", "X-Selected")]
         [InlineData("/relative", "X-Selected")]
         [InlineData("https://poll.example", "*")]
         [InlineData("https://poll.example", "")]
@@ -169,6 +170,7 @@ namespace DurableTask.Tests
         [InlineData("https://xn--bcher-kva.example:8443", "https://b\u00FCcher.example:8443/status", true)]
         [InlineData("https://b\u00FCcher.example", "https://xn--bcher-kva.example:8443/status", false)]
         [InlineData("https://b\u00FCcher.example", "https://user@b\u00FCcher.example/status", false)]
+        [InlineData("https://b\u00FCcher.example", "https://b\u00FCcher-.example/status", false)]
         public void SelectedHeadersMatchInternationalizedOrigins(string origin, string location, bool allowed)
         {
             DurableHttpRequest request = CreateRequest();
