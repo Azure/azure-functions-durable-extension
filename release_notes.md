@@ -4,12 +4,12 @@
 
 | Package | Version |
 |---|---|
-| `Microsoft.Azure.WebJobs.Extensions.DurableTask` | `3.19.0` |
-| `Microsoft.Azure.Functions.Worker.Extensions.DurableTask` | `1.22.0` |
+| `Microsoft.Azure.WebJobs.Extensions.DurableTask` | `3.19.1` |
+| `Microsoft.Azure.Functions.Worker.Extensions.DurableTask` | `1.22.1` |
 | `Microsoft.Azure.Functions.Worker.Extensions.DurableTask.AzureBlobPayloads` | `1.1.0` |
 | `Microsoft.Azure.WebJobs.Extensions.DurableTask.FunctionsScale` | `1.1.0` |
 
-These minor releases incorporate the dependency updates from #3597. FunctionsScale version metadata is prepared here, but the current official build/publish pipeline does not package or publish FunctionsScale; its release requires a separate approved distribution path.
+The WebJobs `3.19.1` and worker `1.22.1` patch releases update the Durable Task Framework dependency set for backward-compatible `FailureDetails.Properties` deserialization. The AzureBlobPayloads and FunctionsScale versions remain from the release set prepared in #3597. FunctionsScale version metadata is prepared here, but the current official build/publish pipeline does not package or publish FunctionsScale; its release requires a separate approved distribution path.
 
 ## Microsoft.Azure.Functions.Worker.Extensions.DurableTask
 
@@ -30,7 +30,7 @@ These minor releases incorporate the dependency updates from #3597. FunctionsSca
 
 ### Dependency Updates
 
-- Updated the required host extension to `3.19.0` in worker `1.22.0` to align the dependency-update release set. (#3597)
+- Updated the required host extension to `3.19.1` in worker `1.22.1` so isolated apps receive the Durable Task Framework serialization compatibility fix.
 - Updated `Microsoft.DurableTask.Client.Grpc`, `Microsoft.DurableTask.Worker.Grpc`, and `Microsoft.DurableTask.Abstractions` to 1.28.0, including entity-scheduled orchestration tags, external payload auto-purge support, and the fix for external-event loss after canceled waits in the isolated worker.
 - Updated `Microsoft.DurableTask.LargePayloadPurge.Abstractions` to 1.28.0 to align purge contracts with the SDK client models.
 - Updated `Microsoft.DurableTask.Analyzers` to 1.28.0 and the test source generator reference to the stable `Microsoft.DurableTask.Generators` 1.0.0 release.
@@ -80,7 +80,7 @@ These minor releases incorporate the dependency updates from #3597. FunctionsSca
 - Removed the production dependency on `Microsoft.Azure.WebJobs.Logging.ApplicationInsights` to reduce the extension's transitive dependencies while preserving Microsoft Entra authentication for distributed tracing.
 - Updated the Azure Managed SDK and Functions extensions to 1.12.0, including the Functions scale extension and E2E apps.
 - Updated `Grpc.Net.Client` to 2.84.0 to meet the Durable Task SDK 1.28.0 dependency requirement. `Microsoft.Bcl.AsyncInterfaces` remains at 10.0.9 for Azure Managed SDK compatibility.
-- Updated `Microsoft.Azure.DurableTask.AzureStorage` to 2.11.2, `Microsoft.Azure.DurableTask.Core` to 3.11.2, and `Microsoft.Azure.DurableTask.ApplicationInsights` to 0.13.1.
+- Updated `Microsoft.Azure.DurableTask.AzureStorage` to 2.11.3, `Microsoft.Azure.DurableTask.Core` to 3.11.3, and `Microsoft.Azure.DurableTask.ApplicationInsights` to 0.13.2. This carries the backward-compatible `FailureDetails.Properties` deserialization fix from Azure/durabletask#1431 for persisted DataContractSerializer payloads, including Netherite history and commit logs.
 - Updated Netherite and its Azure Functions extension to 3.1.2, SQL Server and its Azure Functions extensions to 1.8.1, and the test emulator to 2.6.0.
 - Updated package-based host extension consumers to 3.18.0, retaining 2.13.7 for `netstandard2.0` projects.
 - Updated `Microsoft.DurableTask.LargePayloadPurge.Abstractions` to 1.28.0 to align purge contracts with the SDK client models.
