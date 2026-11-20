@@ -40,6 +40,7 @@
 
 
   <ItemGroup>
+    <Compile Include="..\Common\PollingHeaderPolicyTests.cs" Link="Tests\Unit\PollingHeaderPolicyTests.cs" />
     <ProjectReference Include="..\..\src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj" />
   </ItemGroup>
 

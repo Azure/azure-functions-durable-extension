@@ -17,6 +17,56 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
 {
     public class TaskHttpActivityShimTests
     {
+        [Theory]
+        [Trait("Category", PlatformSpecificHelpers.TestCategory)]
+        [InlineData(false, false, false)]
+        [InlineData(false, true, true)]
+        [InlineData(true, false, true)]
+        [InlineData(true, true, false)]
+        [InlineData(true, true, true)]
+        public async Task PollingUsesConfiguredTransport(bool filteringEnabled, bool configured, bool customFactory)
+        {
+            bool sent = false;
+            using var handler = new CallbackHandler((request, _) =>
+            {
+                sent = true;
+                Assert.Equal(!filteringEnabled || configured, request.Headers.Contains("X-Selected"));
+                Assert.Equal(!filteringEnabled, request.Headers.Contains("X-Other"));
+                return Task.FromResult(CreateResponse());
+            });
+            IDurableHttpMessageHandlerFactory handlerFactory = customFactory
+                ? new CustomHandlerFactory(handler)
+                : new DurableHttpMessageHandlerFactory(handler);
+            using HttpClient client = new DurableHttpClientFactory().GetClient(handlerFactory);
+            var original = new DurableHttpRequest(
+                HttpMethod.Get,
+                new Uri("https://start.example/start"),
+                new System.Collections.Generic.Dictionary<string, Microsoft.Extensions.Primitives.StringValues>
+                {
+                    { "X-Selected", "value" },
+                    { "X-Other", "other" },
+                })
+            {
+                EnableCrossOriginHeaderFiltering = filteringEnabled,
+            };
+            if (configured)
+            {
+                original.CrossOriginPollingHeaders = new System.Collections.Generic.Dictionary<string, string[]>
+                {
+                    { "https://poll.example", new[] { "X-Selected" } },
+                };
+            }
+
+            DurableHttpRequest poll = DurableOrchestrationContext.CreateLocationPollRequest(original, "https://poll.example/status");
+            string result = await RunActivityAsync(
+                client,
+                null,
+                request: poll);
+
+            Assert.True(sent);
+            Assert.Equal(HttpStatusCode.OK, JsonConvert.DeserializeObject<DurableHttpResponse>(result).StatusCode);
+        }
+
         [Fact]
         [Trait("Category", PlatformSpecificHelpers.TestCategory)]
         public void FactoryCachesClientWithoutTimeout()
@@ -171,7 +221,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
             return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("ok") };
         }
 
-        private static async Task<string> RunActivityAsync(HttpClient client, TimeSpan? timeout, string path = "request")
+        private static async Task<string> RunActivityAsync(
+            HttpClient client,
+            TimeSpan? timeout,
+            string path = "request",
+            DurableHttpRequest request = null)
         {
             var options = new DurableTaskOptions();
             options.StorageProvider["type"] = "Emulator";
@@ -182,12 +236,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests
                 new[] { new EmulatorDurabilityProviderFactory() },
                 new TestHostShutdownNotificationService(),
                 platformInformationService: TestHelpers.GetMockPlatformInformationService());
-            var request = new DurableHttpRequest(
+            request ??= new DurableHttpRequest(
                 HttpMethod.Get,
                 new Uri("http://localhost/" + path),
                 timeout: timeout);
             var activity = new TaskHttpActivityShim(extension, client);
             return await activity.RunAsync(null, extension.MessageDataConverter.Serialize(new[] { request }));
+        }
+
+        private sealed class CustomHandlerFactory : IDurableHttpMessageHandlerFactory
+        {
+            private readonly HttpMessageHandler handler;
+
+            public CustomHandlerFactory(HttpMessageHandler handler)
+            {
+                this.handler = handler;
+            }
+
+            public HttpMessageHandler CreateHttpMessageHandler()
+            {
+                return this.handler;
+            }
         }
 
         private sealed class CallbackHandler : HttpMessageHandler
