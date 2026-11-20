@@ -25,6 +25,7 @@ internal static class PollingHeaderPolicy
             if (!Uri.TryCreate(entry.Key, UriKind.Absolute, out Uri? origin)
                 || origin.Scheme != Uri.UriSchemeHttps
                 || origin.HostNameType == UriHostNameType.Unknown
+                || IsScopedIpv6Address(origin)
                 || origin.Host.IndexOf('*') >= 0
                 || origin.Port <= 0
                 || entry.Key.IndexOf('\\') >= 0
@@ -91,7 +92,7 @@ internal static class PollingHeaderPolicy
     {
         var selected = new Dictionary<string, StringValues>(StringComparer.OrdinalIgnoreCase);
         if (headers == null || policy == null || !destination.IsAbsoluteUri
-            || destination.Scheme != Uri.UriSchemeHttps)
+            || destination.Scheme != Uri.UriSchemeHttps || IsScopedIpv6Address(destination))
         {
             return selected;
         }
@@ -124,6 +125,11 @@ internal static class PollingHeaderPolicy
         }
 
         return selected;
+    }
+
+    private static bool IsScopedIpv6Address(Uri uri)
+    {
+        return uri.HostNameType == UriHostNameType.IPv6 && uri.IdnHost.IndexOf('%') >= 0;
     }
 
     private static string GetOriginKey(Uri uri)

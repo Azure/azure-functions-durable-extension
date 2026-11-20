@@ -209,7 +209,10 @@ public static class TaskOrchestrationContextExtensionMethods
             ? new Uri(durableHttpRequest.Uri, locationUri)
             : new Uri(locationUri);
 
-        bool sameOrigin = IsSameOrigin(durableHttpRequest.Uri!, parsedLocationUri);
+        bool sameOrigin = IsSameOrigin(
+            durableHttpRequest.Uri!,
+            parsedLocationUri,
+            durableHttpRequest.EnableCrossOriginHeaderFiltering);
         IDictionary<string, string[]>? pollingHeaders = durableHttpRequest.EnableCrossOriginHeaderFiltering
             ? durableHttpRequest.CrossOriginPollingHeaders : null;
 
@@ -242,7 +245,7 @@ public static class TaskOrchestrationContextExtensionMethods
         return newDurableHttpRequest;
     }
 
-    private static bool IsSameOrigin(Uri original, Uri redirect)
+    private static bool IsSameOrigin(Uri original, Uri redirect, bool normalizeIdnHost)
     {
         if (original is null || redirect is null)
         {
@@ -256,8 +259,10 @@ public static class TaskOrchestrationContextExtensionMethods
 
         try
         {
+            string originalHost = normalizeIdnHost ? original.IdnHost : original.Host;
+            string redirectHost = normalizeIdnHost ? redirect.IdnHost : redirect.Host;
             return string.Equals(original.Scheme, redirect.Scheme, StringComparison.OrdinalIgnoreCase)
-                && string.Equals(original.IdnHost, redirect.IdnHost, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(originalHost, redirectHost, StringComparison.OrdinalIgnoreCase)
                 && original.Port == redirect.Port;
         }
         catch (UriFormatException)

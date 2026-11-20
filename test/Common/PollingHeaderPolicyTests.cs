@@ -118,6 +118,8 @@ namespace DurableTask.Tests
         [InlineData("https://poll.example#fragment", "X-Selected")]
         [InlineData("https://user@poll.example", "X-Selected")]
         [InlineData("https://b\u00FCcher-.example", "X-Selected")]
+        [InlineData("https://[fe80::1%1]", "X-Selected")]
+        [InlineData("https://[fe80::1%25eth0]:8443", "X-Selected")]
         [InlineData("/relative", "X-Selected")]
         [InlineData("https://poll.example", "*")]
         [InlineData("https://poll.example", "")]
@@ -189,6 +191,8 @@ namespace DurableTask.Tests
         [InlineData("https://poll.example:8443", "https://poll.example:8443/status", true)]
         [InlineData("https://poll.example:8443", "https://poll.example/status", false)]
         [InlineData("https://[::1]:8443", "https://[::1]:8443/status", true)]
+        [InlineData("https://[fe80::1]", "https://[fe80::1%1]/status", false)]
+        [InlineData("https://[fe80::1]:8443", "https://[fe80::1%25eth0]:8443/status", false)]
         public void ExplicitPortsAndIpOrigins(string origin, string location, bool allowed)
         {
             DurableHttpRequest request = CreateRequest();
@@ -247,6 +251,29 @@ namespace DurableTask.Tests
             poll.Headers.Clear();
             Assert.NotNull(request.Headers);
             Assert.Equal(6, request.Headers.Count);
+        }
+
+#if !WORKER_POLLING_TESTS
+        [Trait("Category", Microsoft.Azure.WebJobs.Extensions.DurableTask.Tests.PlatformSpecificHelpers.TestCategory)]
+#endif
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(true, true)]
+        public void SameOriginIdnComparisonRequiresOptIn(bool enableFiltering, bool sameOrigin)
+        {
+            DurableHttpRequest request = CreateRequest(new Uri("https://b\u00FCcher.example/start"));
+            request.EnableCrossOriginHeaderFiltering = enableFiltering;
+
+            DurableHttpRequest poll = PollingContext.CreateLocationPollRequest(
+                request,
+                "https://xn--bcher-kva.example/status");
+
+            Assert.NotNull(poll.Headers);
+            Assert.Equal(sameOrigin, poll.Headers.ContainsKey("Authorization"));
+            Assert.Equal(sameOrigin, poll.Headers.ContainsKey("Cookie"));
+#if !WORKER_POLLING_TESTS
+            Assert.Equal(sameOrigin, poll.TokenSource is not null);
+#endif
         }
 
 #if !WORKER_POLLING_TESTS
@@ -317,6 +344,11 @@ namespace DurableTask.Tests
 
         private static DurableHttpRequest CreateRequest()
         {
+            return CreateRequest(new Uri("https://start.example/start"));
+        }
+
+        private static DurableHttpRequest CreateRequest(Uri uri)
+        {
             var headers = new Dictionary<string, StringValues>
             {
                 { "X-Selected", new StringValues(new[] { "one", "two" }) },
@@ -327,7 +359,7 @@ namespace DurableTask.Tests
                 { "X-FuNcTiOnS-kEy", "test-key" },
             };
 #if WORKER_POLLING_TESTS
-            return new DurableHttpRequest(HttpMethod.Post, new Uri("https://start.example/start"), headers)
+            return new DurableHttpRequest(HttpMethod.Post, uri, headers)
             {
                 EnableCrossOriginHeaderFiltering = true,
                 TokenSource = new Microsoft.Azure.Functions.Worker.Extensions.DurableTask.ManagedIdentityTokenSource("https://start.example/"),
@@ -335,7 +367,7 @@ namespace DurableTask.Tests
 #else
             return new DurableHttpRequest(
                 HttpMethod.Post,
-                new Uri("https://start.example/start"),
+                uri,
                 headers,
                 tokenSource: new ManagedIdentityTokenSource("https://start.example/"))
             {
