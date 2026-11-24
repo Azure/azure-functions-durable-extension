@@ -4,6 +4,7 @@
     <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <DefineConstants>$(DefineConstants);WORKER_POLLING_TESTS</DefineConstants>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
 
@@ -19,12 +20,14 @@
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="Moq" />
     <ProjectReference Include="..\..\src\Worker.Extensions.DurableTask\Worker.Extensions.DurableTask.csproj" />
+    <ProjectReference Include="..\..\src\WebJobs.Extensions.DurableTask\WebJobs.Extensions.DurableTask.csproj" Aliases="HostExtension" />
     <ProjectReference Include="..\..\src\Worker.Extensions.DurableTask.AzureBlobPayloads\Worker.Extensions.DurableTask.AzureBlobPayloads.csproj" />
     <ProjectReference Include="GeneratedInvocationApp\GeneratedInvocationApp.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Using Include="Xunit" />
+    <Compile Include="..\Common\PollingHeaderPolicyTests.cs" Link="PollingHeaderPolicyTests.cs" />
     <Compile Remove="GeneratedInvocationApp\**\*.cs" />
   </ItemGroup>
 
