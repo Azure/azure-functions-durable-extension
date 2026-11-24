@@ -73,6 +73,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.DurableTask
 
         public override string EventSourceName { get; set; } = "DurableTask-AzureStorage";
 
+        internal override bool TaskHubNameMatches(string taskHubName, string otherTaskHubName)
+        {
+            return string.Equals(taskHubName, otherTaskHubName, StringComparison.OrdinalIgnoreCase);
+        }
+
         /// <inheritdoc/>
         public async override Task<IList<OrchestrationState>> GetAllOrchestrationStates(CancellationToken cancellationToken)
         {
